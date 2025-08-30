@@ -31,8 +31,8 @@ public class ClienteController {
             }
 
             Cliente clientFound = clientes.stream()
-                    .filter(cliente -> username.equals(cliente.getUsername()) &&
-                            password.equals(cliente.getPassword()))
+                    .filter(cliente -> username.equals(cliente.getNomeUsuario()) &&
+                            password.equals(cliente.getSenha()))
                     .findFirst()
                     .orElse(null);
 
@@ -54,16 +54,16 @@ public class ClienteController {
                 return ResponseEntity.status(400).build();
             }
 
-            if (client.getUsername() == null || client.getUsername().trim().isEmpty()) {
+            if (client.getNomeUsuario() == null || client.getNomeUsuario().trim().isEmpty()) {
                 return ResponseEntity.status(400).build();
             }
 
-            if (client.getPassword() == null || client.getPassword().trim().isEmpty()) {
+            if (client.getSenha() == null || client.getSenha().trim().isEmpty()) {
                 return ResponseEntity.status(400).build();
             }
 
             boolean clientAlreadyExists = clientes.stream()
-                    .anyMatch(c -> client.getUsername().equals(c.getUsername()));
+                    .anyMatch(c -> client.getNomeUsuario().equals(c.getNomeUsuario()));
 
             if(clientAlreadyExists){
                 return ResponseEntity.status(409).build();
