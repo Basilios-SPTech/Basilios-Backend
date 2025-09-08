@@ -1,7 +1,11 @@
 package com.basilios.basilios.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import com.basilios.basilios.model.Cliente;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
+import java.util.Optional;
+
+public interface ClienteRepository extends JpaRepository<Cliente, Long> {
+    Optional<Cliente> findByNomeUsuario(String nomeUsuario);
+    boolean existsByNomeUsuario(String nomeUsuario);
 }
