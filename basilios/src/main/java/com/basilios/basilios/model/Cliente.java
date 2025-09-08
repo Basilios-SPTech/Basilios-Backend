@@ -1,6 +1,5 @@
 package com.basilios.basilios.model;
 
-import com.basilios.basilios.model.Endereco;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -9,11 +8,15 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
+import org.hibernate.validator.constraints.br.CPF;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cliente")
+@SQLDelete(sql = "UPDATE cliente SET deleted_at = NOW() WHERE id_cliente = ?")
+@Where(clause = "deleted_at IS NULL")
 public class Cliente {
 
     @Id
@@ -21,22 +24,22 @@ public class Cliente {
     @Column(name = "id_cliente")
     private Long idCliente;
 
-    @NotBlank(message = "Nome de usuário é obrigatório")
-    @Size(max = 50, message = "Nome de usuário deve ter no máximo 50 caracteres")
-    @Column(name = "nome_usuario", nullable = false, unique = true, length = 50)
+    @NotBlank
+    @Size(max = 50)
+    @Column(name = "nome_usuario", nullable = false, unique = true)
     private String nomeUsuario;
 
-    @NotBlank(message = "Senha é obrigatória")
-    @Size(max = 255, message = "Senha deve ter no máximo 255 caracteres")
-    @Column(name = "senha", nullable = false, length = 255)
+    @NotBlank
+    @Size(max = 255)
+    @Column(name = "senha", nullable = false)
     private String senha;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_endereco", foreignKey = @ForeignKey(name = "fk_cliente_endereco"))
     private Endereco endereco;
 
-    @Pattern(regexp = "^\\d{11}$", message = "CPF deve conter exatamente 11 dígitos")
-    @Column(name = "cpf", length = 11)
+@CPF
+@Column(name = "cpf", length = 11)
     private String cpf;
 
     @CreationTimestamp
@@ -50,100 +53,49 @@ public class Cliente {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // Construtores
     public Cliente() {}
 
     public Cliente(String nomeUsuario, String senha) {
         this.nomeUsuario = nomeUsuario;
-        this.senha = senha;
+        setSenha(senha); // já faz hash
     }
 
     public Cliente(String nomeUsuario, String senha, Endereco endereco, String cpf) {
         this.nomeUsuario = nomeUsuario;
-        this.senha = senha;
+        setSenha(senha);
         this.endereco = endereco;
         this.cpf = cpf;
     }
 
     // Getters e Setters
-    public Long getIdCliente() {
-        return idCliente;
-    }
+    public Long getIdCliente() { return idCliente; }
+    public void setIdCliente(Long idCliente) { this.idCliente = idCliente; }
 
-    public void setIdCliente(Long idCliente) {
-        this.idCliente = idCliente;
-    }
+    public String getNomeUsuario() { return nomeUsuario; }
+    public void setNomeUsuario(String nomeUsuario) { this.nomeUsuario = nomeUsuario; }
 
-    public String getNomeUsuario() {
-        return nomeUsuario;
-    }
-
-    public void setNomeUsuario(String nomeUsuario) {
-        this.nomeUsuario = nomeUsuario;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
+    public String getSenha() { return senha; }
 
     public void setSenha(String senha) {
-        this.senha = senha;
+        if (senha != null) {
+            this.senha = new BCryptPasswordEncoder().encode(senha);
+        }
     }
 
-    public Endereco getEndereco() {
-        return endereco;
-    }
+    public Endereco getEndereco() { return endereco; }
+    public void setEndereco(Endereco endereco) { this.endereco = endereco; }
 
-    public void setEndereco(Endereco endereco) {
-        this.endereco = endereco;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public String getCpf() {
-        return cpf;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
+    public boolean isAtivo() { return deletedAt == null; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public void restaurar() { this.deletedAt = null; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
-    }
-
-    // Métodos utilitários
-    public boolean isAtivo() {
-        return deletedAt == null;
-    }
-
-    public void marcarComoExcluido() {
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    public void restaurar() {
-        this.deletedAt = null;
-    }
-
-    // toString
     @Override
     public String toString() {
         return "Cliente{" +
@@ -157,19 +109,14 @@ public class Cliente {
                 '}';
     }
 
-    // equals e hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
+        if (!(o instanceof Cliente)) return false;
         Cliente cliente = (Cliente) o;
-
-        return idCliente != null ? idCliente.equals(cliente.idCliente) : cliente.idCliente == null;
+        return idCliente != null && idCliente.equals(cliente.idCliente);
     }
 
     @Override
-    public int hashCode() {
-        return idCliente != null ? idCliente.hashCode() : 0;
-    }
+    public int hashCode() { return idCliente != null ? idCliente.hashCode() : 0; }
 }

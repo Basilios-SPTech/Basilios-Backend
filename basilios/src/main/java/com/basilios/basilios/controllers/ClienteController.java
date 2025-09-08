@@ -1,78 +1,62 @@
 package com.basilios.basilios.controllers;
 
 import com.basilios.basilios.model.Cliente;
+import com.basilios.basilios.service.ClienteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/client")
+@RequestMapping("/clientes")
 public class ClienteController {
 
-    List<Cliente> clientes = new ArrayList<>();
+    private final ClienteService clienteService;
 
+    public ClienteController(ClienteService clienteService) {
+        this.clienteService = clienteService;
+    }
+
+    // GET all
     @GetMapping
-    public ResponseEntity<List<Cliente>> getClient(){
-        return ResponseEntity.status(200).body(clientes);
+    public ResponseEntity<List<Cliente>> listarClientes() {
+        return clienteService.listarClientes();
     }
 
-    @PostMapping("/verify-client")
-    public ResponseEntity<Cliente> verifyClient(@RequestBody Map<String, String> credentials){
-        try {
-            String username = credentials.get("username");
-            String password = credentials.get("password");
-
-            if(username == null  || username.trim().isEmpty() ||
-                password == null || password.trim().isEmpty()){
-                return ResponseEntity.status(400).build();
-            }
-
-            Cliente clientFound = clientes.stream()
-                    .filter(cliente -> username.equals(cliente.getNomeUsuario()) &&
-                            password.equals(cliente.getSenha()))
-                    .findFirst()
-                    .orElse(null);
-
-            if(clientFound != null){
-                return ResponseEntity.status(200).body(clientFound);
-            }else{
-                return ResponseEntity.status(401).build();
-            }
-
-        }catch (Exception e){
-            return ResponseEntity.status(500).build();
-        }
+    // GET by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        return clienteService.buscarPorId(id);
     }
 
+    // POST - login
+    @PostMapping("/login")
+    public ResponseEntity<?> verificarCliente(@RequestBody Map<String, String> credenciais) {
+        return clienteService.verificarCliente(credenciais);
+    }
+
+    // POST - create
     @PostMapping
-    public ResponseEntity<Void> insertClient(@RequestBody Cliente client){
-        try{
-            if(client == null){
-                return ResponseEntity.status(400).build();
-            }
+    public ResponseEntity<?> inserirCliente(@RequestBody Cliente cliente) {
+        return clienteService.inserirCliente(cliente);
+    }
 
-            if (client.getNomeUsuario() == null || client.getNomeUsuario().trim().isEmpty()) {
-                return ResponseEntity.status(400).build();
-            }
+    // PUT - update total
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizarCliente(@PathVariable Long id, @RequestBody Cliente cliente) {
+        return clienteService.atualizarCliente(id, cliente);
+    }
 
-            if (client.getSenha() == null || client.getSenha().trim().isEmpty()) {
-                return ResponseEntity.status(400).build();
-            }
+    // PATCH - update parcial
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> atualizarParcial(@PathVariable Long id, @RequestBody Map<String, Object> campos) {
+        return clienteService.atualizarParcial(id, campos);
+    }
 
-            boolean clientAlreadyExists = clientes.stream()
-                    .anyMatch(c -> client.getNomeUsuario().equals(c.getNomeUsuario()));
-
-            if(clientAlreadyExists){
-                return ResponseEntity.status(409).build();
-            }
-
-            clientes.add(client);
-            return ResponseEntity.status(201).build();
-        } catch (Exception e) {
-            return ResponseEntity.status(500).build();
-        }
+    // DELETE
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletarCliente(@PathVariable Long id) {
+        return clienteService.deletarCliente(id);
     }
 }
