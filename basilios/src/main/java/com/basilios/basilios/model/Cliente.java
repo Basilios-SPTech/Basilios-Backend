@@ -9,7 +9,6 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 import org.hibernate.validator.constraints.br.CPF;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -77,9 +76,7 @@ public class Cliente {
     public String getSenha() { return senha; }
 
     public void setSenha(String senha) {
-        if (senha != null) {
-            this.senha = new BCryptPasswordEncoder().encode(senha);
-        }
+       this.senha = senha;
     }
 
     public Endereco getEndereco() { return endereco; }
