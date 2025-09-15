@@ -38,6 +38,7 @@ public class Cliente {
     private Endereco endereco;
 
 @CPF
+@NotBlank
 @Column(name = "cpf", length = 11)
     private String cpf;
 
