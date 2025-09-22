@@ -65,6 +65,14 @@ public class Endereco {
     @Column
     private LocalDateTime deletedAt;
 
+    // Adicionar estes novos campos:
+    @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
+
     // Construtores
     public Endereco() {}
 
@@ -106,6 +114,12 @@ public class Endereco {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public LocalDateTime getDeletedAt() { return deletedAt; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 
     // Métodos utilitários
     public boolean isAtivo() {
