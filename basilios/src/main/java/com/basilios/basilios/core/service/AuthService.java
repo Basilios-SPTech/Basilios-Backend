@@ -6,10 +6,9 @@ import com.basilios.basilios.app.dto.auth.RegisterRequest;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.AuthenticationException;
 import com.basilios.basilios.core.exception.BusinessException;
-import com.basilios.basilios.core.model.Cliente;
-import com.basilios.basilios.core.model.Endereco;
+import com.basilios.basilios.core.model.Client;
 import com.basilios.basilios.core.model.Usuario;
-import com.basilios.basilios.infra.repository.ClienteRepository;
+import com.basilios.basilios.infra.repository.ClientRepository;
 import com.basilios.basilios.infra.repository.EnderecoRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import com.basilios.basilios.infra.security.JwtUtil;
@@ -31,7 +30,7 @@ public class AuthService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private ClienteRepository clienteRepository;
+    private ClientRepository clientRepository;
 
     @Autowired
     private EnderecoRepository enderecoRepository;
@@ -50,10 +49,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        // 1. Validar senhas coincidem
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new BusinessException("As senhas não coincidem");
-        }
+
 
         // 2. Normalizar CPF (remover formatação)
         String cpfNormalizado = normalizarCpf(request.getCpf());
@@ -71,52 +67,33 @@ public class AuthService {
             throw new BusinessException("CPF já cadastrado");
         }
 
-        // 4. Criar e salvar endereço
-        Endereco endereco = Endereco.builder()
-                .rua(request.getRua())
-                .numero(request.getNumero())
-                .bairro(request.getBairro())
-                .complemento(request.getComplemento())
-                .cep(request.getCep())
-                .cidade(request.getCidade() != null ? request.getCidade() : "São Paulo")
-                .estado(request.getEstado() != null ? request.getEstado() : "SP")
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .build();
-
         // 5. Criar Cliente (novo usuário sempre é Cliente)
-        Cliente cliente = Cliente.builder()
+        Client client = Client.builder()
                 .nomeUsuario(request.getNomeUsuario())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .cpf(cpfNormalizado)
                 .telefone(normalizarTelefone(request.getTelefone()))
-                .dataNascimento(request.getDataNascimento())
                 .roles(Set.of(RoleEnum.ROLE_CLIENTE))
                 .enabled(true)
                 .build();
 
-        // 6. Associar endereço ao cliente
-        endereco.setUsuario(cliente);
-        endereco = enderecoRepository.save(endereco);
 
-        cliente.addEndereco(endereco);
-        cliente.setEnderecoPrincipal(endereco);
 
         // 7. Salvar cliente
-        cliente = clienteRepository.save(cliente);
+        client = clientRepository.save(client);
 
         // 8. Gerar token JWT
-        UserDetails userDetails = userDetailsService.loadUserByUsername(cliente.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(client.getEmail());
         String token = jwtUtil.generateToken(userDetails);
 
         // 9. Retornar resposta
         return AuthResponse.builder()
                 .token(token)
                 .type("Bearer")
-                .id(cliente.getId())
-                .name(cliente.getNomeUsuario())
-                .email(cliente.getEmail())
+                .id(client.getId())
+                .name(client.getNomeUsuario())
+                .email(client.getEmail())
                 .build();
     }
 

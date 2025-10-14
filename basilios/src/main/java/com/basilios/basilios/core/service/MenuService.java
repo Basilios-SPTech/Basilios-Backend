@@ -1,21 +1,13 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.core.model.Produto;
-import com.basilios.basilios.infra.repository.ProdutoRepository;
-import com.basilios.basilios.app.dto.menu.ProdutoDTO;
+import com.basilios.basilios.core.model.Product;
+import com.basilios.basilios.infra.repository.ProductRepository;
+import com.basilios.basilios.app.dto.menu.ProductDTO;
 import com.basilios.basilios.app.dto.menu.MenuFilterDTO;
-import com.basilios.basilios.core.exception.ProdutoNotFoundException;
-import com.basilios.basilios.core.exception.ProdutoUnavailableException;
-import com.basilios.basilios.core.exception.InvalidPriceException;
-import com.basilios.basilios.core.exception.DuplicateProdutoException;
-import com.basilios.basilios.core.exception.InvalidMenuFilterException;
-import com.basilios.basilios.core.exception.MenuOperationException;
+import com.basilios.basilios.core.exception.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,341 +20,235 @@ import java.util.stream.Collectors;
 public class MenuService {
 
     @Autowired
-    private ProdutoRepository produtoRepository;
+    private ProductRepository productRepository;
 
-    /**
-     * Retorna apenas produtos ativos (não pausados)
-     */
+    // ========== Active Menu ==========
     @Transactional(readOnly = true)
-    public List<Produto> getActiveMenu() {
-        return produtoRepository.findAll().stream()
-                .filter(produto -> !produto.getIsPaused())
-                .collect(Collectors.toList());
+    public List<Product> getActiveMenu() {
+        return productRepository.findByIsPausedFalse();
     }
 
-    /**
-     * Retorna todos os produtos
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getAllMenu() {
-        return produtoRepository.findAll();
+    public List<Product> getAllMenu() {
+        return productRepository.findAll();
     }
 
-    /**
-     * Retorna produtos com paginação
-     */
     @Transactional(readOnly = true)
-    public Page<Produto> getMenuPaginated(boolean activeOnly, Pageable pageable) {
-        if (activeOnly) {
-            return produtoRepository.findByIsPausedFalse(pageable);
+    public Page<Product> getMenuPaginated(boolean activeOnly, Pageable pageable) {
+        return activeOnly
+                ? productRepository.findByIsPausedFalse(pageable)
+                : productRepository.findAll(pageable);
+    }
+
+    // ========== Find by ID ==========
+    @Transactional(readOnly = true)
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+    }
+
+    // ========== Search ==========
+    @Transactional(readOnly = true)
+    public List<Product> searchByName(String name, boolean activeOnly) {
+        if (name != null && name.trim().length() < 2) {
+            throw InvalidMenuFilterException.invalidSearchTerm(name);
         }
-        return produtoRepository.findAll(pageable);
+        return activeOnly
+                ? productRepository.findByNameContainingIgnoreCaseAndIsPausedFalse(name)
+                : productRepository.findByNameContainingIgnoreCase(name);
     }
 
-    /**
-     * Busca produto por ID
-     */
     @Transactional(readOnly = true)
-    public Produto getProdutoById(Long id) {
-        return produtoRepository.findById(id)
-                .orElseThrow(() -> new ProdutoNotFoundException(id));
+    public List<Product> getProductsByPriceRange(BigDecimal min, BigDecimal max, boolean activeOnly) {
+        if (min.compareTo(max) > 0) {
+            throw InvalidMenuFilterException.invalidPriceRange(min, max);
+        }
+        return activeOnly
+                ? productRepository.findByPriceBetweenAndIsPausedFalse(min, max)
+                : productRepository.findByPriceBetween(min, max);
     }
 
-    /**
-     * Busca produtos por nome
-     */
     @Transactional(readOnly = true)
-    public List<Produto> searchByNome(String nome, boolean activeOnly) {
-        if (nome != null && nome.trim().length() < 2) {
-            throw InvalidMenuFilterException.invalidSearchTerm(nome);
-        }
-
-        if (activeOnly) {
-            return produtoRepository.findByNomeProdutoContainingIgnoreCaseAndIsPausedFalse(nome);
-        }
-        return produtoRepository.findByNomeProdutoContainingIgnoreCase(nome);
+    public List<Product> getProductsByIngredient(String ingredient, boolean activeOnly) {
+        return activeOnly
+                ? productRepository.findByIngredientsContainingIgnoreCaseAndIsPausedFalse(ingredient)
+                : productRepository.findByIngredientsContainingIgnoreCase(ingredient);
     }
 
-    /**
-     * Busca produtos por faixa de preço
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getProdutosByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, boolean activeOnly) {
-        if (minPrice.compareTo(maxPrice) > 0) {
-            throw InvalidMenuFilterException.invalidPriceRange(minPrice, maxPrice);
-        }
-
-        if (activeOnly) {
-            return produtoRepository.findByPrecoBetweenAndIsPausedFalse(minPrice, maxPrice);
-        }
-        return produtoRepository.findByPrecoBetween(minPrice, maxPrice);
-    }
-
-    /**
-     * Busca produtos por ingrediente
-     */
-    @Transactional(readOnly = true)
-    public List<Produto> getProdutosByIngredient(String ingrediente, boolean activeOnly) {
-        if (activeOnly) {
-            return produtoRepository.findByIngredientesContainingIgnoreCaseAndIsPausedFalse(ingrediente);
-        }
-        return produtoRepository.findByIngredientesContainingIgnoreCase(ingrediente);
-    }
-
-    /**
-     * Busca produtos ordenados por preço
-     */
-    @Transactional(readOnly = true)
-    public List<Produto> getProdutosOrderedByPrice(String direction, boolean activeOnly) {
+    public List<Product> getProductsOrderedByPrice(String direction, boolean activeOnly) {
         if (!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc")) {
             throw InvalidMenuFilterException.invalidSortDirection(direction);
         }
 
-        Sort sort = direction.equalsIgnoreCase("desc") ?
-                Sort.by("preco").descending() :
-                Sort.by("preco").ascending();
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by("price").descending()
+                : Sort.by("price").ascending();
 
-        List<Produto> produtos = produtoRepository.findAll(sort);
-
+        List<Product> products = productRepository.findAll(sort);
         if (activeOnly) {
-            return produtos.stream()
-                    .filter(produto -> !produto.getIsPaused())
-                    .collect(Collectors.toList());
+            return products.stream().filter(Product::isActive).collect(Collectors.toList());
         }
-
-        return produtos;
+        return products;
     }
 
-    /**
-     * Busca com múltiplos filtros
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getFilteredMenu(MenuFilterDTO filter) {
-        return produtoRepository.findWithFilters(
-                filter.getNome(),
+    public List<Product> getFilteredMenu(MenuFilterDTO filter) {
+        return productRepository.findWithFilters(
+                filter.getName(),
                 filter.getMinPrice(),
                 filter.getMaxPrice(),
-                filter.getIngredientes(),
+                filter.getIngredients(),
                 filter.isActiveOnly()
         );
     }
 
-    /**
-     * Criar novo produto
-     */
-    public Produto createProduto(ProdutoDTO produtoDTO) {
-        // Verificar se já existe produto com mesmo nome
-        if (produtoRepository.existsByNomeProdutoIgnoreCase(produtoDTO.getNomeProduto())) {
-            throw new DuplicateProdutoException(produtoDTO.getNomeProduto());
+    // ========== CRUD ==========
+    public Product createProduct(ProductDTO dto) {
+        if (productRepository.existsByNameIgnoreCase(dto.getName())) {
+            throw new DuplicateProductException(dto.getName());
         }
 
-        Produto produto = new Produto();
-        produto.setNomeProduto(produtoDTO.getNomeProduto());
-        produto.setDescricao(produtoDTO.getDescricao());
-        produto.setIngredientes(produtoDTO.getIngredientes());
-        produto.setPreco(produtoDTO.getPreco());
-        produto.setIsPaused(false);
+        Product product = new Product();
+        product.setName(dto.getName());
+        product.setDescription(dto.getDescription());
+        product.setPrice(dto.getPrice());
+        product.setIsPaused(false);
 
-        return produtoRepository.save(produto);
+        return productRepository.save(product);
     }
 
-    /**
-     * Atualizar produto existente
-     */
-    public Produto updateProduto(Long id, ProdutoDTO produtoDTO) {
-        Produto produto = getProdutoById(id);
+    public Product updateProduct(Long id, ProductDTO dto) {
+        Product product = getProductById(id);
 
-        // Verificar se nome já existe em outro produto
-        if (!produto.getNomeProduto().equalsIgnoreCase(produtoDTO.getNomeProduto()) &&
-                produtoRepository.existsByNomeProdutoIgnoreCase(produtoDTO.getNomeProduto())) {
-            throw new DuplicateProdutoException(produtoDTO.getNomeProduto());
+        if (!product.getName().equalsIgnoreCase(dto.getName()) &&
+                productRepository.existsByNameIgnoreCase(dto.getName())) {
+            throw new DuplicateProductException(dto.getName());
         }
 
-        produto.setNomeProduto(produtoDTO.getNomeProduto());
-        produto.setDescricao(produtoDTO.getDescricao());
-        produto.setIngredientes(produtoDTO.getIngredientes());
-        produto.setPreco(produtoDTO.getPreco());
+        product.setName(dto.getName());
+        product.setDescription(dto.getDescription());
+        product.setPrice(dto.getPrice());
 
-        return produtoRepository.save(produto);
+        return productRepository.save(product);
     }
 
-    /**
-     * Pausar produto
-     */
-    public void pauseProduto(Long id) {
-        Produto produto = getProdutoById(id);
-        if (produto.getIsPaused()) {
-            throw MenuOperationException.cannotPause(id, "Produto já está pausado");
+    public void pauseProduct(Long id) {
+        Product product = getProductById(id);
+        if (product.getIsPaused()) throw MenuOperationException.cannotPause(id, "Product already paused");
+        product.pause();
+        productRepository.save(product);
+    }
+
+    public void activateProduct(Long id) {
+        Product product = getProductById(id);
+        if (!product.getIsPaused()) throw MenuOperationException.cannotActivate(id, "Product already active");
+        product.activate();
+        productRepository.save(product);
+    }
+
+    public boolean toggleProductStatus(Long id) {
+        Product product = getProductById(id);
+        product.toggleStatus();
+        productRepository.save(product);
+        return product.getIsPaused();
+    }
+
+    public void deleteProduct(Long id) {
+        Product product = getProductById(id);
+        productRepository.delete(product);
+    }
+
+    public Product updateProductPrice(Long id, BigDecimal newPrice) {
+        if (newPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPriceException(newPrice);
         }
-        produto.pausar();
-        produtoRepository.save(produto);
+        Product product = getProductById(id);
+        product.setPrice(newPrice);
+        return productRepository.save(product);
     }
 
-    /**
-     * Ativar produto
-     */
-    public void activateProduto(Long id) {
-        Produto produto = getProdutoById(id);
-        if (!produto.getIsPaused()) {
-            throw MenuOperationException.cannotActivate(id, "Produto já está ativo");
-        }
-        produto.ativar();
-        produtoRepository.save(produto);
-    }
-
-    /**
-     * Alternar status do produto
-     */
-    public boolean toggleProdutoStatus(Long id) {
-        Produto produto = getProdutoById(id);
-        produto.alternarStatus();
-        produtoRepository.save(produto);
-        return produto.getIsPaused();
-    }
-
-    /**
-     * Deletar produto
-     */
-    public void deleteProduto(Long id) {
-        Produto produto = getProdutoById(id);
-        // Verificar se produto pode ser deletado (ex: não possui pedidos pendentes)
-        // Esta verificação pode ser implementada conforme regras de negócio
-        produtoRepository.delete(produto);
-    }
-
-    /**
-     * Atualizar preço do produto
-     */
-    public Produto updateProdutoPrice(Long id, BigDecimal novoPreco) {
-        if (novoPreco.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidPriceException(novoPreco);
-        }
-
-        Produto produto = getProdutoById(id);
-        produto.setPreco(novoPreco);
-        return produtoRepository.save(produto);
-    }
-
-    /**
-     * Buscar produtos mais vendidos (implementação básica)
-     */
+    // ========== Popular & Stats ==========
     @Transactional(readOnly = true)
-    public List<Produto> getPopularProdutos(int limit) {
-        // Esta implementação pode ser melhorada quando houver dados de vendas
+    public List<Product> getPopularProducts(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return produtoRepository.findByIsPausedFalseOrderByCreatedAtDesc(pageable).getContent();
+        return productRepository.findByIsPausedFalseOrderByCreatedAtDesc(pageable).getContent();
     }
 
-    /**
-     * Contar todos os produtos
-     */
     @Transactional(readOnly = true)
-    public long countAllProdutos() {
-        return produtoRepository.count();
+    public long countAllProducts() {
+        return productRepository.count();
     }
 
-    /**
-     * Contar produtos ativos
-     */
     @Transactional(readOnly = true)
-    public long countActiveProdutos() {
-        return produtoRepository.countByIsPausedFalse();
+    public long countActiveProducts() {
+        return productRepository.countByIsPausedFalse();
     }
 
-    /**
-     * Contar produtos pausados
-     */
     @Transactional(readOnly = true)
-    public long countPausedProdutos() {
-        return produtoRepository.countByIsPausedTrue();
+    public long countPausedProducts() {
+        return productRepository.countByIsPausedTrue();
     }
 
-    /**
-     * Verificar se produto está disponível
-     */
     @Transactional(readOnly = true)
-    public boolean isProdutoAvailable(Long id) {
-        Produto produto = getProdutoById(id);
-        return produto.isAtivo();
+    public boolean isProductAvailable(Long id) {
+        Product product = getProductById(id);
+        return product.isActive();
     }
 
-    /**
-     * Buscar produtos por lista de IDs
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getProdutosByIds(List<Long> ids) {
-        return produtoRepository.findAllById(ids);
+    public List<Product> getProductsByIds(List<Long> ids) {
+        return productRepository.findAllById(ids);
     }
 
-    /**
-     * Validar se todos os produtos estão disponíveis
-     */
     @Transactional(readOnly = true)
-    public void validateProdutosAvailability(List<Long> produtoIds) {
-        List<Produto> produtos = getProdutosByIds(produtoIds);
+    public void validateProductsAvailability(List<Long> productIds) {
+        List<Product> products = getProductsByIds(productIds);
 
-        if (produtos.size() != produtoIds.size()) {
-            throw new ProdutoNotFoundException("Um ou mais produtos não foram encontrados", null);
+        if (products.size() != productIds.size()) {
+            throw new ProductNotFoundException("One or more products not found", null);
         }
 
-        List<String> produtosPausados = produtos.stream()
-                .filter(produto -> produto.getIsPaused())
-                .map(Produto::getNomeProduto)
+        List<String> pausedProducts = products.stream()
+                .filter(p -> !p.isActive())
+                .map(Product::getName)
                 .collect(Collectors.toList());
 
-        if (!produtosPausados.isEmpty()) {
-            throw new ProdutoUnavailableException(produtosPausados);
+        if (!pausedProducts.isEmpty()) {
+            throw new ProductUnavailableException(pausedProducts);
         }
     }
 
-    /**
-     * Buscar produtos por categoria de preço
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getProdutosByPriceCategory(String categoria, boolean activeOnly) {
-        return produtoRepository.findByPriceCategory(categoria.toUpperCase(), activeOnly);
+    public List<Product> getProductsByPriceCategory(String category, boolean activeOnly) {
+        return productRepository.findByPriceCategory(category.toUpperCase(), activeOnly);
     }
 
-    /**
-     * Buscar produtos similares
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getSimilarProdutos(Long produtoId, String keyword, int limit) {
+    public List<Product> getSimilarProducts(Long productId, String keyword, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return produtoRepository.findSimilarProdutos(produtoId, keyword);
+        return productRepository.findSimilarProducts(productId, keyword);
     }
 
-    /**
-     * Obter estatísticas do menu
-     */
     @Transactional(readOnly = true)
     public Object[] getMenuStatistics() {
-        return produtoRepository.getMenuStatistics();
+        return productRepository.getMenuStatistics();
     }
 
-    /**
-     * Buscar produtos recém adicionados
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getRecentlyAddedProdutos(int limit) {
+    public List<Product> getRecentlyAddedProducts(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return produtoRepository.findRecentlyAdded(pageable);
+        return productRepository.findRecentlyAdded(pageable);
     }
 
-    /**
-     * Validar disponibilidade de produtos por IDs
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getAvailableProductsByIds(List<Long> ids) {
-        return produtoRepository.findAvailableProductsByIds(ids);
+    public List<Product> getAvailableProductsByIds(List<Long> ids) {
+        return productRepository.findAvailableProductsByIds(ids);
     }
 
-    /**
-     * Buscar sugestões de produtos
-     */
     @Transactional(readOnly = true)
-    public List<Produto> getProdutoSuggestions(Long currentId, int limit) {
+    public List<Product> getProductSuggestions(Long currentId, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return produtoRepository.findSuggestions(currentId, pageable);
+        return productRepository.findSuggestions(currentId, pageable);
     }
 }

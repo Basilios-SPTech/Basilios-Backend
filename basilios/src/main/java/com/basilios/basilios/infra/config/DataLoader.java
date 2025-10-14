@@ -1,12 +1,13 @@
 package com.basilios.basilios.infra.config;
 
+import com.basilios.basilios.core.enums.CargoEnum;
 import com.basilios.basilios.core.enums.RoleEnum;
-import com.basilios.basilios.core.model.Produto;
+import com.basilios.basilios.core.model.Employee;
+import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.core.model.Store;
-import com.basilios.basilios.core.model.User;
-import com.basilios.basilios.infra.repository.ProdutoRepository;
+import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.infra.repository.StoreRepository;
-import com.basilios.basilios.infra.repository.UserRepository;
+import com.basilios.basilios.infra.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +21,10 @@ import java.util.Set;
 public class DataLoader implements CommandLineRunner {
 
     @Autowired
-    private UserRepository userRepository;
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private ProdutoRepository produtoRepository;
+    private ProductRepository productRepository;
 
     @Autowired
     private StoreRepository storeRepository;
@@ -34,30 +35,21 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // Criar usuário padrão se não existir
-        if (!userRepository.existsByEmail("admin@basilios.com")) {
-            User admin = User.builder()
-                    .name("Administrador Basilios")
+        if (!usuarioRepository.existsByEmail("admin@basilios.com")) {
+            Employee admin = Employee.builder()
+                    .nomeUsuario("Administrador Basilios")
                     .email("admin@basilios.com")
+                    .cpf("58745699854")
+                    .telefone("4002892202")
+                    .cargo(CargoEnum.DONO)
                     .password(passwordEncoder.encode("admin123"))
                     .roles(Set.of(RoleEnum.ROLE_ADMIN, RoleEnum.ROLE_CLIENTE, RoleEnum.ROLE_FUNCIONARIO))
                     .enabled(true)
                     .build();
-            userRepository.save(admin);
+            usuarioRepository.save(admin);
             System.out.println("✅ Usuário admin criado: admin@basilios.com / admin123");
         }
 
-        // Criar usuário comum para testes
-        if (!userRepository.existsByEmail("teste@basilios.com")) {
-            User user = User.builder()
-                    .name("Usuário Teste")
-                    .email("teste@basilios.com")
-                    .password(passwordEncoder.encode("123456"))
-                    .roles(Set.of(RoleEnum.ROLE_CLIENTE))
-                    .enabled(true)
-                    .build();
-            userRepository.save(user);
-            System.out.println("✅ Usuário teste criado: teste@basilios.com / 123456");
-        }
 
         // Criar loja padrão se não existir
         if (storeRepository.count() == 0) {
@@ -74,57 +66,56 @@ public class DataLoader implements CommandLineRunner {
         }
 
         // Criar produtos de exemplo se não existirem
-        if (produtoRepository.count() == 0) {
-            Produto[] produtos = {
-                    new Produto("Burger Clássico", "Hambúrguer tradicional com carne bovina, alface, tomate e molho especial",
+        if (productRepository.count() == 0) {
+            Product[] products = {
+                    new Product("Burger Clássico", "Hambúrguer tradicional com carne bovina, alface, tomate e molho especial",
                             Arrays.asList("Pão brioche", "Carne bovina 180g", "Alface", "Tomate", "Molho especial"),
                             new BigDecimal("25.90")),
 
-                    new Produto("Cheeseburger Premium", "Hambúrguer com carne bovina, queijo cheddar, cebola caramelizada e bacon",
+                    new Product("Cheeseburger Premium", "Hambúrguer com carne bovina, queijo cheddar, cebola caramelizada e bacon",
                             Arrays.asList("Pão brioche", "Carne bovina 200g", "Queijo cheddar", "Bacon", "Cebola caramelizada"),
                             new BigDecimal("32.90")),
 
-                    new Produto("Chicken Burger", "Hambúrguer de frango grelhado com molho barbecue",
+                    new Product("Chicken Burger", "Hambúrguer de frango grelhado com molho barbecue",
                             Arrays.asList("Pão integral", "Frango grelhado 150g", "Alface", "Tomate", "Molho barbecue"),
                             new BigDecimal("28.90")),
 
-                    new Produto("Veggie Burger", "Hambúrguer vegetariano com blend de legumes",
+                    new Product("Veggie Burger", "Hambúrguer vegetariano com blend de legumes",
                             Arrays.asList("Pão integral", "Hambúrguer vegetal", "Alface", "Tomate", "Abacate", "Molho tahine"),
                             new BigDecimal("26.90")),
 
-                    new Produto("Smash Burger Duplo", "Dois smash burgers com queijo e molho especial",
+                    new Product("Smash Burger Duplo", "Dois smash burgers com queijo e molho especial",
                             Arrays.asList("Pão brioche", "2x Carne smash 100g", "2x Queijo", "Cebola", "Molho especial"),
                             new BigDecimal("38.90")),
 
-                    new Produto("Batata Frita Grande", "Porção grande de batatas fritas crocantes",
+                    new Product("Batata Frita Grande", "Porção grande de batatas fritas crocantes",
                             Arrays.asList("Batata", "Óleo", "Sal"),
                             new BigDecimal("18.90")),
 
-                    new Produto("Onion Rings", "Anéis de cebola empanados e fritos",
+                    new Product("Onion Rings", "Anéis de cebola empanados e fritos",
                             Arrays.asList("Cebola", "Farinha", "Temperos"),
                             new BigDecimal("16.90")),
 
-                    new Produto("Milkshake Chocolate", "Milkshake cremoso de chocolate",
+                    new Product("Milkshake Chocolate", "Milkshake cremoso de chocolate",
                             Arrays.asList("Sorvete de baunilha", "Leite", "Calda de chocolate", "Chantilly"),
                             new BigDecimal("15.90")),
 
-                    new Produto("Refrigerante 350ml", "Refrigerante gelado",
+                    new Product("Refrigerante 350ml", "Refrigerante gelado",
                             Arrays.asList("Refrigerante"),
                             new BigDecimal("8.90")),
 
-                    new Produto("Água 500ml", "Água mineral",
+                    new Product("Água 500ml", "Água mineral",
                             Arrays.asList("Água mineral"),
                             new BigDecimal("5.90"))
             };
 
-            for (Produto produto : produtos) {
-                produtoRepository.save(produto);
+            for (Product product : products) {
+                productRepository.save(product);
             }
-            System.out.println("✅ " + produtos.length + " produtos de exemplo criados");
+            System.out.println("✅ " + products.length + " produtos de exemplo criados");
         }
 
         System.out.println("🍔 Basilios Hamburgeria - Dados iniciais carregados com sucesso!");
-        System.out.println("📧 Login: teste@basilios.com | Senha: 123456");
         System.out.println("📧 Admin: admin@basilios.com | Senha: admin123");
     }
 }

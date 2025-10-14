@@ -30,8 +30,6 @@ public class RegisterRequest {
     @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
     private String password;
 
-    @NotBlank(message = "Confirmação de senha é obrigatória")
-    private String confirmPassword;
 
     // Dados pessoais
     @NotBlank(message = "CPF é obrigatório")
@@ -44,35 +42,4 @@ public class RegisterRequest {
             message = "Telefone inválido. Use o formato: (11) 99999-9999 ou 11999999999")
     private String telefone;
 
-    private LocalDate dataNascimento;
-
-    // Endereço (obrigatório no cadastro)
-    @NotBlank(message = "Rua é obrigatória")
-    @Size(max = 255, message = "Rua deve ter no máximo 255 caracteres")
-    private String rua;
-
-    @NotBlank(message = "Número é obrigatório")
-    @Size(max = 10, message = "Número deve ter no máximo 10 caracteres")
-    private String numero;
-
-    @NotBlank(message = "Bairro é obrigatório")
-    @Size(max = 100, message = "Bairro deve ter no máximo 100 caracteres")
-    private String bairro;
-
-    @Size(max = 100, message = "Complemento deve ter no máximo 100 caracteres")
-    private String complemento;
-
-    @NotBlank(message = "CEP é obrigatório")
-    @Pattern(regexp = "\\d{5}-?\\d{3}", message = "CEP inválido. Use o formato: 12345-678 ou 12345678")
-    private String cep;
-
-    @Size(max = 100, message = "Cidade deve ter no máximo 100 caracteres")
-    private String cidade;
-
-    @Pattern(regexp = "[A-Z]{2}", message = "Estado deve ter 2 letras maiúsculas (ex: SP)")
-    private String estado;
-
-    // Coordenadas do endereço (opcional)
-    private Double latitude;
-    private Double longitude;
 }

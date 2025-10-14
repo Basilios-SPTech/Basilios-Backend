@@ -39,7 +39,6 @@ public class UsuarioService {
                 .email(usuario.getEmail())
                 .cpf(usuario.getCpf())
                 .telefone(usuario.getTelefone())
-                .dataNascimento(usuario.getDataNascimento())
                 .roles(usuario.getRoles())
                 .enabled(usuario.getEnabled())
                 .createdAt(usuario.getCreatedAt())

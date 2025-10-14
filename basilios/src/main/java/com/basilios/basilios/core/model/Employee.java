@@ -18,7 +18,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class Funcionario extends Usuario {
+public class Employee extends Usuario {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

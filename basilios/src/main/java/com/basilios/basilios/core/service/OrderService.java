@@ -1,18 +1,15 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.app.dto.endereco.EnderecoRequest;
-import com.basilios.basilios.app.dto.order.CreateOrderRequest;
-import com.basilios.basilios.app.dto.order.OrderItemRequest;
+import com.basilios.basilios.app.dto.order.OrderRequest;
 import com.basilios.basilios.app.dto.order.OrderResponse;
+import com.basilios.basilios.app.mapper.OrderMapper;
+import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.ResourceNotFoundException;
-import com.basilios.basilios.core.model.Endereco;
-import com.basilios.basilios.core.model.Order;
-import com.basilios.basilios.core.model.Produto;
-import com.basilios.basilios.core.model.Usuario;
+import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.EnderecoRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
-import com.basilios.basilios.infra.repository.ProdutoRepository;
+import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.util.DistanceCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +26,8 @@ import java.util.Map;
 public class OrderService {
 
     private static final double MAX_DELIVERY_DISTANCE_KM = 7.0;
+    private static final BigDecimal BASE_DELIVERY_FEE = new BigDecimal("5.00");
+    private static final BigDecimal DELIVERY_FEE_PER_KM = new BigDecimal("2.00");
 
     @Autowired
     private OrderRepository orderRepository;
@@ -37,10 +36,13 @@ public class OrderService {
     private EnderecoRepository enderecoRepository;
 
     @Autowired
-    private ProdutoRepository produtoRepository;
+    private ProductRepository productRepository;
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private OrderMapper orderMapper;
 
     @Value("${store.latitude:#{-23.550520}}")
     private Double storeLatitude;
@@ -49,21 +51,30 @@ public class OrderService {
     private Double storeLongitude;
 
     /**
-     * Cria novo pedido
-     * Retorna OrderResponse com redirecionamento se necessário
+     * Cria novo pedido com relacionamento puro (ProductOrder)
      */
     @Transactional
-    public OrderResponse createOrder(CreateOrderRequest request) {
+    public OrderResponse createOrder(OrderRequest request) {
         Usuario usuario = usuarioService.getCurrentUsuario();
 
-        // Criar e salvar endereço de entrega
-        Endereco enderecoEntrega = createEndereco(request.getEnderecoEntrega(), usuario);
-        enderecoEntrega = enderecoRepository.save(enderecoEntrega);
+        // Buscar endereço de entrega
+        Address addressEntrega = enderecoRepository.findById(request.getAddressId())
+                .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + request.getAddressId()));
+
+        // Verificar se endereço pertence ao usuário
+        if (!addressEntrega.getUsuario().getId().equals(usuario.getId())) {
+            throw new BusinessException("Endereço não pertence ao usuário");
+        }
+
+        // Verificar se endereço está ativo
+        if (!addressEntrega.isAtivo()) {
+            throw new BusinessException("Endereço não está ativo");
+        }
 
         // Verificar distância
         double distance = DistanceCalculator.calculateDistance(
                 storeLatitude, storeLongitude,
-                enderecoEntrega.getLatitude(), enderecoEntrega.getLongitude()
+                addressEntrega.getLatitude(), addressEntrega.getLongitude()
         );
 
         // Se fora da área de entrega, retornar redirecionamento
@@ -71,6 +82,7 @@ public class OrderService {
             Map<String, String> partnerLinks = new HashMap<>();
             partnerLinks.put("ifood", "https://www.ifood.com.br");
             partnerLinks.put("99food", "https://www.99food.com.br");
+            partnerLinks.put("rappi", "https://www.rappi.com.br");
 
             return OrderResponse.builder()
                     .redirectToPartners(true)
@@ -78,63 +90,135 @@ public class OrderService {
                     .build();
         }
 
-        // Processar itens do pedido
-        List<Order.OrderItem> orderItems = new ArrayList<>();
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (OrderItemRequest itemRequest : request.getItems()) {
-            Produto produto = produtoRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + itemRequest.getProductId()));
-
-            if (produto.getIsPaused()) {
-                throw new BusinessException("Produto " + produto.getNomeProduto() + " não está disponível");
-            }
-
-            BigDecimal subtotal = produto.getPreco().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
-
-            Order.OrderItem orderItem = new Order.OrderItem(
-                    produto.getIdProduto(),
-                    produto.getNomeProduto(),
-                    itemRequest.getQuantity(),
-                    produto.getPreco(),
-                    subtotal
-            );
-
-            orderItems.add(orderItem);
-            total = total.add(subtotal);
-        }
-
-        // Criar e salvar pedido
+        // Criar pedido
         Order order = Order.builder()
                 .usuario(usuario)
-                .items(orderItems)
-                .total(total)
-                .enderecoEntrega(enderecoEntrega)
+                .addressEntrega(addressEntrega)
+                .status(StatusPedidoEnum.PENDENTE)
+                .observations(request.getObservations())
                 .build();
 
+        // Processar items do pedido
+        for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
+            Product product = productRepository.findById(itemRequest.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + itemRequest.getProductId()));
+
+            // Verificar se produto está disponível
+            if (product.getIsPaused()) {
+                throw new BusinessException("Produto '" + product.getName() + "' não está disponível");
+            }
+
+            // Determinar preço (verifica se há promoção ativa)
+            BigDecimal unitPrice = product.getFinalPrice(); // Já considera promoções
+            BigDecimal originalPrice = product.getPrice();
+            boolean hadPromotion = product.isOnPromotion();
+            String promotionName = null;
+
+            if (hadPromotion) {
+                Promotion promotion = product.getBestCurrentPromotion();
+                if (promotion != null) {
+                    promotionName = promotion.getTitle();
+                }
+            }
+
+            // Criar ProductOrder
+            ProductOrder productOrder = ProductOrder.builder()
+                    .product(product)
+                    .order(order)
+                    .quantity(itemRequest.getQuantity())
+                    .unitPrice(unitPrice)
+                    .productName(product.getName())
+                    .observations(itemRequest.getObservations())
+                    .hadPromotion(hadPromotion)
+                    .promotionName(promotionName)
+                    .originalPrice(hadPromotion ? originalPrice : null)
+                    .build();
+
+            // calculateSubtotal() será chamado automaticamente no @PrePersist
+            order.getProductOrders().add(productOrder);
+        }
+
+        // Calcular taxa de entrega baseada na distância
+        BigDecimal deliveryFee = calculateDeliveryFee(distance);
+        order.setDeliveryFee(deliveryFee);
+
+        // Aplicar desconto se fornecido
+        if (request.getDiscount() != null && request.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
+            order.setDiscount(request.getDiscount());
+        }
+
+        // calculateTotal() será chamado automaticamente no @PrePersist
         order = orderRepository.save(order);
 
-        return OrderResponse.builder()
-                .id(order.getId())
-                .items(order.getItems())
-                .total(order.getTotal())
-                .status(order.getStatus())
-                .createdAt(order.getCreatedAt())
-                .redirectToPartners(false)
-                .build();
+        // Retornar resposta
+        return orderMapper.toResponse(order);
     }
 
     /**
-     * Lista pedidos do usuário autenticado
+     * Calcula taxa de entrega baseada na distância
+     * Fórmula: BASE_FEE + (distância * FEE_PER_KM)
+     */
+    private BigDecimal calculateDeliveryFee(double distanceKm) {
+        if (distanceKm <= 0) {
+            return BASE_DELIVERY_FEE;
+        }
+
+        BigDecimal distanceFee = DELIVERY_FEE_PER_KM.multiply(BigDecimal.valueOf(distanceKm));
+        BigDecimal totalFee = BASE_DELIVERY_FEE.add(distanceFee);
+
+        // Arredondar para 2 casas decimais
+        return totalFee.setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
+
+    /**
+     * Lista pedidos do usuário autenticado (ordenados por data decrescente)
      */
     @Transactional(readOnly = true)
-    public List<Order> getUserOrders() {
+    public List<OrderResponse> getUserOrders() {
         Usuario usuario = usuarioService.getCurrentUsuario();
-        return orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
+        List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
+        return orderMapper.toResponseList(orders);
     }
 
     /**
-     * Busca pedido por ID
+     * Lista pedidos do usuário autenticado de forma simplificada (sem items)
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getUserOrdersSimple() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
+        return orders.stream()
+                .map(orderMapper::toSimpleResponse)
+                .toList();
+    }
+
+    /**
+     * Busca pedido por ID (completo com items)
+     */
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long id) {
+        Order order = findById(id);
+        return orderMapper.toResponse(order);
+    }
+
+    /**
+     * Busca pedido por ID do usuário autenticado
+     */
+    @Transactional(readOnly = true)
+    public OrderResponse getUserOrderById(Long id) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        Order order = findById(id);
+
+        // Verificar se pedido pertence ao usuário
+        if (!order.getUsuario().getId().equals(usuario.getId())) {
+            throw new BusinessException("Pedido não pertence ao usuário");
+        }
+
+        return orderMapper.toResponse(order);
+    }
+
+    /**
+     * Busca entidade Order por ID (uso interno)
      */
     @Transactional(readOnly = true)
     public Order findById(Long id) {
@@ -143,7 +227,7 @@ public class OrderService {
     }
 
     /**
-     * Busca pedidos de um usuário específico
+     * Busca pedidos de um usuário específico (admin)
      */
     @Transactional(readOnly = true)
     public List<Order> findByUsuario(Usuario usuario) {
@@ -151,72 +235,190 @@ public class OrderService {
     }
 
     /**
-     * Confirma pedido (muda status para CONFIRMADO)
+     * Busca pedidos por status
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getOrdersByStatus(StatusPedidoEnum status) {
+        List<Order> orders = orderRepository.findByStatus(status);
+        return orderMapper.toResponseList(orders);
+    }
+
+    /**
+     * Busca pedidos pendentes (para cozinha)
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getPendingOrders() {
+        List<Order> orders = orderRepository.findPendingOrders();
+        return orderMapper.toResponseList(orders);
+    }
+
+    /**
+     * Busca pedidos em andamento (confirmado, preparando, despachado)
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getActiveOrders() {
+        List<Order> orders = orderRepository.findActiveOrders();
+        return orderMapper.toResponseList(orders);
+    }
+
+    /**
+     * Busca pedidos recentes de um usuário (últimos 30 dias)
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getUserRecentOrders() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        List<Order> orders = orderRepository.findByUsuarioAndCreatedAtAfter(usuario, thirtyDaysAgo);
+        return orderMapper.toResponseList(orders);
+    }
+
+    // ========== MUDANÇA DE STATUS ==========
+
+    /**
+     * Confirma pedido (PENDENTE → CONFIRMADO)
      */
     @Transactional
-    public Order confirmarPedido(Long id) {
+    public OrderResponse confirmarPedido(Long id) {
         Order order = findById(id);
+        validateStatusTransition(order, StatusPedidoEnum.CONFIRMADO);
         order.confirmar();
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
     }
 
     /**
-     * Inicia preparo do pedido
+     * Inicia preparo do pedido (CONFIRMADO → PREPARANDO)
      */
     @Transactional
-    public Order iniciarPreparo(Long id) {
+    public OrderResponse iniciarPreparo(Long id) {
         Order order = findById(id);
+        validateStatusTransition(order, StatusPedidoEnum.PREPARANDO);
         order.iniciarPreparo();
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
     }
 
     /**
-     * Despacha pedido para entrega
+     * Despacha pedido para entrega (PREPARANDO → DESPACHADO)
      */
     @Transactional
-    public Order despacharPedido(Long id) {
+    public OrderResponse despacharPedido(Long id) {
         Order order = findById(id);
+        validateStatusTransition(order, StatusPedidoEnum.DESPACHADO);
         order.despachar();
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
     }
 
     /**
-     * Marca pedido como entregue
+     * Marca pedido como entregue (DESPACHADO → ENTREGUE)
      */
     @Transactional
-    public Order entregarPedido(Long id) {
+    public OrderResponse entregarPedido(Long id) {
         Order order = findById(id);
+        validateStatusTransition(order, StatusPedidoEnum.ENTREGUE);
         order.entregar();
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
     }
 
     /**
-     * Cancela pedido
+     * Cancela pedido (qualquer status → CANCELADO, exceto ENTREGUE)
      */
     @Transactional
-    public Order cancelarPedido(Long id) {
+    public OrderResponse cancelarPedido(Long id, String motivo) {
         Order order = findById(id);
-        order.cancelar();
-        return orderRepository.save(order);
+        validateStatusTransition(order, StatusPedidoEnum.CANCELADO);
+        order.cancelar(motivo);
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
     }
 
     /**
-     * Cria objeto Endereco a partir do DTO
+     * Cancela pedido do usuário autenticado
+     * Só pode cancelar se estiver PENDENTE ou CONFIRMADO
      */
-    private Endereco createEndereco(EnderecoRequest request, Usuario usuario) {
-        Endereco endereco = Endereco.builder()
-                .usuario(usuario)
-                .rua(request.getRua())
-                .numero(request.getNumero())
-                .bairro(request.getBairro())
-                .cep(request.getCep())
-                .cidade(request.getCidade())
-                .estado(request.getEstado())
-                .complemento(request.getComplemento())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .build();
+    @Transactional
+    public OrderResponse cancelarPedidoUsuario(Long id, String motivo) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        Order order = findById(id);
 
-        return endereco;
+        // Verificar se pedido pertence ao usuário
+        if (!order.getUsuario().getId().equals(usuario.getId())) {
+            throw new BusinessException("Pedido não pertence ao usuário");
+        }
+
+        // Cliente só pode cancelar pedidos PENDENTE ou CONFIRMADO
+        if (!order.isPendente() && !order.isConfirmado()) {
+            throw new BusinessException("Não é possível cancelar pedido neste status: " + order.getStatus());
+        }
+
+        order.cancelar(motivo);
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
+    }
+
+    /**
+     * Valida se é possível transicionar para o novo status
+     */
+    private void validateStatusTransition(Order order, StatusPedidoEnum newStatus) {
+        if (!order.getStatus().podeTransicionarPara(newStatus)) {
+            throw new BusinessException(
+                    String.format("Não é possível mudar status de %s para %s",
+                            order.getStatus(), newStatus)
+            );
+        }
+    }
+
+    // ========== ESTATÍSTICAS ==========
+
+    /**
+     * Conta total de pedidos do usuário
+     */
+    @Transactional(readOnly = true)
+    public long countUserOrders() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return orderRepository.countByUsuario(usuario);
+    }
+
+    /**
+     * Conta pedidos do usuário por status
+     */
+    @Transactional(readOnly = true)
+    public long countUserOrdersByStatus(StatusPedidoEnum status) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return orderRepository.countByUsuarioAndStatus(usuario, status);
+    }
+
+    /**
+     * Calcula valor total gasto pelo usuário
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal calculateUserTotalSpent() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        List<Order> orders = orderRepository.findByUsuarioAndStatus(usuario, StatusPedidoEnum.ENTREGUE);
+
+        return orders.stream()
+                .map(Order::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Verifica se pedido pode ser cancelado pelo usuário
+     */
+    @Transactional(readOnly = true)
+    public boolean canUserCancelOrder(Long orderId) {
+        try {
+            Usuario usuario = usuarioService.getCurrentUsuario();
+            Order order = findById(orderId);
+
+            if (!order.getUsuario().getId().equals(usuario.getId())) {
+                return false;
+            }
+
+            return order.isPendente() || order.isConfirmado();
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

@@ -16,17 +16,17 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProdutoDTO {
+public class ProductDTO {
     @NotBlank(message = "Nome do produto é obrigatório")
     @Size(max = 255, message = "Nome do produto deve ter no máximo 255 caracteres")
-    private String nomeProduto;
+    private String name;
 
     @Size(max = 1000, message = "Descrição deve ter no máximo 1000 caracteres")
-    private String descricao;
+    private String description;
 
     private List<@Size(max = 100, message = "Ingrediente deve ter no máximo 100 caracteres") String> ingredientes;
 
     @NotNull(message = "Preço é obrigatório")
     @DecimalMin(value = "0.01", message = "Preço deve ser maior que zero")
-    private BigDecimal preco;
+    private BigDecimal price;
 }

@@ -1,14 +1,14 @@
 package com.basilios.basilios.core.exception;
 
-public class ProdutoNotFoundException extends RuntimeException {
+public class ProductNotFoundException extends RuntimeException {
     private final Long productId;
 
-    public ProdutoNotFoundException(Long productId) {
+    public ProductNotFoundException(Long productId) {
         super("Produto não encontrado com ID: " + productId);
         this.productId = productId;
     }
 
-    public ProdutoNotFoundException(String message, Long productId) {
+    public ProductNotFoundException(String message, Long productId) {
         super(message);
         this.productId = productId;
     }

@@ -72,8 +72,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(ProdutoNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleProdutoNotFound(ProdutoNotFoundException ex) {
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleProdutoNotFound(ProductNotFoundException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.NOT_FOUND.value());
@@ -83,8 +83,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(ProdutoUnavailableException.class)
-    public ResponseEntity<Map<String, Object>> handleProdutoUnavailable(ProdutoUnavailableException ex) {
+    @ExceptionHandler(ProductUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleProdutoUnavailable(ProductUnavailableException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.CONFLICT.value());
@@ -106,8 +106,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(DuplicateProdutoException.class)
-    public ResponseEntity<Map<String, Object>> handleDuplicateProduto(DuplicateProdutoException ex) {
+    @ExceptionHandler(DuplicateProductException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateProduto(DuplicateProductException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.CONFLICT.value());

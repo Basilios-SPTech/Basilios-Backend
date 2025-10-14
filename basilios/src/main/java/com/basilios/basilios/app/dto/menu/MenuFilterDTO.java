@@ -1,6 +1,7 @@
 package com.basilios.basilios.app.dto.menu;
 
-import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,23 +15,25 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MenuFilterDTO {
-    private String nome;
 
-    @DecimalMin(value = "0.00", message = "Preço mínimo deve ser maior ou igual a zero")
+    private String name;
+
+    @PositiveOrZero(message = "Minimum price must be zero or greater")
     private BigDecimal minPrice;
 
-    @DecimalMin(value = "0.01", message = "Preço máximo deve ser maior que zero")
+    @Positive(message = "Maximum price must be greater than zero")
     private BigDecimal maxPrice;
 
-    private List<String> ingredientes;
 
-    private String categoria; // ECONOMICO, MEDIO, PREMIUM
+    private List<String> ingredients;
+
+    private String category; // ECONOMIC, MEDIUM, PREMIUM
 
     @Builder.Default
     private boolean activeOnly = true;
 
     @Builder.Default
-    private String sortBy = "nome"; // nome, preco, createdAt
+    private String sortBy = "name"; // name, price, createdAt
 
     @Builder.Default
     private String sortDirection = "asc"; // asc, desc
@@ -40,4 +43,5 @@ public class MenuFilterDTO {
 
     @Builder.Default
     private int size = 20;
+
 }

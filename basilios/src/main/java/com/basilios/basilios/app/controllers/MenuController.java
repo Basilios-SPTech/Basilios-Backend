@@ -1,8 +1,8 @@
 package com.basilios.basilios.app.controllers;
 
-import com.basilios.basilios.core.model.Produto;
+import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.core.service.MenuService;
-import com.basilios.basilios.app.dto.menu.ProdutoDTO;
+import com.basilios.basilios.app.dto.menu.ProductDTO;
 import com.basilios.basilios.app.dto.menu.MenuFilterDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,28 +28,28 @@ public class MenuController {
      * Retorna apenas produtos ativos (não pausados)
      */
     @GetMapping
-    public ResponseEntity<List<Produto>> getActiveMenu() {
-        List<Produto> produtos = menuService.getActiveMenu();
-        return ResponseEntity.ok(produtos);
+    public ResponseEntity<List<Product>> getActiveMenu() {
+        List<Product> products = menuService.getActiveMenu();
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Retorna todos os produtos (ativos e pausados)
      */
     @GetMapping("/all")
-    public ResponseEntity<List<Produto>> getAllMenu() {
-        List<Produto> produtos = menuService.getAllMenu();
-        return ResponseEntity.ok(produtos);
+    public ResponseEntity<List<Product>> getAllMenu() {
+        List<Product> products = menuService.getAllMenu();
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Retorna produtos com paginação
      */
     @GetMapping("/paginated")
-    public ResponseEntity<Page<Produto>> getMenuPaginated(
+    public ResponseEntity<Page<Product>> getMenuPaginated(
             @RequestParam(defaultValue = "true") boolean activeOnly,
             Pageable pageable) {
-        Page<Produto> produtos = menuService.getMenuPaginated(activeOnly, pageable);
+        Page<Product> produtos = menuService.getMenuPaginated(activeOnly, pageable);
         return ResponseEntity.ok(produtos);
     }
 
@@ -57,83 +57,83 @@ public class MenuController {
      * Busca produto por ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Produto> getProdutoById(@PathVariable Long id) {
-        Produto produto = menuService.getProdutoById(id);
-        return ResponseEntity.ok(produto);
+    public ResponseEntity<Product> getProdutoById(@PathVariable Long id) {
+        Product product = menuService.getProductById(id);
+        return ResponseEntity.ok(product);
     }
 
     /**
      * Busca produtos por nome (contém)
      */
     @GetMapping("/search")
-    public ResponseEntity<List<Produto>> searchProdutosByNome(
+    public ResponseEntity<List<Product>> searchProdutosByNome(
             @RequestParam String nome,
             @RequestParam(defaultValue = "true") boolean activeOnly) {
-        List<Produto> produtos = menuService.searchByNome(nome, activeOnly);
-        return ResponseEntity.ok(produtos);
+        List<Product> products = menuService.searchByName(nome, activeOnly);
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Busca produtos por faixa de preço
      */
     @GetMapping("/price-range")
-    public ResponseEntity<List<Produto>> getProdutosByPriceRange(
+    public ResponseEntity<List<Product>> getProdutosByPriceRange(
             @RequestParam BigDecimal minPrice,
             @RequestParam BigDecimal maxPrice,
             @RequestParam(defaultValue = "true") boolean activeOnly) {
-        List<Produto> produtos = menuService.getProdutosByPriceRange(minPrice, maxPrice, activeOnly);
-        return ResponseEntity.ok(produtos);
+        List<Product> products = menuService.getProductsByPriceRange(minPrice, maxPrice, activeOnly);
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Busca produtos que contêm ingrediente específico
      */
     @GetMapping("/ingredient")
-    public ResponseEntity<List<Produto>> getProdutosByIngredient(
+    public ResponseEntity<List<Product>> getProdutosByIngredient(
             @RequestParam String ingrediente,
             @RequestParam(defaultValue = "true") boolean activeOnly) {
-        List<Produto> produtos = menuService.getProdutosByIngredient(ingrediente, activeOnly);
-        return ResponseEntity.ok(produtos);
+        List<Product> products = menuService.getProductsByIngredient(ingrediente, activeOnly);
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Busca produtos ordenados por preço
      */
     @GetMapping("/ordered-by-price")
-    public ResponseEntity<List<Produto>> getProdutosOrderedByPrice(
+    public ResponseEntity<List<Product>> getProdutosOrderedByPrice(
             @RequestParam(defaultValue = "asc") String direction,
             @RequestParam(defaultValue = "true") boolean activeOnly) {
-        List<Produto> produtos = menuService.getProdutosOrderedByPrice(direction, activeOnly);
-        return ResponseEntity.ok(produtos);
+        List<Product> products = menuService.getProductsOrderedByPrice(direction, activeOnly);
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Busca com múltiplos filtros
      */
     @PostMapping("/filter")
-    public ResponseEntity<List<Produto>> getFilteredMenu(@Valid @RequestBody MenuFilterDTO filter) {
-        List<Produto> produtos = menuService.getFilteredMenu(filter);
-        return ResponseEntity.ok(produtos);
+    public ResponseEntity<List<Product>> getFilteredMenu(@Valid @RequestBody MenuFilterDTO filter) {
+        List<Product> products = menuService.getFilteredMenu(filter);
+        return ResponseEntity.ok(products);
     }
 
     /**
      * Criar novo produto
      */
     @PostMapping
-    public ResponseEntity<Produto> createProduto(@Valid @RequestBody ProdutoDTO produtoDTO) {
-        Produto produto = menuService.createProduto(produtoDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(produto);
+    public ResponseEntity<Product> createProduto(@Valid @RequestBody ProductDTO productDTO) {
+        Product product = menuService.createProduct(productDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(product);
     }
 
     /**
      * Atualizar produto existente
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Produto> updateProduto(
+    public ResponseEntity<Product> updateProduto(
             @PathVariable Long id,
-            @Valid @RequestBody ProdutoDTO produtoDTO) {
-        Produto produto = menuService.updateProduto(id, produtoDTO);
-        return ResponseEntity.ok(produto);
+            @Valid @RequestBody ProductDTO productDTO) {
+        Product product = menuService.updateProduct(id, productDTO);
+        return ResponseEntity.ok(product);
     }
 
     /**
@@ -141,7 +141,7 @@ public class MenuController {
      */
     @PatchMapping("/{id}/pause")
     public ResponseEntity<Map<String, Object>> pauseProduto(@PathVariable Long id) {
-        menuService.pauseProduto(id);
+        menuService.pauseProduct(id);
         return ResponseEntity.ok(Map.of(
                 "message", "Produto pausado com sucesso",
                 "id", id,
@@ -154,7 +154,7 @@ public class MenuController {
      */
     @PatchMapping("/{id}/activate")
     public ResponseEntity<Map<String, Object>> activateProduto(@PathVariable Long id) {
-        menuService.activateProduto(id);
+        menuService.activateProduct(id);
         return ResponseEntity.ok(Map.of(
                 "message", "Produto ativado com sucesso",
                 "id", id,
@@ -167,7 +167,7 @@ public class MenuController {
      */
     @PatchMapping("/{id}/toggle")
     public ResponseEntity<Map<String, Object>> toggleProdutoStatus(@PathVariable Long id) {
-        boolean newStatus = menuService.toggleProdutoStatus(id);
+        boolean newStatus = menuService.toggleProductStatus(id);
         return ResponseEntity.ok(Map.of(
                 "message", "Status do produto alterado com sucesso",
                 "id", id,
@@ -180,7 +180,7 @@ public class MenuController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteProduto(@PathVariable Long id) {
-        menuService.deleteProduto(id);
+        menuService.deleteProduct(id);
         return ResponseEntity.ok(Map.of("message", "Produto removido com sucesso"));
     }
 
@@ -188,21 +188,21 @@ public class MenuController {
      * Atualizar preço do produto
      */
     @PatchMapping("/{id}/price")
-    public ResponseEntity<Produto> updateProdutoPrice(
+    public ResponseEntity<Product> updateProdutoPrice(
             @PathVariable Long id,
             @RequestParam BigDecimal novoPreco) {
-        Produto produto = menuService.updateProdutoPrice(id, novoPreco);
-        return ResponseEntity.ok(produto);
+        Product product = menuService.updateProductPrice(id, novoPreco);
+        return ResponseEntity.ok(product);
     }
 
     /**
      * Buscar produtos mais vendidos (se houver implementação futura)
      */
     @GetMapping("/popular")
-    public ResponseEntity<List<Produto>> getPopularProdutos(
+    public ResponseEntity<List<Product>> getPopularProdutos(
             @RequestParam(defaultValue = "10") int limit) {
-        List<Produto> produtos = menuService.getPopularProdutos(limit);
-        return ResponseEntity.ok(produtos);
+        List<Product> products = menuService.getPopularProducts(limit);
+        return ResponseEntity.ok(products);
     }
 
     /**
@@ -211,9 +211,9 @@ public class MenuController {
     @GetMapping("/count")
     public ResponseEntity<Map<String, Long>> getMenuStats() {
         Map<String, Long> stats = Map.of(
-                "totalProdutos", menuService.countAllProdutos(),
-                "produtosAtivos", menuService.countActiveProdutos(),
-                "produtosPausados", menuService.countPausedProdutos()
+                "totalProdutos", menuService.countAllProducts(),
+                "produtosAtivos", menuService.countActiveProducts(),
+                "produtosPausados", menuService.countPausedProducts()
         );
         return ResponseEntity.ok(stats);
     }
@@ -223,14 +223,14 @@ public class MenuController {
      */
     @GetMapping("/{id}/available")
     public ResponseEntity<Map<String, Object>> checkProdutoAvailability(@PathVariable Long id) {
-        boolean available = menuService.isProdutoAvailable(id);
-        Produto produto = menuService.getProdutoById(id);
+        boolean available = menuService.isProductAvailable(id);
+        Product product = menuService.getProductById(id);
 
         return ResponseEntity.ok(Map.of(
                 "id", id,
-                "nome", produto.getNomeProduto(),
+                "nome", product.getName(),
                 "available", available,
-                "paused", produto.getIsPaused()
+                "paused", product.getIsPaused()
         ));
     }
 }

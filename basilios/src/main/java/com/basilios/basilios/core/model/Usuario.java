@@ -12,9 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
-import org.hibernate.validator.constraints.br.CPF;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -51,7 +49,6 @@ public abstract class Usuario {
     @Column(nullable = false)
     private String password;
 
-    @CPF(message = "CPF inválido")
     @NotBlank(message = "CPF é obrigatório")
     @Pattern(regexp = "\\d{11}", message = "CPF deve conter apenas 11 dígitos")
     @Column(nullable = false, unique = true, length = 11)
@@ -61,9 +58,6 @@ public abstract class Usuario {
     @Pattern(regexp = "\\d{10,11}", message = "Telefone deve ter 10 ou 11 dígitos")
     @Column(nullable = false, length = 11)
     private String telefone;
-
-    @Column(name = "data_nascimento")
-    private LocalDate dataNascimento;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))
@@ -78,11 +72,11 @@ public abstract class Usuario {
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Endereco> enderecos = new ArrayList<>();
+    private List<Address> addresses = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "endereco_principal_id")
-    private Endereco enderecoPrincipal;
+    private Address addressPrincipal;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -94,6 +88,7 @@ public abstract class Usuario {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
 
     // Métodos utilitários
     public boolean isAtivo() {
@@ -108,25 +103,25 @@ public abstract class Usuario {
         this.deletedAt = null;
     }
 
-    public void addEndereco(Endereco endereco) {
-        enderecos.add(endereco);
-        endereco.setUsuario(this);
+    public void addEndereco(Address address) {
+        addresses.add(address);
+        address.setUsuario(this);
 
         // Se for o primeiro endereço, define como principal
-        if (enderecoPrincipal == null) {
-            enderecoPrincipal = endereco;
+        if (addressPrincipal == null) {
+            addressPrincipal = address;
         }
     }
 
-    public void removeEndereco(Endereco endereco) {
-        enderecos.remove(endereco);
-        endereco.setUsuario(null);
+    public void removeEndereco(Address address) {
+        addresses.remove(address);
+        address.setUsuario(null);
 
         // Se removeu o endereço principal, define outro como principal
-        if (endereco.equals(enderecoPrincipal) && !enderecos.isEmpty()) {
-            enderecoPrincipal = enderecos.get(0);
-        } else if (enderecos.isEmpty()) {
-            enderecoPrincipal = null;
+        if (address.equals(addressPrincipal) && !addresses.isEmpty()) {
+            addressPrincipal = addresses.get(0);
+        } else if (addresses.isEmpty()) {
+            addressPrincipal = null;
         }
     }
 

@@ -1,6 +1,6 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.core.model.Endereco;
+import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.infra.repository.EnderecoRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class EnderecoService {
     }
 
     // 🔹 Listar todos os endereços
-    public ResponseEntity<List<Endereco>> listarEnderecos() {
+    public ResponseEntity<List<Address>> listarEnderecos() {
         return ResponseEntity.ok(enderecoRepository.findAll());
     }
 
@@ -33,44 +33,44 @@ public class EnderecoService {
     }
 
     // 🔹 Inserir novo endereço
-    public ResponseEntity<Object> inserirEndereco(Endereco endereco) {
-        if (endereco == null) {
+    public ResponseEntity<Object> inserirEndereco(Address address) {
+        if (address == null) {
             return ResponseEntity.badRequest().body("Endereço não pode ser nulo.");
         }
-        Endereco salvo = enderecoRepository.save(endereco);
+        Address salvo = enderecoRepository.save(address);
         return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
     // 🔹 Atualizar endereço por ID (PUT)
-    public ResponseEntity<Object> atualizarEndereco(Long id, Endereco endereco) {
+    public ResponseEntity<Object> atualizarEndereco(Long id, Address address) {
         if (!enderecoRepository.existsById(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Endereço não encontrado.");
         }
-        endereco.setIdEndereco(id);
-        Endereco atualizado = enderecoRepository.save(endereco);
+        address.setIdEndereco(id);
+        Address atualizado = enderecoRepository.save(address);
         return ResponseEntity.ok(atualizado);
     }
 
     // 🔹 Atualizar parcialmente (PATCH)
     public ResponseEntity<Object> atualizarParcial(Long id, Map<String, Object> campos) {
-        Optional<Endereco> enderecoOpt = enderecoRepository.findById(id);
+        Optional<Address> enderecoOpt = enderecoRepository.findById(id);
 
         if (enderecoOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Endereço não encontrado.");
         }
 
-        Endereco endereco = enderecoOpt.get();
+        Address address = enderecoOpt.get();
 
         try {
             for (Map.Entry<String, Object> entry : campos.entrySet()) {
                 String campo = entry.getKey();
                 Object valor = entry.getValue();
 
-                Field field = Endereco.class.getDeclaredField(campo);
+                Field field = Address.class.getDeclaredField(campo);
                 field.setAccessible(true);
-                field.set(endereco, valor);
+                field.set(address, valor);
             }
-            Endereco atualizado = enderecoRepository.save(endereco);
+            Address atualizado = enderecoRepository.save(address);
             return ResponseEntity.ok(atualizado);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
