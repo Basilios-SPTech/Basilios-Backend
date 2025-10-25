@@ -1,8 +1,8 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.app.dto.auth.AuthResponse;
-import com.basilios.basilios.app.dto.auth.LoginRequest;
-import com.basilios.basilios.app.dto.auth.RegisterRequest;
+import com.basilios.basilios.app.dto.auth.AuthResponseDTO;
+import com.basilios.basilios.app.dto.auth.LoginRequestDTO;
+import com.basilios.basilios.app.dto.auth.RegisterRequestDTO;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.AuthenticationException;
 import com.basilios.basilios.core.exception.BusinessException;
@@ -48,7 +48,7 @@ public class AuthService {
     private UserDetailsService userDetailsService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponseDTO register(RegisterRequestDTO request) {
 
 
         // 2. Normalizar CPF (remover formatação)
@@ -88,7 +88,7 @@ public class AuthService {
         String token = jwtUtil.generateToken(userDetails);
 
         // 9. Retornar resposta
-        return AuthResponse.builder()
+        return AuthResponseDTO.builder()
                 .token(token)
                 .type("Bearer")
                 .id(client.getId())
@@ -97,9 +97,9 @@ public class AuthService {
                 .build();
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponseDTO login(LoginRequestDTO request) {
         try {
-            // Autenticar usando email ou nomeUsuario
+            // Autenticar usando apenas email
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
@@ -107,8 +107,8 @@ public class AuthService {
             throw new AuthenticationException("Credenciais inválidas");
         }
 
-        // Buscar usuário por email ou nomeUsuario
-        Usuario usuario = usuarioRepository.findByEmailOrNomeUsuario(request.getEmail(), request.getEmail())
+        // Buscar usuário por email
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthenticationException("Usuário não encontrado"));
 
         // Verificar se está ativo
@@ -120,7 +120,7 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
         String token = jwtUtil.generateToken(userDetails);
 
-        return AuthResponse.builder()
+        return AuthResponseDTO.builder()
                 .token(token)
                 .type("Bearer")
                 .id(usuario.getId())

@@ -5,11 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class LoginRequest {
-    @Email
-    @NotBlank
+public class LoginRequestDTO {
+
+    @Email(message = "Email inválido")
+    @NotBlank(message = "Email é obrigatório")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "Senha é obrigatória")
     private String password;
 }

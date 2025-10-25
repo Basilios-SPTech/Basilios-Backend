@@ -9,13 +9,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterRequest {
+public class RegisterRequestDTO {
 
     // Dados básicos de autenticação
     @NotBlank(message = "Nome de usuário é obrigatório")

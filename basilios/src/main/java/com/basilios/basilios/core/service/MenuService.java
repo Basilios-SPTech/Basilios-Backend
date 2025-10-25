@@ -1,8 +1,12 @@
 package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.core.model.Product;
+import com.basilios.basilios.core.model.Ingredient;
+import com.basilios.basilios.core.model.IngredientProduct;
 import com.basilios.basilios.infra.repository.ProductRepository;
-import com.basilios.basilios.app.dto.menu.ProductDTO;
+import com.basilios.basilios.infra.repository.IngredientRepository;
+import com.basilios.basilios.infra.repository.IngredientProductRepository;
+import com.basilios.basilios.app.dto.product.ProductDTO;
 import com.basilios.basilios.app.dto.menu.MenuFilterDTO;
 import com.basilios.basilios.core.exception.*;
 
@@ -15,6 +19,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.basilios.basilios.infra.observer.MenuSubject;
+
 @Service
 @Transactional
 public class MenuService {
@@ -22,7 +28,17 @@ public class MenuService {
     @Autowired
     private ProductRepository productRepository;
 
-    // ========== Active Menu ==========
+    @Autowired
+    private IngredientRepository ingredientRepository;
+
+    @Autowired
+    private IngredientProductRepository ingredientProductRepository;
+
+    @Autowired
+    private MenuSubject menuSubject;
+
+    // ========== MENU ATIVO ==========
+
     @Transactional(readOnly = true)
     public List<Product> getActiveMenu() {
         return productRepository.findByIsPausedFalse();
@@ -40,14 +56,16 @@ public class MenuService {
                 : productRepository.findAll(pageable);
     }
 
-    // ========== Find by ID ==========
+    // ========== BUSCA POR ID ==========
+
     @Transactional(readOnly = true)
     public Product getProductById(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
-    // ========== Search ==========
+    // ========== BUSCAS ==========
+
     @Transactional(readOnly = true)
     public List<Product> searchByName(String name, boolean activeOnly) {
         if (name != null && name.trim().length() < 2) {
@@ -68,11 +86,18 @@ public class MenuService {
                 : productRepository.findByPriceBetween(min, max);
     }
 
+    /**
+     * Busca produtos por ingrediente (usando relacionamento correto)
+     */
     @Transactional(readOnly = true)
-    public List<Product> getProductsByIngredient(String ingredient, boolean activeOnly) {
+    public List<Product> getProductsByIngredient(String ingredientName, boolean activeOnly) {
+        if (ingredientName == null || ingredientName.trim().isEmpty()) {
+            throw new BusinessException("Nome do ingrediente é obrigatório");
+        }
+
         return activeOnly
-                ? productRepository.findByIngredientsContainingIgnoreCaseAndIsPausedFalse(ingredient)
-                : productRepository.findByIngredientsContainingIgnoreCase(ingredient);
+                ? productRepository.findByIngredientNameAndActive(ingredientName)
+                : productRepository.findByIngredientName(ingredientName);
     }
 
     @Transactional(readOnly = true)
@@ -98,26 +123,47 @@ public class MenuService {
                 filter.getName(),
                 filter.getMinPrice(),
                 filter.getMaxPrice(),
-                filter.getIngredients(),
                 filter.isActiveOnly()
         );
     }
 
-    // ========== CRUD ==========
+    // ========== CRUD DE PRODUTOS ==========
+
+    /**
+     * Cria produto com ingredientes
+     */
     public Product createProduct(ProductDTO dto) {
         if (productRepository.existsByNameIgnoreCase(dto.getName())) {
             throw new DuplicateProductException(dto.getName());
         }
 
-        Product product = new Product();
-        product.setName(dto.getName());
-        product.setDescription(dto.getDescription());
-        product.setPrice(dto.getPrice());
-        product.setIsPaused(false);
+        Product product = Product.builder()
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .price(dto.getPrice())
+                .isPaused(false)
+                .build();
 
-        return productRepository.save(product);
+        product = productRepository.save(product);
+
+        // Adicionar ingredientes se fornecidos
+        if (dto.getIngredientes() != null && !dto.getIngredientes().isEmpty()) {
+            addIngredientsToProduct(product, dto.getIngredientes());
+        }
+
+        // Notificar observadores que um produto foi criado
+        try {
+            menuSubject.menuChanged("PRODUCT_CREATED", product);
+        } catch (Exception ex) {
+            // manter comportamento original mesmo se notificação falhar
+        }
+
+        return product;
     }
 
+    /**
+     * Atualiza produto e seus ingredientes
+     */
     public Product updateProduct(Long id, ProductDTO dto) {
         Product product = getProductById(id);
 
@@ -130,33 +176,81 @@ public class MenuService {
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
 
-        return productRepository.save(product);
+        product = productRepository.save(product);
+
+        // Notificar observadores sobre atualização
+        try {
+            menuSubject.menuChanged("PRODUCT_UPDATED", product);
+        } catch (Exception ex) {
+            // ignora falha na notificação
+        }
+
+        // Atualizar ingredientes se fornecidos
+        if (dto.getIngredientes() != null) {
+            // Remover ingredientes antigos
+            removeAllIngredientsFromProduct(product);
+
+            // Adicionar novos ingredientes
+            if (!dto.getIngredientes().isEmpty()) {
+                addIngredientsToProduct(product, dto.getIngredientes());
+            }
+        }
+
+        return product;
     }
 
     public void pauseProduct(Long id) {
         Product product = getProductById(id);
-        if (product.getIsPaused()) throw MenuOperationException.cannotPause(id, "Product already paused");
+        if (product.getIsPaused()) {
+            throw MenuOperationException.cannotPause(id, "Product already paused");
+        }
         product.pause();
         productRepository.save(product);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_PAUSED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
     }
 
     public void activateProduct(Long id) {
         Product product = getProductById(id);
-        if (!product.getIsPaused()) throw MenuOperationException.cannotActivate(id, "Product already active");
+        if (!product.getIsPaused()) {
+            throw MenuOperationException.cannotActivate(id, "Product already active");
+        }
         product.activate();
         productRepository.save(product);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_ACTIVATED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
     }
 
     public boolean toggleProductStatus(Long id) {
         Product product = getProductById(id);
         product.toggleStatus();
         productRepository.save(product);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_TOGGLED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
         return product.getIsPaused();
     }
 
     public void deleteProduct(Long id) {
         Product product = getProductById(id);
         productRepository.delete(product);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_DELETED", id);
+        } catch (Exception ex) {
+            // ignore
+        }
     }
 
     public Product updateProductPrice(Long id, BigDecimal newPrice) {
@@ -165,10 +259,184 @@ public class MenuService {
         }
         Product product = getProductById(id);
         product.setPrice(newPrice);
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_PRICE_UPDATED", saved);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return saved;
     }
 
-    // ========== Popular & Stats ==========
+    // ========== GERENCIAMENTO DE INGREDIENTES ==========
+
+    /**
+     * Adiciona ingredientes a um produto (aceita lista de nomes)
+     */
+    @Transactional
+    public Product addIngredientsToProduct(Product product, List<String> ingredientNames) {
+        if (ingredientNames == null || ingredientNames.isEmpty()) {
+            return product;
+        }
+
+        for (String ingredientName : ingredientNames) {
+            if (ingredientName == null || ingredientName.trim().isEmpty()) {
+                continue;
+            }
+
+            // Buscar ou criar ingrediente
+            Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(ingredientName.trim())
+                    .orElseGet(() -> {
+                        Ingredient newIngredient = new Ingredient(ingredientName.trim());
+                        return ingredientRepository.save(newIngredient);
+                    });
+
+            // Verificar se já existe este relacionamento
+            if (!ingredientProductRepository.existsByProductAndIngredient(product, ingredient)) {
+                // Criar relacionamento
+                IngredientProduct ip = new IngredientProduct();
+                ip.setProduct(product);
+                ip.setIngredient(ingredient);
+                ip.setQuantity(1); // Default
+                ip.setMeasurementUnit("unidade"); // Default
+
+                ingredientProductRepository.save(ip);
+            }
+        }
+
+        try {
+            // notifica que ingredientes do produto foram modificados
+            menuSubject.menuChanged("PRODUCT_INGREDIENTS_UPDATED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return product;
+    }
+
+    /**
+     * Adiciona um ingrediente específico com quantidade e unidade
+     */
+    @Transactional
+    public Product addIngredientToProduct(Long productId, String ingredientName,
+                                          Integer quantity, String measurementUnit) {
+        Product product = getProductById(productId);
+
+        if (ingredientName == null || ingredientName.trim().isEmpty()) {
+            throw new BusinessException("Nome do ingrediente é obrigatório");
+        }
+
+        // Buscar ou criar ingrediente
+        Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(ingredientName.trim())
+                .orElseGet(() -> {
+                    Ingredient newIngredient = new Ingredient(ingredientName.trim());
+                    return ingredientRepository.save(newIngredient);
+                });
+
+        // Verificar se já existe
+        if (ingredientProductRepository.existsByProductAndIngredient(product, ingredient)) {
+            throw new BusinessException("Ingrediente já adicionado ao produto");
+        }
+
+        // Criar relacionamento
+        IngredientProduct ip = new IngredientProduct();
+        ip.setProduct(product);
+        ip.setIngredient(ingredient);
+        ip.setQuantity(quantity != null ? quantity : 1);
+        ip.setMeasurementUnit(measurementUnit != null ? measurementUnit : "unidade");
+
+        ingredientProductRepository.save(ip);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_INGREDIENT_ADDED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return productRepository.findById(productId).get();
+    }
+
+    /**
+     * Remove um ingrediente de um produto
+     */
+    @Transactional
+    public Product removeIngredientFromProduct(Long productId, Long ingredientId) {
+        Product product = getProductById(productId);
+
+        Ingredient ingredient = ingredientRepository.findById(ingredientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ingrediente não encontrado: " + ingredientId));
+
+        IngredientProduct ip = ingredientProductRepository.findByProductAndIngredient(product, ingredient)
+                .orElseThrow(() -> new BusinessException("Ingrediente não está associado ao produto"));
+
+        ingredientProductRepository.delete(ip);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_INGREDIENT_REMOVED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return productRepository.findById(productId).get();
+    }
+
+    /**
+     * Remove todos os ingredientes de um produto
+     */
+    @Transactional
+    public void removeAllIngredientsFromProduct(Product product) {
+        List<IngredientProduct> ingredientProducts =
+                ingredientProductRepository.findByProduct(product);
+
+        ingredientProductRepository.deleteAll(ingredientProducts);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_INGREDIENTS_CLEARED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
+    }
+
+    /**
+     * Atualiza quantidade de um ingrediente em um produto
+     */
+    @Transactional
+    public Product updateIngredientQuantity(Long productId, Long ingredientId,
+                                            Integer quantity, String measurementUnit) {
+        Product product = getProductById(productId);
+
+        Ingredient ingredient = ingredientRepository.findById(ingredientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ingrediente não encontrado: " + ingredientId));
+
+        IngredientProduct ip = ingredientProductRepository.findByProductAndIngredient(product, ingredient)
+                .orElseThrow(() -> new BusinessException("Ingrediente não está associado ao produto"));
+
+        if (quantity != null) {
+            ip.setQuantity(quantity);
+        }
+        if (measurementUnit != null) {
+            ip.setMeasurementUnit(measurementUnit);
+        }
+
+        ingredientProductRepository.save(ip);
+
+        try {
+            menuSubject.menuChanged("PRODUCT_INGREDIENT_QUANTITY_UPDATED", product);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return productRepository.findById(productId).get();
+    }
+
+    /**
+     * Lista todos os ingredientes de um produto
+     */
+    @Transactional(readOnly = true)
+    public List<IngredientProduct> getProductIngredients(Long productId) {
+        Product product = getProductById(productId);
+        return ingredientProductRepository.findByProduct(product);
+    }
+
+    // ========== ESTATÍSTICAS E RELATÓRIOS ==========
+
     @Transactional(readOnly = true)
     public List<Product> getPopularProducts(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
@@ -226,7 +494,6 @@ public class MenuService {
 
     @Transactional(readOnly = true)
     public List<Product> getSimilarProducts(Long productId, String keyword, int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
         return productRepository.findSimilarProducts(productId, keyword);
     }
 
@@ -251,4 +518,24 @@ public class MenuService {
         Pageable pageable = PageRequest.of(0, limit);
         return productRepository.findSuggestions(currentId, pageable);
     }
+
+    /**
+     * Conta quantos produtos usam um ingrediente específico
+     */
+    @Transactional(readOnly = true)
+    public long countProductsWithIngredient(Long ingredientId) {
+        return ingredientRepository.countProductsUsingIngredient(ingredientId);
+    }
+
+    /**
+     * Lista produtos que NÃO têm ingredientes cadastrados
+     */
+    @Transactional(readOnly = true)
+    public List<Product> getProductsWithoutIngredients() {
+        List<Product> allProducts = productRepository.findAll();
+        return allProducts.stream()
+                .filter(p -> ingredientProductRepository.findByProduct(p).isEmpty())
+                .collect(Collectors.toList());
+    }
 }
+

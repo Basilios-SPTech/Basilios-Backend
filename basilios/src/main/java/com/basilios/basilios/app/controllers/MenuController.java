@@ -2,7 +2,7 @@ package com.basilios.basilios.app.controllers;
 
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.core.service.MenuService;
-import com.basilios.basilios.app.dto.menu.ProductDTO;
+import com.basilios.basilios.app.dto.product.ProductDTO;
 import com.basilios.basilios.app.dto.menu.MenuFilterDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,7 +27,7 @@ public class MenuController {
     /**
      * Retorna apenas produtos ativos (não pausados)
      */
-    @GetMapping
+    @GetMapping("/active")
     public ResponseEntity<List<Product>> getActiveMenu() {
         List<Product> products = menuService.getActiveMenu();
         return ResponseEntity.ok(products);
@@ -36,7 +36,7 @@ public class MenuController {
     /**
      * Retorna todos os produtos (ativos e pausados)
      */
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<List<Product>> getAllMenu() {
         List<Product> products = menuService.getAllMenu();
         return ResponseEntity.ok(products);
@@ -128,13 +128,13 @@ public class MenuController {
     /**
      * Atualizar produto existente
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduto(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductDTO productDTO) {
-        Product product = menuService.updateProduct(id, productDTO);
-        return ResponseEntity.ok(product);
-    }
+//    @PutMapping("/{id}")
+//    public ResponseEntity<Product> updateProduto(
+//            @PathVariable Long id,
+//            @Valid @RequestBody ProductDTO productDTO) {
+//        Product product = menuService.updateProduct(id, productDTO);
+//        return ResponseEntity.ok(product);
+//    }
 
     /**
      * Pausar produto (soft pause)

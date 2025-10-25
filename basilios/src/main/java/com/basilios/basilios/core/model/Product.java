@@ -1,5 +1,7 @@
 package com.basilios.basilios.core.model;
 
+import com.basilios.basilios.core.enums.ProductCategory;
+import com.basilios.basilios.core.enums.ProductSubcategory;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -35,6 +37,20 @@ public class Product {
     @Lob
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductCategory category; // BURGER, SIDE, DRINK, etc
+
+    @Enumerated(EnumType.STRING)
+    private ProductSubcategory subcategory; // BEEF, CHICKEN, etc
+
+    @ElementCollection
+    @CollectionTable(name = "product_tags",
+            joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "tag")
+    @Builder.Default
+    private Set<String> tags = new HashSet<>(); // ["ARTESANAL", "PICANTE"]
 
     // Relacionamento Many-to-Many com Promotion (lado inverso)
     @ManyToMany(mappedBy = "products")

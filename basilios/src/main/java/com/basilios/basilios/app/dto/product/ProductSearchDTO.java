@@ -1,4 +1,4 @@
-package com.basilios.basilios.app.dto.menu;
+package com.basilios.basilios.app.dto.product;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProdutoSearchDTO {
+public class ProductSearchDTO {
     private String query;
     private List<String> searchFields; // nome, descricao, ingredientes
     private BigDecimal minPrice;

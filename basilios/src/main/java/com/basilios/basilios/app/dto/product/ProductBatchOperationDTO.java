@@ -1,4 +1,4 @@
-package com.basilios.basilios.app.dto.menu;
+package com.basilios.basilios.app.dto.product;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProdutoBatchOperationDTO {
+public class ProductBatchOperationDTO {
     @NotEmpty(message = "Lista de IDs não pode estar vazia")
     private List<Long> produtoIds;
 

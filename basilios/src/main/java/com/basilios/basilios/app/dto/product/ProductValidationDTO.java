@@ -1,4 +1,4 @@
-package com.basilios.basilios.app.dto.menu;
+package com.basilios.basilios.app.dto.product;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,20 +12,20 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProdutoValidationDTO {
+public class ProductValidationDTO {
     private boolean isValid;
     private List<String> errors;
     private List<String> warnings;
     private Map<String, Object> validationDetails;
 
-    public static ProdutoValidationDTO valid() {
-        return ProdutoValidationDTO.builder()
+    public static ProductValidationDTO valid() {
+        return ProductValidationDTO.builder()
                 .isValid(true)
                 .build();
     }
 
-    public static ProdutoValidationDTO invalid(List<String> errors) {
-        return ProdutoValidationDTO.builder()
+    public static ProductValidationDTO invalid(List<String> errors) {
+        return ProductValidationDTO.builder()
                 .isValid(false)
                 .errors(errors)
                 .build();

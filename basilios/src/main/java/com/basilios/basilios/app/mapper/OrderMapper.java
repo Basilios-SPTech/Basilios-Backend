@@ -1,6 +1,6 @@
 package com.basilios.basilios.app.mapper;
 
-import com.basilios.basilios.app.dto.order.OrderResponse;
+import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.ProductOrder;
@@ -15,12 +15,12 @@ public class OrderMapper {
     /**
      * Converte Order para OrderResponse
      */
-    public OrderResponse toResponse(Order order) {
+    public OrderResponseDTO toResponse(Order order) {
         if (order == null) {
             return null;
         }
 
-        return OrderResponse.builder()
+        return OrderResponseDTO.builder()
                 .id(order.getId())
                 .items(toItemResponseList(order.getProductOrders()))
                 .subtotal(order.getSubtotal())
@@ -45,7 +45,7 @@ public class OrderMapper {
     /**
      * Converte lista de Orders para lista de OrderResponse
      */
-    public List<OrderResponse> toResponseList(List<Order> orders) {
+    public List<OrderResponseDTO> toResponseList(List<Order> orders) {
         if (orders == null) {
             return List.of();
         }
@@ -58,12 +58,12 @@ public class OrderMapper {
      * Converte OrderResponse simplificado (sem items detalhados)
      * Útil para listagens
      */
-    public OrderResponse toSimpleResponse(Order order) {
+    public OrderResponseDTO toSimpleResponse(Order order) {
         if (order == null) {
             return null;
         }
 
-        return OrderResponse.builder()
+        return OrderResponseDTO.builder()
                 .id(order.getId())
                 .subtotal(order.getSubtotal())
                 .deliveryFee(order.getDeliveryFee())
@@ -79,12 +79,12 @@ public class OrderMapper {
     /**
      * Converte ProductOrder para OrderItemResponse
      */
-    private OrderResponse.OrderItemResponse toItemResponse(ProductOrder productOrder) {
+    private OrderResponseDTO.OrderItemResponse toItemResponse(ProductOrder productOrder) {
         if (productOrder == null) {
             return null;
         }
 
-        return OrderResponse.OrderItemResponse.builder()
+        return OrderResponseDTO.OrderItemResponse.builder()
                 .id(productOrder.getId())
                 .productId(productOrder.getProduct() != null ? productOrder.getProduct().getId() : null)
                 .productName(productOrder.getProductName())
@@ -103,7 +103,7 @@ public class OrderMapper {
     /**
      * Converte lista de ProductOrder para lista de OrderItemResponse
      */
-    private List<OrderResponse.OrderItemResponse> toItemResponseList(Iterable<ProductOrder> productOrders) {
+    private List<OrderResponseDTO.OrderItemResponse> toItemResponseList(Iterable<ProductOrder> productOrders) {
         if (productOrders == null) {
             return List.of();
         }
@@ -116,12 +116,12 @@ public class OrderMapper {
     /**
      * Converte Address para AddressResponse
      */
-    private OrderResponse.AddressResponse toAddressResponse(Address address) {
+    private OrderResponseDTO.AddressResponse toAddressResponse(Address address) {
         if (address == null) {
             return null;
         }
 
-        return OrderResponse.AddressResponse.builder()
+        return OrderResponseDTO.AddressResponse.builder()
                 .id(address.getIdEndereco())
                 .rua(address.getRua())
                 .numero(address.getNumero())

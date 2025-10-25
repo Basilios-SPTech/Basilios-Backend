@@ -1,7 +1,7 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.app.dto.order.OrderRequest;
-import com.basilios.basilios.app.dto.order.OrderResponse;
+import com.basilios.basilios.app.dto.order.OrderRequestDTO;
+import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.mapper.OrderMapper;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
@@ -54,7 +54,7 @@ public class OrderService {
      * Cria novo pedido com relacionamento puro (ProductOrder)
      */
     @Transactional
-    public OrderResponse createOrder(OrderRequest request) {
+    public OrderResponseDTO createOrder(OrderRequestDTO request) {
         Usuario usuario = usuarioService.getCurrentUsuario();
 
         // Buscar endereço de entrega
@@ -84,7 +84,7 @@ public class OrderService {
             partnerLinks.put("99food", "https://www.99food.com.br");
             partnerLinks.put("rappi", "https://www.rappi.com.br");
 
-            return OrderResponse.builder()
+            return OrderResponseDTO.builder()
                     .redirectToPartners(true)
                     .partnerLinks(partnerLinks)
                     .build();
@@ -99,7 +99,7 @@ public class OrderService {
                 .build();
 
         // Processar items do pedido
-        for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
+        for (OrderRequestDTO.OrderItemRequest itemRequest : request.getItems()) {
             Product product = productRepository.findById(itemRequest.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + itemRequest.getProductId()));
 
@@ -174,7 +174,7 @@ public class OrderService {
      * Lista pedidos do usuário autenticado (ordenados por data decrescente)
      */
     @Transactional(readOnly = true)
-    public List<OrderResponse> getUserOrders() {
+    public List<OrderResponseDTO> getUserOrders() {
         Usuario usuario = usuarioService.getCurrentUsuario();
         List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
         return orderMapper.toResponseList(orders);
@@ -184,7 +184,7 @@ public class OrderService {
      * Lista pedidos do usuário autenticado de forma simplificada (sem items)
      */
     @Transactional(readOnly = true)
-    public List<OrderResponse> getUserOrdersSimple() {
+    public List<OrderResponseDTO> getUserOrdersSimple() {
         Usuario usuario = usuarioService.getCurrentUsuario();
         List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
         return orders.stream()
@@ -196,7 +196,7 @@ public class OrderService {
      * Busca pedido por ID (completo com items)
      */
     @Transactional(readOnly = true)
-    public OrderResponse getOrderById(Long id) {
+    public OrderResponseDTO getOrderById(Long id) {
         Order order = findById(id);
         return orderMapper.toResponse(order);
     }
@@ -205,7 +205,7 @@ public class OrderService {
      * Busca pedido por ID do usuário autenticado
      */
     @Transactional(readOnly = true)
-    public OrderResponse getUserOrderById(Long id) {
+    public OrderResponseDTO getUserOrderById(Long id) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Order order = findById(id);
 
@@ -238,7 +238,7 @@ public class OrderService {
      * Busca pedidos por status
      */
     @Transactional(readOnly = true)
-    public List<OrderResponse> getOrdersByStatus(StatusPedidoEnum status) {
+    public List<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status) {
         List<Order> orders = orderRepository.findByStatus(status);
         return orderMapper.toResponseList(orders);
     }
@@ -247,7 +247,7 @@ public class OrderService {
      * Busca pedidos pendentes (para cozinha)
      */
     @Transactional(readOnly = true)
-    public List<OrderResponse> getPendingOrders() {
+    public List<OrderResponseDTO> getPendingOrders() {
         List<Order> orders = orderRepository.findPendingOrders();
         return orderMapper.toResponseList(orders);
     }
@@ -256,7 +256,7 @@ public class OrderService {
      * Busca pedidos em andamento (confirmado, preparando, despachado)
      */
     @Transactional(readOnly = true)
-    public List<OrderResponse> getActiveOrders() {
+    public List<OrderResponseDTO> getActiveOrders() {
         List<Order> orders = orderRepository.findActiveOrders();
         return orderMapper.toResponseList(orders);
     }
@@ -265,7 +265,7 @@ public class OrderService {
      * Busca pedidos recentes de um usuário (últimos 30 dias)
      */
     @Transactional(readOnly = true)
-    public List<OrderResponse> getUserRecentOrders() {
+    public List<OrderResponseDTO> getUserRecentOrders() {
         Usuario usuario = usuarioService.getCurrentUsuario();
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         List<Order> orders = orderRepository.findByUsuarioAndCreatedAtAfter(usuario, thirtyDaysAgo);
@@ -278,7 +278,7 @@ public class OrderService {
      * Confirma pedido (PENDENTE → CONFIRMADO)
      */
     @Transactional
-    public OrderResponse confirmarPedido(Long id) {
+    public OrderResponseDTO confirmarPedido(Long id) {
         Order order = findById(id);
         validateStatusTransition(order, StatusPedidoEnum.CONFIRMADO);
         order.confirmar();
@@ -290,7 +290,7 @@ public class OrderService {
      * Inicia preparo do pedido (CONFIRMADO → PREPARANDO)
      */
     @Transactional
-    public OrderResponse iniciarPreparo(Long id) {
+    public OrderResponseDTO iniciarPreparo(Long id) {
         Order order = findById(id);
         validateStatusTransition(order, StatusPedidoEnum.PREPARANDO);
         order.iniciarPreparo();
@@ -302,7 +302,7 @@ public class OrderService {
      * Despacha pedido para entrega (PREPARANDO → DESPACHADO)
      */
     @Transactional
-    public OrderResponse despacharPedido(Long id) {
+    public OrderResponseDTO despacharPedido(Long id) {
         Order order = findById(id);
         validateStatusTransition(order, StatusPedidoEnum.DESPACHADO);
         order.despachar();
@@ -314,7 +314,7 @@ public class OrderService {
      * Marca pedido como entregue (DESPACHADO → ENTREGUE)
      */
     @Transactional
-    public OrderResponse entregarPedido(Long id) {
+    public OrderResponseDTO entregarPedido(Long id) {
         Order order = findById(id);
         validateStatusTransition(order, StatusPedidoEnum.ENTREGUE);
         order.entregar();
@@ -326,7 +326,7 @@ public class OrderService {
      * Cancela pedido (qualquer status → CANCELADO, exceto ENTREGUE)
      */
     @Transactional
-    public OrderResponse cancelarPedido(Long id, String motivo) {
+    public OrderResponseDTO cancelarPedido(Long id, String motivo) {
         Order order = findById(id);
         validateStatusTransition(order, StatusPedidoEnum.CANCELADO);
         order.cancelar(motivo);
@@ -339,7 +339,7 @@ public class OrderService {
      * Só pode cancelar se estiver PENDENTE ou CONFIRMADO
      */
     @Transactional
-    public OrderResponse cancelarPedidoUsuario(Long id, String motivo) {
+    public OrderResponseDTO cancelarPedidoUsuario(Long id, String motivo) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Order order = findById(id);
 

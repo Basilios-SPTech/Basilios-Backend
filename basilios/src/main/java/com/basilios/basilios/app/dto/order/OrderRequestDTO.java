@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderRequest {
+public class OrderRequestDTO {
 
     @NotNull(message = "ID do endereço de entrega é obrigatório")
     private Long addressId;

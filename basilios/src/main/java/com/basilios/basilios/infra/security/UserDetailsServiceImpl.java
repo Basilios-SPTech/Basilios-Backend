@@ -18,16 +18,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private UsuarioRepository usuarioRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        // Busca por email OU nomeUsuario (login flexível)
-        Usuario usuario = usuarioRepository.findByEmailOrNomeUsuario(identifier, identifier)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + identifier));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // Busca por email (login por email apenas)
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
 
         // Verifica se usuário está ativo
         if (!usuario.getEnabled()) {
-            throw new UsernameNotFoundException("Usuário desabilitado: " + identifier);
+            throw new UsernameNotFoundException("Usuário desabilitado: " + email);
         }
-
 
 
         return org.springframework.security.core.userdetails.User
