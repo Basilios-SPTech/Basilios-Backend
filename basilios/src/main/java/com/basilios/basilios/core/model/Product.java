@@ -65,13 +65,14 @@ public class Product {
     private Set<IngredientProduct> productIngredients = new HashSet<>();
 
     // Relacionamento Many-to-Many com Order (através de ProductOrder)
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Removido cascade/orphanRemoval: Order é o aggregate root dos itens de pedido
+    @OneToMany(mappedBy = "product")
     @Builder.Default
     @ToString.Exclude
     private Set<ProductOrder> productOrders = new HashSet<>();
 
     // Relacionamento Many-to-Many com Combo (através de ProductCombo)
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product")
     @Builder.Default
     @ToString.Exclude
     private Set<ProductCombo> productCombos = new HashSet<>();

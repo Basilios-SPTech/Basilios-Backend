@@ -108,13 +108,27 @@ public class Order {
 
         po.calculateSubtotal();
         productOrders.add(po);
+
+        // Mantém o lado do produto sincronizado em memória (não persiste nada por si só)
+        if (po.getProduct() != null) {
+            po.getProduct().getProductOrders().add(po);
+        }
     }
 
     /**
      * Remove um produto do pedido
      */
     public void removeProduct(ProductOrder productOrder) {
+        if (productOrder == null) {
+            return;
+        }
+
         productOrders.remove(productOrder);
+
+        if (productOrder.getProduct() != null) {
+            productOrder.getProduct().getProductOrders().remove(productOrder);
+        }
+
         productOrder.setOrder(null);
     }
 
@@ -122,7 +136,10 @@ public class Order {
      * Limpa todos os produtos
      */
     public void clearProducts() {
-        productOrders.clear();
+        // Remove de forma segura, mantendo ambos os lados consistentes
+        for (ProductOrder po : new HashSet<>(productOrders)) {
+            removeProduct(po);
+        }
     }
 
     /**

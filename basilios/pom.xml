@@ -21,6 +21,9 @@
     <properties>
         <java.version>21</java.version>
         <jjwt.version>0.11.5</jjwt.version>
+        <!-- Garantir encoding consistente para resources, compilação e relatórios -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencies>
@@ -104,6 +107,28 @@
 
     <build>
         <plugins>
+            <!-- Garantir que resources sejam filtrados usando UTF-8 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- Compiler plugin explicitando encoding e release -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+
+            <!-- Spring Boot plugin (existente) -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
