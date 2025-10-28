@@ -9,7 +9,7 @@ import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.model.Client;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.ClientRepository;
-import com.basilios.basilios.infra.repository.EnderecoRepository;
+import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import com.basilios.basilios.infra.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -33,7 +34,7 @@ public class AuthService {
     private ClientRepository clientRepository;
 
     @Autowired
-    private EnderecoRepository enderecoRepository;
+    private AddressRepository addressRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -59,9 +60,6 @@ public class AuthService {
             throw new BusinessException("Email já cadastrado");
         }
 
-        if (usuarioRepository.existsByNomeUsuario(request.getNomeUsuario())) {
-            throw new BusinessException("Nome de usuário já existe");
-        }
 
         if (usuarioRepository.existsByCpf(cpfNormalizado)) {
             throw new BusinessException("CPF já cadastrado");
@@ -74,7 +72,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .cpf(cpfNormalizado)
                 .telefone(normalizarTelefone(request.getTelefone()))
-                .roles(Set.of(RoleEnum.ROLE_CLIENTE))
+                .roles(List.of(RoleEnum.ROLE_CLIENTE))
                 .enabled(true)
                 .build();
 

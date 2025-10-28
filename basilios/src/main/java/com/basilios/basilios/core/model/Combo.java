@@ -10,9 +10,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "combo")
@@ -39,7 +40,7 @@ public class Combo {
     @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
-    private Set<ProductCombo> productCombos = new HashSet<>();
+    private List<ProductCombo> productCombos = new ArrayList<>();
 
     @NotNull(message = "Preço do combo é obrigatório")
     @DecimalMin(value = "0.00", message = "Preço do combo deve ser maior ou igual a zero")
@@ -89,7 +90,7 @@ public class Combo {
      * Limpa todos os produtos do combo
      */
     public void clearProducts() {
-        for (ProductCombo pc : new HashSet<>(productCombos)) {
+        for (ProductCombo pc : new ArrayList<>(productCombos)) {
             removeProduct(pc.getProduct());
         }
     }
@@ -124,7 +125,7 @@ public class Combo {
         }
 
         BigDecimal savings = calculateSavings();
-        return savings.divide(individualPrice, 4, BigDecimal.ROUND_HALF_UP)
+        return savings.divide(individualPrice, 4, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100"));
     }
 

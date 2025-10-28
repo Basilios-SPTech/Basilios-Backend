@@ -13,8 +13,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @Entity
 @Table(name = "product")
@@ -50,32 +51,32 @@ public class Product {
             joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "tag")
     @Builder.Default
-    private Set<String> tags = new HashSet<>(); // ["ARTESANAL", "PICANTE"]
+    private List<String> tags = new ArrayList<>(); // ["ARTESANAL", "PICANTE"]
 
     // Relacionamento Many-to-Many com Promotion (lado inverso)
     @ManyToMany(mappedBy = "products")
     @Builder.Default
     @ToString.Exclude
-    private Set<Promotion> promotions = new HashSet<>();
+    private List<Promotion> promotions = new ArrayList<>();
 
     // Relacionamento Many-to-Many com Ingredient (através de IngredientProduct)
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
-    private Set<IngredientProduct> productIngredients = new HashSet<>();
+    private List<IngredientProduct> productIngredients = new ArrayList<>();
 
     // Relacionamento Many-to-Many com Order (através de ProductOrder)
     // Removido cascade/orphanRemoval: Order é o aggregate root dos itens de pedido
     @OneToMany(mappedBy = "product")
     @Builder.Default
     @ToString.Exclude
-    private Set<ProductOrder> productOrders = new HashSet<>();
+    private List<ProductOrder> productOrders = new ArrayList<>();
 
     // Relacionamento Many-to-Many com Combo (através de ProductCombo)
     @OneToMany(mappedBy = "product")
     @Builder.Default
     @ToString.Exclude
-    private Set<ProductCombo> productCombos = new HashSet<>();
+    private List<ProductCombo> productCombos = new ArrayList<>();
 
     @NotNull(message = "Preço é obrigatório")
     @DecimalMin(value = "0.00", message = "Preço deve ser maior ou igual a zero")
@@ -184,15 +185,33 @@ public class Product {
      * Remove um ingrediente do produto
      */
     public void removeIngredient(Ingredient ingredient) {
-        productIngredients.removeIf(ip ->
-                ip.getIngredient().equals(ingredient)
-        );
+        if (ingredient == null) return;
+
+        Iterator<IngredientProduct> it = productIngredients.iterator();
+        while (it.hasNext()) {
+            IngredientProduct ip = it.next();
+            if (ip.getIngredient() != null && ip.getIngredient().equals(ingredient)) {
+                // remove dos dois lados e zera referências da entidade de junção
+                it.remove();
+                ingredient.getProductIngredients().remove(ip);
+                ip.setProduct(null);
+                ip.setIngredient(null);
+            }
+        }
     }
 
     /**
      * Remove todos os ingredientes
      */
     public void clearIngredients() {
+        for (IngredientProduct ip : new ArrayList<>(productIngredients)) {
+            Ingredient ingredient = ip.getIngredient();
+            if (ingredient != null) {
+                ingredient.getProductIngredients().remove(ip);
+            }
+            ip.setProduct(null);
+            ip.setIngredient(null);
+        }
         productIngredients.clear();
     }
 

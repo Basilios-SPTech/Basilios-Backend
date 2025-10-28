@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * DTO básico de produto (usado internamente)
@@ -35,7 +33,7 @@ public class ProductDTO {
     private ProductSubcategory subcategory;
 
     @Builder.Default
-    private Set<String> tags = new HashSet<>();
+    private List<String> tags = new ArrayList<>();
 
     private BigDecimal price;
 

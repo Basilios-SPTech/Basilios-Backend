@@ -1,6 +1,7 @@
 package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
+import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.ResourceNotFoundException;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
@@ -9,6 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Set;
 
 @Service
 public class UsuarioService {
@@ -39,7 +42,7 @@ public class UsuarioService {
                 .email(usuario.getEmail())
                 .cpf(usuario.getCpf())
                 .telefone(usuario.getTelefone())
-                .roles(usuario.getRoles())
+                .roles((Set<RoleEnum>) usuario.getRoles())
                 .enabled(usuario.getEnabled())
                 .createdAt(usuario.getCreatedAt())
                 .build();

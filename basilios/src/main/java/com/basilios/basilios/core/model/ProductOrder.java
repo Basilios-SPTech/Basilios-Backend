@@ -54,6 +54,7 @@ public class ProductOrder {
     @Column(columnDefinition = "TEXT")
     private String observations;
 
+    @Builder.Default
     @Column(name = "had_promotion")
     private Boolean hadPromotion = false;
 

@@ -11,10 +11,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "promotion")
@@ -47,7 +48,7 @@ public class Promotion {
     )
     @Builder.Default
     @ToString.Exclude
-    private Set<Product> products = new HashSet<>();
+    private List<Product> products = new ArrayList<>();
 
     @DecimalMin(value = "0.0", message = "Desconto percentual deve ser maior ou igual a 0")
     @DecimalMax(value = "100.0", message = "Desconto percentual deve ser menor ou igual a 100")
@@ -137,7 +138,7 @@ public class Promotion {
         if (discountPercentage != null && discountPercentage.compareTo(BigDecimal.ZERO) > 0) {
             discount = originalPrice
                     .multiply(discountPercentage)
-                    .divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP);
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         }
         // Se não houver percentual, usa valor fixo
         else if (discountAmount != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
@@ -187,7 +188,7 @@ public class Promotion {
      * Remove todos os produtos
      */
     public void clearProducts() {
-        for (Product product : new HashSet<>(products)) {
+        for (Product product : new ArrayList<>(products)) {
             removeProduct(product);
         }
     }

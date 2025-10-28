@@ -18,8 +18,12 @@ public class ProductSearchDTO {
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private List<String> categories;
+    @Builder.Default
     private Boolean activeOnly = true;
+    @Builder.Default
     private Integer limit = 10;
+    @Builder.Default
     private String sortBy = "relevance"; // relevance, price, name, date
+    @Builder.Default
     private String sortDirection = "desc";
 }

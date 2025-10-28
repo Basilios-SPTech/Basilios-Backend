@@ -6,7 +6,7 @@ import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.ResourceNotFoundException;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
-import com.basilios.basilios.infra.repository.EnderecoRepository;
+import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class AddressService {
 
     @Autowired
-    private EnderecoRepository enderecoRepository;
+    private AddressRepository addressRepository;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -59,7 +59,7 @@ public class AddressService {
      */
     @Transactional(readOnly = true)
     public Address findById(Long id) {
-        return enderecoRepository.findById(id)
+        return addressRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + id));
     }
 
@@ -120,7 +120,7 @@ public class AddressService {
         usuario.addEndereco(address);
 
         // Salvar
-        address = enderecoRepository.save(address);
+        address = addressRepository.save(address);
         usuarioRepository.save(usuario);
 
         return toResponse(address);
@@ -158,7 +158,7 @@ public class AddressService {
         address.setLatitude(request.getLatitude());
         address.setLongitude(request.getLongitude());
 
-        address = enderecoRepository.save(address);
+        address = addressRepository.save(address);
 
         return toResponse(address);
     }
@@ -226,7 +226,7 @@ public class AddressService {
 
         // Soft delete
         usuario.removeEndereco(address);
-        enderecoRepository.save(address);
+        addressRepository.save(address);
     }
 
     /**
@@ -235,7 +235,7 @@ public class AddressService {
     @Transactional
     public AddressResponseDTO restoreAddress(Long id) {
         Usuario usuario = usuarioService.getCurrentUsuario();
-        Address address = enderecoRepository.findById(id)
+        Address address = addressRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + id));
 
         // Validar propriedade
@@ -248,7 +248,7 @@ public class AddressService {
 
         // Restaurar
         address.restaurar();
-        address = enderecoRepository.save(address);
+        address = addressRepository.save(address);
 
         // Se usuário não tem endereço principal, definir este
         if (usuario.getAddressPrincipal() == null) {

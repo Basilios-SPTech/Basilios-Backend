@@ -53,11 +53,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // ========== Ordenações ==========
     Page<Product> findByIsPausedFalseOrderByCreatedAtDesc(Pageable pageable);
-    List<Product> findByOrderByPriceAsc();
+    // Corrigidos: nomes derivados inválidos substituídos por findAllBy...
+    List<Product> findAllByOrderByPriceAsc();
     List<Product> findByIsPausedFalseOrderByPriceAsc();
-    List<Product> findByOrderByPriceDesc();
+    List<Product> findAllByOrderByPriceDesc();
     List<Product> findByIsPausedFalseOrderByPriceDesc();
-    List<Product> findByOrderByNameAsc();
+    List<Product> findAllByOrderByNameAsc();
 
     // ========== Contadores ==========
     long countByIsPausedFalse();

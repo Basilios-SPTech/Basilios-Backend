@@ -3,9 +3,9 @@ package com.basilios.basilios.infra.repository;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.Usuario;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -16,7 +16,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /**
      * Busca pedidos de um usuário ordenados por data (mais recentes primeiro)
+     * Pré-carrega productOrders e product para evitar N+1
      */
+    @EntityGraph(attributePaths = {"productOrders", "productOrders.product"})
     List<Order> findByUsuarioOrderByCreatedAtDesc(Usuario usuario);
 
     /**
@@ -28,6 +30,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * Busca pedidos por status
      */
     List<Order> findByStatus(StatusPedidoEnum status);
+
+    /**
+     * Busca pedidos pendentes (PENDENTE)
+     */
+    @Query("SELECT o FROM Order o WHERE o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.PENDENTE ORDER BY o.createdAt ASC")
+    List<Order> findPendingOrders();
+
+    /**
+     * Busca pedidos em andamento (CONFIRMADO, PREPARANDO, DESPACHADO)
+     */
+    @Query("SELECT o FROM Order o WHERE o.status IN (com.basilios.basilios.core.enums.StatusPedidoEnum.CONFIRMADO, com.basilios.basilios.core.enums.StatusPedidoEnum.PREPARANDO, com.basilios.basilios.core.enums.StatusPedidoEnum.DESPACHADO) ORDER BY o.createdAt ASC")
+    List<Order> findActiveOrders();
 
     /**
      * Busca pedidos de um usuário por status
@@ -57,18 +71,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /**
      * Busca últimos N pedidos de um usuário
      */
-    @Query("SELECT o FROM Order o WHERE o.usuario = :usuario ORDER BY o.createdAt DESC")
-    List<Order> findRecentOrdersByUsuario(@Param("usuario") Usuario usuario);
+    // (method defined above) - single definition kept
 
     /**
-     * Busca pedidos pendentes
+     * Busca pedidos por status ordenados por data asc
      */
-    @Query("SELECT o FROM Order o WHERE o.status = 'PENDENTE' ORDER BY o.createdAt ASC")
-    List<Order> findPendingOrders();
+    List<Order> findByStatusOrderByCreatedAtAsc(StatusPedidoEnum status);
 
     /**
-     * Busca pedidos em andamento (confirmado, preparando, despachado)
+     * Busca pedidos por múltiplos status (ex: confirmado, preparando, despachado)
      */
-    @Query("SELECT o FROM Order o WHERE o.status IN ('CONFIRMADO', 'PREPARANDO', 'DESPACHADO') ORDER BY o.createdAt ASC")
-    List<Order> findActiveOrders();
+    List<Order> findByStatusInOrderByCreatedAtAsc(List<StatusPedidoEnum> statuses);
 }

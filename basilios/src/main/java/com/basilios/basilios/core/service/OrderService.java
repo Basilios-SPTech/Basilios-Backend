@@ -7,7 +7,7 @@ import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.ResourceNotFoundException;
 import com.basilios.basilios.core.model.*;
-import com.basilios.basilios.infra.repository.EnderecoRepository;
+import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.util.DistanceCalculator;
@@ -33,7 +33,7 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private EnderecoRepository enderecoRepository;
+    private AddressRepository addressRepository;
 
     @Autowired
     private ProductRepository productRepository;
@@ -58,7 +58,7 @@ public class OrderService {
         Usuario usuario = usuarioService.getCurrentUsuario();
 
         // Buscar endereço de entrega
-        Address addressEntrega = enderecoRepository.findById(request.getAddressId())
+        Address addressEntrega = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + request.getAddressId()));
 
         // Verificar se endereço pertence ao usuário

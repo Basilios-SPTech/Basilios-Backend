@@ -70,7 +70,7 @@ public class DataLoader implements CommandLineRunner {
                 .telefone("4002892202")
                 .cargo(CargoEnum.DONO)
                 .password(passwordEncoder.encode("admin123"))
-                .roles(Set.of(
+                .roles(List.of(
                         RoleEnum.ROLE_ADMIN,
                         RoleEnum.ROLE_CLIENTE,
                         RoleEnum.ROLE_FUNCIONARIO

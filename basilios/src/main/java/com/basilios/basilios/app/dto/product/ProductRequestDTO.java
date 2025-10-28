@@ -10,9 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * DTO unificado para criação e atualização de produtos
@@ -38,7 +36,7 @@ public class ProductRequestDTO {
     private ProductSubcategory subcategory; // Opcional
 
     @Builder.Default
-    private Set<String> tags = new HashSet<>(); // ["ARTESANAL", "PICANTE", "VEGANO"]
+    private List<String> tags = new ArrayList<>(); // ["ARTESANAL", "PICANTE", "VEGANO"]
 
     @NotNull(message = "Preço é obrigatório")
     @DecimalMin(value = "0.01", message = "Preço deve ser maior que zero")

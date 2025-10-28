@@ -8,8 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -33,7 +33,7 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
-    private Set<ProductOrder> productOrders = new HashSet<>();
+    private List<ProductOrder> productOrders = new ArrayList<>();
 
     @NotNull(message = "Total é obrigatório")
     @Column(nullable = false, precision = 10, scale = 2)
@@ -109,10 +109,6 @@ public class Order {
         po.calculateSubtotal();
         productOrders.add(po);
 
-        // Mantém o lado do produto sincronizado em memória (não persiste nada por si só)
-        if (po.getProduct() != null) {
-            po.getProduct().getProductOrders().add(po);
-        }
     }
 
     /**
@@ -125,9 +121,9 @@ public class Order {
 
         productOrders.remove(productOrder);
 
-        if (productOrder.getProduct() != null) {
-            productOrder.getProduct().getProductOrders().remove(productOrder);
-        }
+        // NOTA: não atualizamos o lado do Product aqui. O Order é o aggregate root
+        // responsável pelos itens; manter atualizações do lado do Product aumenta
+        // risco de inconsistência se o campo productOrders for removido do Product.
 
         productOrder.setOrder(null);
     }
@@ -137,7 +133,7 @@ public class Order {
      */
     public void clearProducts() {
         // Remove de forma segura, mantendo ambos os lados consistentes
-        for (ProductOrder po : new HashSet<>(productOrders)) {
+        for (ProductOrder po : new ArrayList<>(productOrders)) {
             removeProduct(po);
         }
     }

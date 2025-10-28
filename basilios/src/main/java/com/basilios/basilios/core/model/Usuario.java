@@ -15,9 +15,7 @@ import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "usuario")
@@ -59,12 +57,12 @@ public abstract class Usuario {
     @Column(nullable = false, length = 11)
     private String telefone;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Set<RoleEnum> roles = new HashSet<>();
+    private List<RoleEnum> roles = new ArrayList<>();
 
     @Builder.Default
     @Column(nullable = false)
