@@ -68,7 +68,7 @@ public abstract class Usuario {
     @Column(nullable = false)
     private Boolean enabled = true;
 
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "usuario")
     @Builder.Default
     private List<Address> addresses = new ArrayList<>();
 
