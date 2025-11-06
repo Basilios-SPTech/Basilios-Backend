@@ -117,7 +117,7 @@ public class AddressService {
                 .build();
 
         // Adicionar ao usuário
-        usuario.addEndereco(address);
+        usuarioService.addAddress(usuario.getId(), address);
 
         // Salvar
         address = addressRepository.save(address);
@@ -212,11 +212,11 @@ public class AddressService {
 
         // Verificar se é o endereço principal
         if (usuario.getAddressPrincipal() != null &&
-                usuario.getAddressPrincipal().getIdEndereco().equals(id)) {
+                usuario.getAddressPrincipal().getIdAddress().equals(id)) {
             // Definir outro endereço como principal
             Address newPrincipal = usuario.getAddresses().stream()
                     .filter(Address::isAtivo)
-                    .filter(a -> !a.getIdEndereco().equals(id))
+                    .filter(a -> !a.getIdAddress().equals(id))
                     .findFirst()
                     .orElse(null);
 
@@ -225,7 +225,7 @@ public class AddressService {
         }
 
         // Soft delete
-        usuario.removeEndereco(address);
+        usuarioService.removeAddress(usuario.getId(), address);
         addressRepository.save(address);
     }
 
@@ -355,7 +355,7 @@ public class AddressService {
      */
     private AddressResponseDTO toResponse(Address address) {
         return AddressResponseDTO.builder()
-                .id(address.getIdEndereco())
+                .id(address.getIdAddress())
                 .rua(address.getRua())
                 .numero(address.getNumero())
                 .bairro(address.getBairro())
@@ -379,7 +379,7 @@ public class AddressService {
         if (usuario == null || usuario.getAddressPrincipal() == null) {
             return false;
         }
-        return usuario.getAddressPrincipal().getIdEndereco().equals(address.getIdEndereco());
+        return usuario.getAddressPrincipal().getIdAddress().equals(address.getIdAddress());
     }
 
     /**

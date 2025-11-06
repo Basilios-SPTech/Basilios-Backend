@@ -25,7 +25,7 @@ public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_endereco")
-    private Long idEndereco;
+    private Long idAddress;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", foreignKey = @ForeignKey(name = "fk_endereco_usuario"))
@@ -106,7 +106,7 @@ public class Address {
     @Override
     public String toString() {
         return "Endereco{" +
-                "idEndereco=" + idEndereco +
+                "idEndereco=" + idAddress +
                 ", rua='" + rua + '\'' +
                 ", numero='" + numero + '\'' +
                 ", bairro='" + bairro + '\'' +

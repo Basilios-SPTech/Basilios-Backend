@@ -1,4 +1,4 @@
-package com.basilios.basilios.app.dto.auth;
+package com.basilios.basilios.app.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthResponseDTO {
-    private String token;
-    @Builder.Default
-    private String type = "Bearer";
+public class UsuarioTokenDTO {
     private Long id;
-    private String name;
+    private String nomeUsuario;
     private String email;
+    private String token;
 }

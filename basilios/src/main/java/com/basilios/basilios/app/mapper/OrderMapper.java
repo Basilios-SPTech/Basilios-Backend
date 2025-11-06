@@ -122,7 +122,7 @@ public class OrderMapper {
         }
 
         return OrderResponseDTO.AddressResponse.builder()
-                .id(address.getIdEndereco())
+                .id(address.getIdAddress())
                 .rua(address.getRua())
                 .numero(address.getNumero())
                 .bairro(address.getBairro())
