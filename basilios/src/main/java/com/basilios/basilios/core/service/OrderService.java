@@ -5,7 +5,7 @@ import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.mapper.OrderMapper;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
-import com.basilios.basilios.core.exception.ResourceNotFoundException;
+import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
@@ -59,7 +59,7 @@ public class OrderService {
 
         // Buscar endereço de entrega
         Address addressEntrega = addressRepository.findById(request.getAddressId())
-                .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + request.getAddressId()));
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + request.getAddressId()));
 
         // Verificar se endereço pertence ao usuário
         if (!addressEntrega.getUsuario().getId().equals(usuario.getId())) {
@@ -101,7 +101,7 @@ public class OrderService {
         // Processar items do pedido
         for (OrderRequestDTO.OrderItemRequest itemRequest : request.getItems()) {
             Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + itemRequest.getProductId()));
+                    .orElseThrow(() -> new NotFoundException("Produto não encontrado: " + itemRequest.getProductId()));
 
             // Verificar se produto está disponível
             if (product.getIsPaused()) {
@@ -223,7 +223,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Order findById(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado: " + id));
+                .orElseThrow(() -> new NotFoundException("Pedido não encontrado: " + id));
     }
 
     /**
