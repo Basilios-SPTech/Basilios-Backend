@@ -1,4 +1,4 @@
-package com.basilios.basilios.app.dto.auth;
+package com.basilios.basilios.app.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -9,11 +9,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterRequestDTO {
+public class UsuarioRegisterDTO {
 
     // Dados básicos de autenticação
     @NotBlank(message = "Nome de usuário é obrigatório")
@@ -39,5 +41,8 @@ public class RegisterRequestDTO {
     @Pattern(regexp = "^\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}$|^\\d{10,11}$",
             message = "Telefone inválido. Use o formato: (11) 99999-9999 ou 11999999999")
     private String telefone;
+
+
+    private LocalDate dataNascimento;
 
 }

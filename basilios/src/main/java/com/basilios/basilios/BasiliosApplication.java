@@ -8,6 +8,6 @@ public class BasiliosApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(BasiliosApplication.class, args);
-	}
+    }
 
 }

@@ -7,33 +7,31 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "usuario")
-@Inheritance(strategy = InheritanceType.JOINED)
 @SQLDelete(sql = "UPDATE usuario SET deleted_at = NOW() WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
 @Data
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-public abstract class Usuario {
+public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Nome de usuário é obrigatório")
     @Size(min = 3, max = 50, message = "Nome de usuário deve ter entre 3 e 50 caracteres")
     @Column(name = "nome_usuario", nullable = false, unique = true, length = 50)
     private String nomeUsuario;
@@ -57,7 +55,7 @@ public abstract class Usuario {
     @Column(nullable = false, length = 11)
     private String telefone;
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
@@ -68,13 +66,17 @@ public abstract class Usuario {
     @Column(nullable = false)
     private Boolean enabled = true;
 
-    @OneToMany(mappedBy = "usuario")
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Address> addresses = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "endereco_principal_id")
     private Address addressPrincipal;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Order> orders = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -88,7 +90,11 @@ public abstract class Usuario {
     private LocalDateTime deletedAt;
 
 
-    // Métodos utilitários
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
+
+
+    // Métodos utilitários simples
     public boolean isAtivo() {
         return deletedAt == null;
     }
@@ -101,38 +107,8 @@ public abstract class Usuario {
         this.deletedAt = null;
     }
 
-    public void addEndereco(Address address) {
-        addresses.add(address);
-        address.setUsuario(this);
-
-        // Se for o primeiro endereço, define como principal
-        if (addressPrincipal == null) {
-            addressPrincipal = address;
-        }
-    }
-
-    public void removeEndereco(Address address) {
-        addresses.remove(address);
-        address.setUsuario(null);
-
-        // Se removeu o endereço principal, define outro como principal
-        if (address.equals(addressPrincipal) && !addresses.isEmpty()) {
-            addressPrincipal = addresses.get(0);
-        } else if (addresses.isEmpty()) {
-            addressPrincipal = null;
-        }
-    }
-
-    public void addRole(RoleEnum role) {
-        this.roles.add(role);
-    }
-
-    public void removeRole(RoleEnum role) {
-        this.roles.remove(role);
-    }
-
     public boolean hasRole(RoleEnum role) {
-        return this.roles.contains(role);
+        return this.roles != null && this.roles.contains(role);
     }
 
     @Override

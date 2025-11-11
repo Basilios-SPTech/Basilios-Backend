@@ -57,13 +57,15 @@ public class SecurityConfig {
 
                         // libera swagger e docs
                         .requestMatchers(
+                                "/api/auth/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
                         // admin
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/funcionario/**").hasRole("FUNCIONARIO")
+                        .requestMatchers("/api/cliente/**").hasRole("CLIENTE")
 
                         // qualquer outra rota precisa estar autenticada
                         .anyRequest().authenticated()
