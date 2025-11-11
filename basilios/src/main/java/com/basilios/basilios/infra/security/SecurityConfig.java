@@ -15,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.Customizer;
+
 
 @Configuration
 @EnableWebSecurity
@@ -49,31 +51,45 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // libera autenticação e menu
-                        .requestMatchers("/api/auth/**", "/api/menu/**").permitAll()
+                // 🔓 Ativa o suporte a CORS dentro do Spring Security
+                .cors(Customizer.withDefaults())
 
-                        // libera swagger e docs
+                // 🚫 Desativa CSRF pra API REST
+                .csrf(csrf -> csrf.disable())
+
+                // 🔄 Stateless (sem sessão)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 🔐 Configura quem pode acessar o quê
+                .authorizeHttpRequests(auth -> auth
+                        // Libera requisições de preflight (OPTIONS)
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Libera login e endpoints públicos
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/login",
+                                "/api/menu",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // admin
+                        // Regras de acesso por role
                         .requestMatchers("/api/funcionario/**").hasRole("FUNCIONARIO")
                         .requestMatchers("/api/cliente/**").hasRole("CLIENTE")
 
-                        // qualquer outra rota precisa estar autenticada
+                        // O resto precisa de autenticação
                         .anyRequest().authenticated()
                 )
+
+                // 🧩 Autenticação com JWT
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
 }
