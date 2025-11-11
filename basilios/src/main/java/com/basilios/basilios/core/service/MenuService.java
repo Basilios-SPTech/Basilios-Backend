@@ -363,7 +363,7 @@ public class MenuService {
         Product product = getProductById(productId);
 
         Ingredient ingredient = ingredientRepository.findById(ingredientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ingrediente não encontrado: " + ingredientId));
+                .orElseThrow(() -> new NotFoundException("Ingrediente não encontrado: " + ingredientId));
 
         IngredientProduct ip = ingredientProductRepository.findByProductAndIngredient(product, ingredient)
                 .orElseThrow(() -> new BusinessException("Ingrediente não está associado ao produto"));
@@ -404,7 +404,7 @@ public class MenuService {
         Product product = getProductById(productId);
 
         Ingredient ingredient = ingredientRepository.findById(ingredientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ingrediente não encontrado: " + ingredientId));
+                .orElseThrow(() -> new NotFoundException("Ingrediente não encontrado: " + ingredientId));
 
         IngredientProduct ip = ingredientProductRepository.findByProductAndIngredient(product, ingredient)
                 .orElseThrow(() -> new BusinessException("Ingrediente não está associado ao produto"));

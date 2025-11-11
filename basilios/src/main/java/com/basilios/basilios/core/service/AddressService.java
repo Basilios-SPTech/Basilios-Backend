@@ -3,7 +3,7 @@ package com.basilios.basilios.core.service;
 import com.basilios.basilios.app.dto.endereco.AddressRequestDTO;
 import com.basilios.basilios.app.dto.endereco.AddressResponseDTO;
 import com.basilios.basilios.core.exception.BusinessException;
-import com.basilios.basilios.core.exception.ResourceNotFoundException;
+import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.AddressRepository;
@@ -45,9 +45,9 @@ public class AddressService {
      * Lista todos os endereços de um usuário específico (admin)
      */
     @Transactional(readOnly = true)
-    public List<Address> getAddressesByUsuario(Long usuarioId) {
+    public List<Address> findActiveAddressesByUserId(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + usuarioId));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + usuarioId));
 
         return usuario.getAddresses().stream()
                 .filter(Address::isAtivo)
@@ -60,14 +60,14 @@ public class AddressService {
     @Transactional(readOnly = true)
     public Address findById(Long id) {
         return addressRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + id));
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
     }
 
     /**
      * Busca endereço por ID do usuário autenticado (com validação de propriedade)
      */
     @Transactional(readOnly = true)
-    public AddressResponseDTO getUserAddressById(Long id) {
+    public AddressResponseDTO getAuthenticatedUserAddressById(Long id) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Address address = findById(id);
 
@@ -84,7 +84,7 @@ public class AddressService {
         Usuario usuario = usuarioService.getCurrentUsuario();
 
         if (usuario.getAddressPrincipal() == null) {
-            throw new ResourceNotFoundException("Usuário não possui endereço principal");
+            throw new NotFoundException("Usuário não possui endereço principal");
         }
 
         return toResponse(usuario.getAddressPrincipal());
@@ -236,7 +236,7 @@ public class AddressService {
     public AddressResponseDTO restoreAddress(Long id) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + id));
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
 
         // Validar propriedade
         validateOwnership(address, usuario);

@@ -1,6 +1,6 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.core.exception.ResourceNotFoundException;
+import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Store;
 import com.basilios.basilios.infra.repository.StoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +17,13 @@ public class StoreService {
     public Store getMainStore() {
         List<Store> stores = storeRepository.findAll();
         if (stores.isEmpty()) {
-            throw new ResourceNotFoundException("Nenhuma loja cadastrada");
+            throw new NotFoundException("Nenhuma loja cadastrada");
         }
         return stores.get(0); // Retorna a primeira loja (loja principal)
     }
 
     public Store findById(Long id) {
         return storeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Loja não encontrada"));
+                .orElseThrow(() -> new NotFoundException("Loja não encontrada"));
     }
 }

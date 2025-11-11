@@ -2,7 +2,7 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.BusinessException;
-import com.basilios.basilios.core.exception.ResourceNotFoundException;
+import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
@@ -28,7 +28,7 @@ public class UsuarioService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
     }
 
     /**
@@ -37,7 +37,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findById(Long id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + id));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + id));
     }
 
     /**
@@ -46,7 +46,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findByEmail(String email) {
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + email));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + email));
     }
 
     /**
@@ -55,7 +55,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findByNomeUsuario(String nomeUsuario) {
         return usuarioRepository.findByNomeUsuario(nomeUsuario)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + nomeUsuario));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + nomeUsuario));
     }
 
     /**
@@ -64,7 +64,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findByCpf(String cpf) {
         return usuarioRepository.findByCpf(cpf)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com CPF: " + cpf));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado com CPF: " + cpf));
     }
 
     /**
@@ -158,7 +158,7 @@ public class UsuarioService {
         Address address = usuario.getAddresses().stream()
                 .filter(a -> a.getIdAddress().equals(addressId))
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado para este usuário"));
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado para este usuário"));
 
         usuario.setAddressPrincipal(address);
         return usuarioRepository.save(usuario);
@@ -207,7 +207,7 @@ public class UsuarioService {
     @Transactional
     public Usuario reativarUsuario(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + id));
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + id));
 
         if (usuario.isAtivo()) {
             throw new BusinessException("Usuário já está ativo");
