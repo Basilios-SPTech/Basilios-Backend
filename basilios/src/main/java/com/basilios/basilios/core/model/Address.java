@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "idEndereco")
-public class Address {
+public class    Address {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
