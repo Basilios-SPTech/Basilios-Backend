@@ -1,5 +1,7 @@
 package com.basilios.basilios.core.service;
 
+import com.basilios.basilios.core.enums.ProductCategory;
+import com.basilios.basilios.core.enums.ProductSubcategory;
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.core.model.Ingredient;
 import com.basilios.basilios.core.model.IngredientProduct;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -137,11 +140,26 @@ public class MenuService {
             throw new DuplicateProductException(dto.getName());
         }
 
+        // Valida enums obrigatórios
+        ProductCategory category = dto.getCategory();
+        if (category == null) {
+            throw new BusinessException("Categoria é obrigatória");
+        }
+
+        ProductSubcategory subcategory = dto.getSubcategory();
+        // (Opcional) valida coerência categoria x subcategoria
+        if (subcategory != null && subcategory.getCategory() != category) {
+            throw new BusinessException("Subcategoria não pertence à categoria informada");
+        }
+
         Product product = Product.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .price(dto.getPrice())
-                .isPaused(false)
+                .category(category)                       // <<=== ESSENCIAL
+                .subcategory(subcategory)                 // <<=== ESSENCIAL
+                .tags(dto.getTags() != null ? dto.getTags() : new ArrayList<>())
+                .isPaused(Boolean.TRUE.equals(dto.getIsPaused()))
                 .build();
 
         product = productRepository.save(product);
@@ -172,9 +190,22 @@ public class MenuService {
             throw new DuplicateProductException(dto.getName());
         }
 
+        // Valida enums (categoria obrigatória no update também)
+        ProductCategory category = dto.getCategory();
+        if (category == null) {
+            throw new BusinessException("Categoria é obrigatória");
+        }
+
+        ProductSubcategory subcategory = dto.getSubcategory();
+        if (subcategory != null && subcategory.getCategory() != category) {
+            throw new BusinessException("Subcategoria não pertence à categoria informada");
+        }
+
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
+        product.setCategory(category);             // <<=== GARANTE NO UPDATE
+        product.setSubcategory(subcategory);       // <<=== GARANTE NO UPDATE
 
         product = productRepository.save(product);
 
@@ -538,4 +569,3 @@ public class MenuService {
                 .collect(Collectors.toList());
     }
 }
-
