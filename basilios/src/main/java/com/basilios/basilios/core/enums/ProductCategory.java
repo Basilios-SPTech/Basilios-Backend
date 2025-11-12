@@ -1,10 +1,8 @@
-package com.basilios.basilios.core.enums;
+// ProductCategory.java
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.text.Normalizer;
 
-import lombok.Getter;
-
-/**
- * Categorias principais de produtos do cardápio
- */
 @Getter
 public enum ProductCategory {
     BURGER("Hambúrguer", "Burgers artesanais e tradicionais"),
@@ -21,33 +19,34 @@ public enum ProductCategory {
         this.description = description;
     }
 
-    /**
-     * Obtém a categoria a partir de uma string (case-insensitive)
-     */
-    public static ProductCategory fromString(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        for (ProductCategory category : ProductCategory.values()) {
-            if (category.name().equalsIgnoreCase(value) ||
-                    category.displayName.equalsIgnoreCase(value)) {
-                return category;
-            }
-        }
-
-        throw new IllegalArgumentException("Categoria inválida: " + value);
+    private static String normalize(String s) {
+        if (s == null) return null;
+        String n = Normalizer.normalize(s, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        return n.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
     }
 
-    /**
-     * Verifica se a string é uma categoria válida
-     */
-    public static boolean isValid(String value) {
-        try {
-            fromString(value);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
+    @JsonCreator
+    public static ProductCategory fromJson(String raw) {
+        if (raw == null) return null;
+        String s = normalize(raw);
+
+        // casa com nome do enum
+        for (var c : values()) if (normalize(c.name()).equals(s)) return c;
+        // casa com displayName
+        for (var c : values()) if (normalize(c.displayName).equals(s)) return c;
+
+        // rótulos compostos vindos do front:
+        switch (s) {
+            case "LANCHESHAMBURGUER": return BURGER;        // "Lanches / Hambúrguer"
+            case "ACOMPANHAMENTOSIDE": return SIDE;          // "Acompanhamento / Side"
+            case "BEBIDAS": return DRINK;                    // "Bebidas"
+            case "SOBREMESA": return DESSERT;                // "Sobremesa"
+            case "COMBOPROMOCAO": return COMBO;              // "Combo / Promoção"
         }
+        throw new IllegalArgumentException("Categoria inválida: " + raw);
     }
+
+    @JsonValue
+    public String toJson() { return name(); }
 }

@@ -33,7 +33,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .withUsername(usuario.getEmail()) // Usa email como username principal
                 .password(usuario.getPassword())
                 .authorities(usuario.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority(role.getValue()))
+                        .map(role -> new SimpleGrantedAuthority(role.name()))
                         .collect(Collectors.toList()))
                 .accountExpired(false)
                 .accountLocked(false)

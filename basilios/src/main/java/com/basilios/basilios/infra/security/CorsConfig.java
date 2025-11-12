@@ -14,9 +14,16 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
+                        // Use originPatterns quando allowCredentials=true (o Spring responde com o origin exato)
+                        .allowedOriginPatterns(
+                                "http://localhost:5173",
+                                "http://127.0.0.1:5173",
+                                "http://localhost:3000",
+                                "https://seu-dominio-de-prod.com"
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                        .allowedHeaders("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin")
+                        .exposedHeaders("Authorization")
                         .allowCredentials(true);
             }
         };
