@@ -1,6 +1,9 @@
-// ProductCategory.java
+package com.basilios.basilios.core.enums;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Getter;
+
 import java.text.Normalizer;
 
 @Getter
@@ -19,34 +22,42 @@ public enum ProductCategory {
         this.description = description;
     }
 
-    private static String normalize(String s) {
-        if (s == null) return null;
-        String n = Normalizer.normalize(s, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
-        return n.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
-    }
-
+    // ----- ENTRADA: converte payload -> enum (aceita rótulos do front)
     @JsonCreator
     public static ProductCategory fromJson(String raw) {
         if (raw == null) return null;
         String s = normalize(raw);
 
-        // casa com nome do enum
-        for (var c : values()) if (normalize(c.name()).equals(s)) return c;
-        // casa com displayName
-        for (var c : values()) if (normalize(c.displayName).equals(s)) return c;
-
-        // rótulos compostos vindos do front:
+        // bate em NOME do enum
+        for (var c : values()) {
+            if (normalize(c.name()).equals(s)) return c;
+        }
+        // bate no displayName
+        for (var c : values()) {
+            if (normalize(c.displayName).equals(s)) return c;
+        }
+        // mapeia rótulos “compostos” usados no front
         switch (s) {
-            case "LANCHESHAMBURGUER": return BURGER;        // "Lanches / Hambúrguer"
-            case "ACOMPANHAMENTOSIDE": return SIDE;          // "Acompanhamento / Side"
-            case "BEBIDAS": return DRINK;                    // "Bebidas"
-            case "SOBREMESA": return DESSERT;                // "Sobremesa"
-            case "COMBOPROMOCAO": return COMBO;              // "Combo / Promoção"
+            case "LANCHESHAMBURGUER": return BURGER;           // "Lanches / Hambúrguer"
+            case "ACOMPANHAMENTOSIDE": return SIDE;             // "Acompanhamento / Side"
+            case "BEBIDAS": return DRINK;                       // "Bebidas"
+            case "SOBREMESA": return DESSERT;                   // "Sobremesa"
+            case "COMBOPROMOCAO": return COMBO;                 // "Combo / Promoção"
         }
         throw new IllegalArgumentException("Categoria inválida: " + raw);
     }
 
+    // ----- SAÍDA: controla o que volta no JSON (aqui mando o NOME do enum)
     @JsonValue
-    public String toJson() { return name(); }
+    public String toJson() {
+        return name();
+    }
+
+    private static String normalize(String s) {
+        String n = Normalizer.normalize(s, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        n = n.replaceAll("[^A-Za-z0-9]", "")
+                .toUpperCase();
+        return n;
+    }
 }
