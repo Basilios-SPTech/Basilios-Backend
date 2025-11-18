@@ -69,6 +69,7 @@ public class SecurityConfig {
 
                         // Libera login e endpoints públicos
                         .requestMatchers(
+                                "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/menu",
                                 "/swagger-ui.html",

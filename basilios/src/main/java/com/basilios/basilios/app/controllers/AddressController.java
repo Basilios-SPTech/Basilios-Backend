@@ -17,42 +17,47 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/addresses")
+@RequestMapping("/address")
 @RequiredArgsConstructor
-@Tag(name = "Endereços", description = "Gerencia os endereços do usuário autenticado")
+@Tag(name = "Endereços", description = "Gerenciamento de endereços")
 public class AddressController {
 
     private final AddressService addressService;
 
-    // ========== LISTAGEM ==========
+    // ========== GET - LISTAGEM ==========
 
     @Operation(
-            summary = "Listar endereços do usuário",
-            description = "Retorna todos os endereços ativos do usuário autenticado.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Lista de endereços retornada com sucesso",
-                            content = @Content(mediaType = "application/json",
-                                    schema = @Schema(implementation = AddressResponseDTO.class)))
-            }
+            summary = "Listar todos os endereços",
+            description = "Retorna TODOS os endereços cadastrados no sistema."
     )
     @GetMapping
-    public ResponseEntity<List<AddressResponseDTO>> getUserAddresses() {
-        List<AddressResponseDTO> addresses = addressService.getUserAddresses();
+    public ResponseEntity<List<AddressResponseDTO>> findAll() {
+        List<AddressResponseDTO> addresses = addressService.findAllAddress();
         return ResponseEntity.ok(addresses);
     }
 
     @Operation(
             summary = "Buscar endereço por ID",
-            description = "Busca um endereço específico do usuário autenticado pelo seu ID."
+            description = "Busca um endereço específico pelo ID."
     )
     @GetMapping("/{id}")
-    public ResponseEntity<AddressResponseDTO> getAddressById(@PathVariable Long id) {
+    public ResponseEntity<AddressResponseDTO> findById(@PathVariable Long id) {
         AddressResponseDTO address = addressService.findById(id);
         return ResponseEntity.ok(address);
     }
 
     @Operation(
-            summary = "Buscar endereço principal",
+            summary = "Listar endereços do usuário",
+            description = "Retorna todos os endereços de um usuário específico."
+    )
+    @GetMapping("/user/{id}")
+    public ResponseEntity<List<AddressResponseDTO>> findByUserId(@PathVariable Long id) {
+        List<AddressResponseDTO> addresses = addressService.findAllByUserId(id);
+        return ResponseEntity.ok(addresses);
+    }
+
+    @Operation(
+            summary = "Buscar endereço principal do usuário",
             description = "Retorna o endereço principal do usuário autenticado."
     )
     @GetMapping("/principal")
@@ -61,15 +66,11 @@ public class AddressController {
         return ResponseEntity.ok(address);
     }
 
-    // ========== CRIAÇÃO ==========
+    // ========== POST - CRIAR ==========
 
     @Operation(
             summary = "Criar novo endereço",
-            description = "Cria um novo endereço para o usuário autenticado.",
-            responses = {
-                    @ApiResponse(responseCode = "201", description = "Endereço criado com sucesso",
-                            content = @Content(schema = @Schema(implementation = AddressResponseDTO.class)))
-            }
+            description = "Cria um novo endereço para o usuário autenticado."
     )
     @PostMapping
     public ResponseEntity<AddressResponseDTO> createAddress(
@@ -78,13 +79,13 @@ public class AddressController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ========== ATUALIZAÇÃO ==========
+    // ========== PATCH - ATUALIZAR ==========
 
     @Operation(
-            summary = "Atualizar endereço existente",
-            description = "Atualiza um endereço existente do usuário autenticado."
+            summary = "Atualizar endereço",
+            description = "Atualiza um endereço existente."
     )
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<AddressResponseDTO> updateAddress(
             @PathVariable Long id,
             @Valid @RequestBody AddressRequestDTO request) {
@@ -93,8 +94,8 @@ public class AddressController {
     }
 
     @Operation(
-            summary = "Definir endereço principal",
-            description = "Define um endereço como principal para o usuário autenticado."
+            summary = "Definir endereço como principal",
+            description = "Define um endereço específico como principal para o usuário autenticado."
     )
     @PatchMapping("/{id}/principal")
     public ResponseEntity<AddressResponseDTO> setAsPrincipal(@PathVariable Long id) {
@@ -102,57 +103,15 @@ public class AddressController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(
-            summary = "Restaurar endereço deletado",
-            description = "Restaura um endereço que foi previamente deletado (soft delete)."
-    )
-    @PatchMapping("/{id}/restaurar")
-    public ResponseEntity<AddressResponseDTO> restoreAddress(@PathVariable Long id) {
-        AddressResponseDTO response = addressService.restoreAddress(id);
-        return ResponseEntity.ok(response);
-    }
-
-    // ========== DELEÇÃO ==========
+    // ========== DELETE ==========
 
     @Operation(
             summary = "Deletar endereço",
-            description = "Realiza o soft delete de um endereço do usuário autenticado."
+            description = "Realiza o soft delete de um endereço."
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
         addressService.deleteAddress(id);
         return ResponseEntity.noContent().build();
-    }
-
-    // ========== ESTATÍSTICAS ==========
-
-    @Operation(
-            summary = "Contar endereços ativos",
-            description = "Retorna a quantidade de endereços ativos do usuário."
-    )
-    @GetMapping("/stats/count")
-    public ResponseEntity<Long> countActiveAddresses() {
-        long count = addressService.countUserActiveAddresses();
-        return ResponseEntity.ok(count);
-    }
-
-    @Operation(
-            summary = "Verificar se há endereços cadastrados",
-            description = "Verifica se o usuário possui algum endereço cadastrado."
-    )
-    @GetMapping("/stats/has-addresses")
-    public ResponseEntity<Boolean> hasAddresses() {
-        boolean hasAddresses = addressService.hasAddresses();
-        return ResponseEntity.ok(hasAddresses);
-    }
-
-    @Operation(
-            summary = "Verificar se há endereço principal",
-            description = "Verifica se o usuário possui um endereço principal definido."
-    )
-    @GetMapping("/stats/has-principal")
-    public ResponseEntity<Boolean> hasPrincipalAddress() {
-        boolean hasPrincipal = addressService.hasPrincipalAddress();
-        return ResponseEntity.ok(hasPrincipal);
     }
 }
