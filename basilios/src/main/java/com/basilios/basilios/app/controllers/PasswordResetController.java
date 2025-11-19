@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/password-reset")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+
 @Slf4j
 public class PasswordResetController {
 
