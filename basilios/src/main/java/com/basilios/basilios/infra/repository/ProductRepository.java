@@ -110,4 +110,53 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.id != :currentId AND p.isPaused = false " +
             "ORDER BY p.createdAt DESC")
     List<Product> findSuggestions(@Param("currentId") Long currentId, Pageable pageable);
+
+    // ========== ANÁLISES AVANÇADAS (Adicione estes) ==========
+
+    /**
+     * Produtos agrupados por categoria (para estatísticas)
+     */
+    @Query("SELECT p.category, COUNT(p) as total, " +
+            "SUM(CASE WHEN p.isPaused = false THEN 1 ELSE 0 END) as active, " +
+            "AVG(p.price) as avgPrice " +
+            "FROM Product p GROUP BY p.category")
+    List<Object[]> getCategoryStatistics();
+
+    /**
+     * Produtos com promoção vigente
+     */
+    @Query("SELECT DISTINCT p FROM Product p " +
+            "JOIN p.promotions promo " +
+            "WHERE promo.isActive = true " +
+            "AND promo.startDate <= CURRENT_DATE " +
+            "AND promo.endDate >= CURRENT_DATE")
+    List<Product> findWithActivePromotions();
+
+    /**
+     * Produtos seguros para deletar (sem pedidos e combos)
+     */
+    @Query("SELECT p FROM Product p " +
+            "WHERE NOT EXISTS (SELECT 1 FROM ProductOrder po WHERE po.product = p) " +
+            "AND NOT EXISTS (SELECT 1 FROM ProductCombo pc WHERE pc.product = p)")
+    List<Product> findDeletableProducts();
+
+    /**
+     * ABC Analysis - Produtos por contribuição de receita
+     */
+    @Query("SELECT p, COALESCE(SUM(po.subtotal), 0) as revenue " +
+            "FROM Product p " +
+            "LEFT JOIN ProductOrder po ON p.id = po.product.id " +
+            "GROUP BY p.id " +
+            "ORDER BY revenue DESC")
+    List<Object[]> getABCAnalysis();
+
+    /**
+     * Produtos ordenados por quantidade de vendas
+     */
+    @Query("SELECT p, COALESCE(SUM(po.quantity), 0) as totalSold " +
+            "FROM Product p " +
+            "LEFT JOIN ProductOrder po ON p.id = po.product.id " +
+            "GROUP BY p.id " +
+            "ORDER BY totalSold DESC")
+    List<Object[]> getProductsByTotalSoldQuantity();
 }

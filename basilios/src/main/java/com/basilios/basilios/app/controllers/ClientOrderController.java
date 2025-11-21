@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/cliente/orders")
+@RequestMapping("/cliente/orders")
 @PreAuthorize("hasRole('CLIENTE')")
 @Tag(name = "Cliente - Pedidos", description = "Gerenciamento de pedidos do cliente")
 @SecurityRequirement(name = "bearer-jwt")
