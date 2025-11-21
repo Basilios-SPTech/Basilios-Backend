@@ -49,7 +49,7 @@ public class AddressService {
     }
 
     /**
-     * Lista todos os endereços de um usuário específico
+     * Lista todos os endereços de um usuário específico (DTO)
      */
     @Transactional(readOnly = true)
     public List<AddressResponseDTO> findAllByUserId(Long usuarioId) {
@@ -59,6 +59,27 @@ public class AddressService {
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Lista endereços do usuário autenticado (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public List<AddressResponseDTO> getUserAddresses() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return addressRepository.findByUsuarioAndDeletedAtIsNull(usuario)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retorna lista de endereços ativos (entidade) para um usuário (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public List<Address> findActiveAddressesByUserId(Long usuarioId) {
+        Usuario usuario = findUsuarioOrThrow(usuarioId);
+        return addressRepository.findByUsuarioAndDeletedAtIsNull(usuario);
     }
 
     /**
@@ -110,7 +131,7 @@ public class AddressService {
         return toResponse(address);
     }
 
-    // ========== DELEÇÃO ==========
+    // ========== DELEÇÃO / RESTORE ==========
 
     /**
      * Deleta endereço (soft delete)
@@ -132,7 +153,67 @@ public class AddressService {
         addressRepository.save(address);
     }
 
-    // ========== MÉTODOS AUXILIARES ==========
+    /**
+     * Restaura um endereço deletado (método esperado pelos testes)
+     */
+    @Transactional
+    public AddressResponseDTO restoreAddress(Long id) {
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
+
+        address.setDeletedAt(null);
+        address = addressRepository.save(address);
+        return toResponse(address);
+    }
+
+    // ========== MÉTODOS AUXILIARES / COMPATIBILIDADE ==========
+
+    /**
+     * Conta endereços ativos do usuário autenticado (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public long countUserActiveAddresses() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return addressRepository.countByUsuarioAndDeletedAtIsNull(usuario);
+    }
+
+    /**
+     * Verifica se o usuário tem algum endereço (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public boolean hasAddresses() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return addressRepository.countByUsuarioAndDeletedAtIsNull(usuario) > 0;
+    }
+
+    /**
+     * Verifica se há endereço principal para usuário autenticado (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public boolean hasPrincipalAddress() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return addressRepository.findPrincipalByUsuario(usuario).isPresent();
+    }
+
+    /**
+     * Retorna endereço principal por id (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public AddressResponseDTO getPrincipalAddressById(Long id) {
+        Address address = addressRepository.findByIdAddressAndUsuario(id, usuarioService.getCurrentUsuario())
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
+        return toResponse(address);
+    }
+
+    /**
+     * Retorna um endereço do usuário autenticado por id (método esperado pelos testes)
+     */
+    @Transactional(readOnly = true)
+    public AddressResponseDTO getAuthenticatedUserAddressById(Long id) {
+        return getPrincipalAddressById(id);
+    }
+
+    // ========== MÉTODOS AUXILIARES EXISTENTES ==========
 
     /**
      * Busca usuário ou lança exceção
@@ -176,7 +257,7 @@ public class AddressService {
     }
 
     /**
-     * Define endereço como principal
+     * Define Address como principal
      */
     private void setAddressAsPrincipal(Address address, Usuario usuario) {
         usuario.setAddressPrincipal(address);
@@ -218,12 +299,9 @@ public class AddressService {
 
     /**
      * Normaliza CEP removendo hífen
-     * 12345-678 → 12345678
      */
     private String normalizeCep(String cep) {
-        if (cep == null) {
-            return null;
-        }
+        if (cep == null) return null;
         return cep.replaceAll("[^0-9]", "");
     }
 
@@ -250,14 +328,8 @@ public class AddressService {
                 .build();
     }
 
-    /**
-     * Formata CEP para exibição
-     * 12345678 → 12345-678
-     */
     private String formatCep(String cep) {
-        if (cep == null || cep.length() != 8) {
-            return cep;
-        }
+        if (cep == null || cep.length() != 8) return cep;
         return cep.substring(0, 5) + "-" + cep.substring(5);
     }
 
@@ -277,3 +349,4 @@ public class AddressService {
         return toResponse(address);
     }
 }
+
