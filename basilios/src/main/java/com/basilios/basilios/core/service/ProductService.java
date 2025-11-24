@@ -639,6 +639,8 @@ public class ProductService {
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
+                .subcategory(product.getSubcategory() != null ? product.getSubcategory().getDisplayName() : null)
+                .subcategoryCode(product.getSubcategory() != null ? product.getSubcategory().name() : null)
                 .ingredients(ingredients)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
@@ -659,4 +661,3 @@ public class ProductService {
         return convertToResponseDTO(product);
     }
 }
-
