@@ -185,4 +185,12 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    // ========== NOVO: verifica se um produto teve itens em promoção no período ==========
+    @Query("SELECT CASE WHEN COUNT(po) > 0 THEN true ELSE false END FROM ProductOrder po " +
+            "WHERE po.product.id = :productId AND po.hadPromotion = true " +
+            "AND po.order.createdAt BETWEEN :startDate AND :endDate")
+    boolean existsPromotionForProductInPeriod(@Param("productId") Long productId,
+                                              @Param("startDate") LocalDateTime startDate,
+                                              @Param("endDate") LocalDateTime endDate);
 }
