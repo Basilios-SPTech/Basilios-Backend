@@ -82,4 +82,31 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * Busca pedidos por múltiplos status (ex: confirmado, preparando, despachado)
      */
     List<Order> findByStatusInOrderByCreatedAtAsc(List<StatusPedidoEnum> statuses);
+
+    // ========== NOVOS MÉTODOS PARA DASHBOARD E ANÁLISES POR PERÍODO ==========
+
+    /**
+     * Busca pedidos criados entre duas datas (inclusivo)
+     */
+    List<Order> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Conta pedidos criados entre duas datas
+     */
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Conta pedidos com um determinado status dentro do período
+     */
+    long countByStatusAndCreatedAtBetween(StatusPedidoEnum status, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Busca pedidos do período ordenados por createdAt (útil para identificar picos)
+     */
+    List<Order> findByCreatedAtBetweenOrderByCreatedAtAsc(LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Busca pedidos entregues entre duas datas (deliveredAt)
+     */
+    List<Order> findByDeliveredAtBetween(LocalDateTime start, LocalDateTime end);
 }

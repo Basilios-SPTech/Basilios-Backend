@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +54,9 @@ public class OrderService {
     /**
      * Cria novo pedido com relacionamento puro (ProductOrder)
      */
+
+
+
     @Transactional
     public OrderResponseDTO createOrder(OrderRequestDTO request) {
         Usuario usuario = usuarioService.getCurrentUsuario();
@@ -167,7 +171,7 @@ public class OrderService {
         BigDecimal totalFee = BASE_DELIVERY_FEE.add(distanceFee);
 
         // Arredondar para 2 casas decimais
-        return totalFee.setScale(2, BigDecimal.ROUND_HALF_UP);
+        return totalFee.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -240,6 +244,15 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status) {
         List<Order> orders = orderRepository.findByStatus(status);
+        return orderMapper.toResponseList(orders);
+    }
+
+    /**
+     * Lista todos os pedidos (admin) — inclui todos os pedidos do sistema
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponseDTO> getAllOrders() {
+        List<Order> orders = orderRepository.findAll();
         return orderMapper.toResponseList(orders);
     }
 
