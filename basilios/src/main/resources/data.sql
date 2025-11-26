@@ -81,19 +81,3 @@ AND NOT EXISTS (
 -- PRODUTOS
 -- ===========================================
 
-INSERT IGNORE INTO product (name, description, category, subcategory, price, is_paused, created_at, updated_at) VALUES
--- Burgers
-('Burger Clássico', 'Hambúrguer tradicional com carne bovina, alface, tomate e molho especial', 'BURGER', 'BEEF', 25.90, false, NOW(), NOW()),
-('Cheeseburger Premium', 'Hambúrguer com carne bovina, queijo cheddar, cebola caramelizada e bacon', 'BURGER', 'BEEF', 32.90, false, NOW(), NOW()),
-('Chicken Burger', 'Hambúrguer de frango grelhado com molho barbecue', 'BURGER', 'CHICKEN', 28.90, false, NOW(), NOW()),
-('Veggie Burger', 'Hambúrguer vegetariano com blend de legumes', 'BURGER', 'VEGETARIAN', 26.90, false, NOW(), NOW()),
-('Smash Burger Duplo', 'Dois smash burgers com queijo e molho especial', 'BURGER', 'BEEF', 38.90, false, NOW(), NOW()),
-
--- Sides (Acompanhamentos)
-('Batata Frita Grande', 'Porção grande de batatas fritas crocantes', 'SIDE', 'FRIES', 18.90, false, NOW(), NOW()),
-('Onion Rings', 'Anéis de cebola empanados e fritos', 'SIDE', 'ONION_RINGS', 16.90, false, NOW(), NOW()),
-
--- Drinks (Bebidas)
-('Milkshake Chocolate', 'Milkshake cremoso de chocolate', 'DRINK', 'MILKSHAKE', 15.90, false, NOW(), NOW()),
-('Refrigerante 350ml', 'Refrigerante gelado', 'DRINK', 'SODA', 8.90, false, NOW(), NOW()),
-('Água 500ml', 'Água mineral', 'DRINK', 'WATER', 5.90, false, NOW(), NOW());
