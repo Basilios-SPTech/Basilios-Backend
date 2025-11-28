@@ -46,4 +46,17 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Verifica se existe usuário com CPF
      */
     boolean existsByCpf(String cpf);
+
+    /**
+     * Busca usuário ativo por email (não deletado)
+     * Usado no sistema de reset de senha
+     */
+    @Query("SELECT u FROM Usuario u WHERE u.email = :email AND u.deletedAt IS NULL")
+    Optional<Usuario> findActiveByEmail(@Param("email") String email);
+
+    /**
+     * Verifica se existe usuário ativo com o email
+     */
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM Usuario u WHERE u.email = :email AND u.deletedAt IS NULL")
+    boolean existsActiveByEmail(@Param("email") String email);
 }
