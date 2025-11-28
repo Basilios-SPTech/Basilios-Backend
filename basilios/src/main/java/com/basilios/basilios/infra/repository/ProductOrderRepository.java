@@ -115,11 +115,13 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
     List<Object[]> findBestSellingProducts();
 
     /**
-     * Busca produtos mais vendidos em um período
+     * Busca produtos mais vendidos em um período (baseado em ProductOrder.createdAt)
+     * EXCLUINDO itens de pedidos cancelados.
      */
     @Query("SELECT po.product, SUM(po.quantity) as totalSold " +
             "FROM ProductOrder po " +
-            "WHERE po.order.createdAt BETWEEN :startDate AND :endDate " +
+            "WHERE po.createdAt BETWEEN :startDate AND :endDate " +
+            "AND po.order.status <> com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO " +
             "GROUP BY po.product " +
             "ORDER BY totalSold DESC")
     List<Object[]> findBestSellingProductsByPeriod(
@@ -134,11 +136,11 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
     BigDecimal calculateProductRevenue(@Param("productId") Long productId);
 
     /**
-     * Calcula receita total de um produto em um período
+     * Calcula receita total de um produto em um período (baseado em ProductOrder.createdAt)
      */
     @Query("SELECT SUM(po.subtotal) FROM ProductOrder po " +
             "WHERE po.product.id = :productId " +
-            "AND po.order.createdAt BETWEEN :startDate AND :endDate")
+            "AND po.createdAt BETWEEN :startDate AND :endDate")
     BigDecimal calculateProductRevenueByPeriod(
             @Param("productId") Long productId,
             @Param("startDate") LocalDateTime startDate,
@@ -172,7 +174,7 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
     Object[] getSalesStatistics();
 
     /**
-     * Estatísticas de vendas por período
+     * Estatísticas de vendas por período (baseado em ProductOrder.createdAt)
      */
     @Query("SELECT " +
             "COUNT(po), " +
@@ -180,7 +182,7 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
             "SUM(po.subtotal), " +
             "AVG(po.unitPrice) " +
             "FROM ProductOrder po " +
-            "WHERE po.order.createdAt BETWEEN :startDate AND :endDate")
+            "WHERE po.createdAt BETWEEN :startDate AND :endDate")
     Object[] getSalesStatisticsByPeriod(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
@@ -189,8 +191,23 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
     // ========== NOVO: verifica se um produto teve itens em promoção no período ==========
     @Query("SELECT CASE WHEN COUNT(po) > 0 THEN true ELSE false END FROM ProductOrder po " +
             "WHERE po.product.id = :productId AND po.hadPromotion = true " +
-            "AND po.order.createdAt BETWEEN :startDate AND :endDate")
+            "AND po.createdAt BETWEEN :startDate AND :endDate")
     boolean existsPromotionForProductInPeriod(@Param("productId") Long productId,
                                               @Param("startDate") LocalDateTime startDate,
                                               @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Soma de quantidades por createdAt (JPQL) — exclui pedidos cancelados
+     */
+    @Query("SELECT COALESCE(SUM(po.quantity), 0) FROM ProductOrder po WHERE po.createdAt BETWEEN :start AND :end AND po.order.status <> com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO")
+    Long sumItemsQuantityBetweenByCreatedAt(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * Versão nativa que aplica defaults quando start ou end são null: exclui pedidos com status 'CANCELADO'
+     */
+    @Query(value = "SELECT COALESCE(SUM(po.quantity), 0) FROM product_order po " +
+            "JOIN orders o ON po.order_id = o.id " +
+            "WHERE o.created_at BETWEEN COALESCE(:start, DATE_SUB(NOW(), INTERVAL 30 DAY)) AND COALESCE(:end, NOW()) " +
+            "AND o.status <> 'CANCELADO'", nativeQuery = true)
+    Long sumItemsQuantityBetweenWithDefaults(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

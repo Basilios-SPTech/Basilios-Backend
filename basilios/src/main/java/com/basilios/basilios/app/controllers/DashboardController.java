@@ -4,7 +4,6 @@ import com.basilios.basilios.core.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +17,12 @@ import java.util.*;
 @Tag(name = "Dashboard", description = "Métricas e relatórios agregados")
 public class DashboardController {
 
+    private final DashboardService dashboardService;
+
     @Autowired
-    private DashboardService dashboardService;
+    public DashboardController(DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
+    }
 
     // Helper to parse incoming date/time strings. Accepts ISO date or datetime.
     private LocalDateTime parseStart(String value) {
@@ -84,7 +87,8 @@ public class DashboardController {
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Map<String, Object> res = Map.of("itemsSold", dashboardService.getItemsSold(start, end));
+        Map<String, Long> stats = dashboardService.getItemsSoldAndNotSold(start, end);
+        Map<String, Object> res = new HashMap<>(stats);
         return ResponseEntity.ok(res);
     }
 
@@ -110,7 +114,7 @@ public class DashboardController {
         OptionalDouble avgSec = dashboardService.getAverageDeliveryTimeInSeconds(start, end);
         Map<String, Object> res;
         if (avgSec.isPresent()) {
-            long seconds = (long) Math.round(avgSec.getAsDouble());
+            long seconds = Math.round(avgSec.getAsDouble());
             long hours = seconds / 3600;
             long minutes = (seconds % 3600) / 60;
             long secs = seconds % 60;

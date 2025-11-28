@@ -5,8 +5,10 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_order")
@@ -64,6 +66,11 @@ public class ProductOrder {
     @Column(name = "original_price", precision = 10, scale = 2)
     private BigDecimal originalPrice;
 
+    // Novo campo: data de criação do item no pedido
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
     // Métodos utilitários
 
     /**
@@ -93,7 +100,7 @@ public class ProductOrder {
         if (hadPromotion && originalPrice != null && unitPrice != null &&
                 originalPrice.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal discount = originalPrice.subtract(unitPrice);
-            return discount.divide(originalPrice, 4, BigDecimal.ROUND_HALF_UP)
+            return discount.divide(originalPrice, 4, java.math.RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100"));
         }
         return BigDecimal.ZERO;

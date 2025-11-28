@@ -1,12 +1,10 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.app.dto.product.ProductResponseDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductOrderRepository;
-import com.basilios.basilios.infra.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,23 +14,23 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 public class DashboardService {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductOrderRepository productOrderRepository;
+
+    private final OrderRepository orderRepository;
+
+    private final ProductOrderService productOrderService;
 
     @Autowired
-    private ProductOrderRepository productOrderRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private ProductService productService;
+    public DashboardService(ProductOrderRepository productOrderRepository, OrderRepository orderRepository, ProductOrderService productOrderService) {
+        this.productOrderRepository = productOrderRepository;
+        this.orderRepository = orderRepository;
+        this.productOrderService = productOrderService;
+    }
 
     // ========== Helpers ==========
 
@@ -53,10 +51,12 @@ public class DashboardService {
         start = normalizeStart(start);
         end = normalizeEnd(end);
 
-        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
-        return orders.stream()
-                .map(o -> o.getTotal() != null ? o.getTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Use repository aggregation to avoid loading all Order entities into memory
+        BigDecimal total = orderRepository.sumTotalByCreatedAtBetweenExcludeCancelled(start, end);
+        if (total == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return total.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -75,24 +75,39 @@ public class DashboardService {
         start = normalizeStart(start);
         end = normalizeEnd(end);
 
-        long orders = getOrdersCount(start, end);
-        if (orders == 0) return BigDecimal.ZERO;
+        // Use only non-cancelled orders for the ticket calculation
+        long nonCancelledOrders = orderRepository.countByStatusNotAndCreatedAtBetween(StatusPedidoEnum.CANCELADO, start, end);
+        if (nonCancelledOrders == 0) return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
         BigDecimal revenue = getRevenue(start, end);
-        return revenue.divide(new BigDecimal(orders), 2, RoundingMode.HALF_UP);
+        return revenue.divide(new BigDecimal(nonCancelledOrders), 2, RoundingMode.HALF_UP);
     }
 
     /**
      * ITENS VENDIDOS: Quantidade total de itens vendidos dentro do período.
      */
     public long getItemsSold(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
+        // delegate to ProductOrderService; we can pass nulls (service/repo handles defaults) but normalize for consistency
+        LocalDateTime nStart = normalizeStart(start);
+        LocalDateTime nEnd = normalizeEnd(end);
+        return productOrderService.getItemsSold(nStart, nEnd);
+    }
 
-        Object[] stats = productOrderRepository.getSalesStatisticsByPeriod(start, end);
-        if (stats == null || stats.length < 2) return 0L;
-        Number qty = (Number) stats[1];
-        return qty == null ? 0L : qty.longValue();
+    /**
+     * ITENS VENDIDOS E NÃO VENDIDOS: Retorna um mapa com quantidade de itens vendidos e quantidade de produtos
+     * que não tiveram vendas no período.
+     */
+    public Map<String, Long> getItemsSoldAndNotSold(LocalDateTime start, LocalDateTime end) {
+        LocalDateTime nStart = normalizeStart(start);
+        LocalDateTime nEnd = normalizeEnd(end);
+
+        long itemsSold = productOrderService.getItemsSold(nStart, nEnd);
+        long productsNotSold = productOrderService.getProductsNotSold(nStart, nEnd);
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("itemsSold", itemsSold);
+        result.put("productsNotSold", productsNotSold);
+        return result;
     }
 
     /**
@@ -106,8 +121,7 @@ public class DashboardService {
         if (total == 0) return 0.0;
 
         long cancelled = orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.CANCELADO, start, end);
-        double rate = ((double) (total - cancelled) / (double) total) * 100.0;
-        return rate;
+        return ((double) (total - cancelled) / (double) total) * 100.0;
     }
 
     /**
@@ -126,7 +140,7 @@ public class DashboardService {
         List<Long> durations = orders.stream()
                 .filter(o -> o.getDeliveredAt() != null && o.getDispatchedAt() != null)
                 .map(o -> Duration.between(o.getDispatchedAt(), o.getDeliveredAt()).getSeconds())
-                .collect(Collectors.toList());
+                .toList();
 
         return durations.stream().mapToLong(Long::longValue).average();
     }
@@ -140,7 +154,7 @@ public class DashboardService {
 
         return orderRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(start, end).stream()
                 .map(Order::getCreatedAt)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -161,7 +175,7 @@ public class DashboardService {
                     map.put("unitsSold", totalSold != null ? totalSold.longValue() : 0L);
                     return map;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
