@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "idEndereco")
+@EqualsAndHashCode(of = "idAddress")
 public class    Address {
 
     @Id

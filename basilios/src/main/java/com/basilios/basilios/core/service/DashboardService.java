@@ -131,7 +131,7 @@ public class DashboardService {
         end = normalizeEnd(end);
         return orderRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(start, end).stream()
                 .map(Order::getCreatedAt)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     /**
