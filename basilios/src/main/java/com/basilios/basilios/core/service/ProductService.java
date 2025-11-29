@@ -641,7 +641,11 @@ public class ProductService {
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
-                .imageUrl(product.getImageUrl())   // <<< FECHANDO CERTO AQUI
+                .imageUrl(product.getImageUrl())
+                // 🔥 AQUI: manda a categoria pro front
+                .category(product.getCategory() != null
+                        ? product.getCategory().name() 
+                        : null)
                 .subcategory(product.getSubcategory() != null
                         ? product.getSubcategory().getDisplayName()
                         : null)
@@ -658,6 +662,7 @@ public class ProductService {
                 .updatedAt(product.getUpdatedAt())
                 .build();
     }
+
 
 
 
