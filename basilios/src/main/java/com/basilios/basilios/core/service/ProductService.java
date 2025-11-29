@@ -644,7 +644,7 @@ public class ProductService {
                 .imageUrl(product.getImageUrl())
                 // 🔥 AQUI: manda a categoria pro front
                 .category(product.getCategory() != null
-                        ? product.getCategory().name() 
+                        ? product.getCategory().name()
                         : null)
                 .subcategory(product.getSubcategory() != null
                         ? product.getSubcategory().getDisplayName()
