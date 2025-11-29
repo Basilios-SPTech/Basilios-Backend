@@ -1,5 +1,6 @@
 package com.basilios.basilios.core.service;
 
+import com.basilios.basilios.app.dto.dashboard.*;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.model.Order;
@@ -83,16 +84,13 @@ public class DashboardService {
     }
 
     /**
-     * ITENS VENDIDOS: Quantidade total de itens vendidos dentro do período.
+     * ITENS VENDIDOS: Quantidade total de itens vendidos dentro do período (apenas pedidos entregues).
      */
     public long getItemsSold(LocalDateTime start, LocalDateTime end) {
         start = normalizeStart(start);
         end = normalizeEnd(end);
-
-        Object[] stats = productOrderRepository.getSalesStatisticsByPeriod(start, end);
-        if (stats == null || stats.length < 2) return 0L;
-        Number qty = (Number) stats[1];
-        return qty == null ? 0L : qty.longValue();
+        Long qty = productOrderRepository.sumQuantityByDeliveredOrdersInPeriod(start, end);
+        return qty == null ? 0L : qty;
     }
 
     /**
@@ -115,19 +113,13 @@ public class DashboardService {
      * Filtragem por período considera deliveredAt no intervalo para refletir entregas ocorridas no período.
      */
     public OptionalDouble getAverageDeliveryTimeInSeconds(LocalDateTime start, LocalDateTime end) {
-        // We'll fetch orders by deliveredAt between start/end.
         start = normalizeStart(start);
         end = normalizeEnd(end);
-
-        // Prefer orders delivered in the period (deliveredAt between start/end)
         List<Order> orders = orderRepository.findByDeliveredAtBetween(start, end);
-
-        // Prefer orders with deliveredAt not null and dispatchedAt not null
         List<Long> durations = orders.stream()
                 .filter(o -> o.getDeliveredAt() != null && o.getDispatchedAt() != null)
-                .map(o -> Duration.between(o.getDispatchedAt(), o.getDeliveredAt()).getSeconds())
-                .collect(Collectors.toList());
-
+                .map(o -> java.time.Duration.between(o.getDispatchedAt(), o.getDeliveredAt()).getSeconds())
+                .toList();
         return durations.stream().mapToLong(Long::longValue).average();
     }
 
@@ -137,10 +129,9 @@ public class DashboardService {
     public List<LocalDateTime> getOrderPeaks(LocalDateTime start, LocalDateTime end) {
         start = normalizeStart(start);
         end = normalizeEnd(end);
-
         return orderRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(start, end).stream()
                 .map(Order::getCreatedAt)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -187,4 +178,72 @@ public class DashboardService {
         return Optional.of(res);
     }
 
+    public List<TopProductDTO> getTopProductsByUnitsDTO(LocalDateTime start, LocalDateTime end, int limit) {
+        List<Map<String, Object>> raw = getTopProductsByUnits(start, end, limit);
+        List<TopProductDTO> dtos = new ArrayList<>();
+        for (Map<String, Object> map : raw) {
+            dtos.add(new TopProductDTO(
+                ((Number) map.get("id")).longValue(),
+                (String) map.get("name"),
+                ((Number) map.get("unitsSold")).intValue()
+            ));
+        }
+        return dtos;
+    }
+
+    public Optional<ChampionDTO> getChampionOfPeriodDTO(LocalDateTime start, LocalDateTime end) {
+        Optional<Map<String, Object>> opt = getChampionOfPeriod(start, end);
+        if (opt.isEmpty()) return Optional.empty();
+        Map<String, Object> map = opt.get();
+        return Optional.of(new ChampionDTO(
+            ((Number) map.get("id")).longValue(),
+            (String) map.get("name"),
+            ((Number) map.get("unitsSold")).intValue(),
+            (Boolean) map.getOrDefault("onPromotion", false)
+        ));
+    }
+
+    public RevenueDTO getRevenueDTO(LocalDateTime start, LocalDateTime end) {
+        return RevenueDTO.toResponse(getRevenue(start, end));
+    }
+
+    public OrdersCountDTO getOrdersCountDTO(LocalDateTime start, LocalDateTime end) {
+        return OrdersCountDTO.toResponse(getOrdersCount(start, end));
+    }
+
+    public AverageTicketDTO getAverageTicketDTO(LocalDateTime start, LocalDateTime end) {
+        return AverageTicketDTO.toResponse(getAverageTicket(start, end));
+    }
+
+    public ItemsSoldDTO getItemsSoldDTO(LocalDateTime start, LocalDateTime end) {
+        return ItemsSoldDTO.toResponse(getItemsSold(start, end));
+    }
+
+    public CancellationRateDTO getCancellationRateDTO(LocalDateTime start, LocalDateTime end) {
+        return CancellationRateDTO.toResponse(getCancellationRate(start, end));
+    }
+
+    public AverageDeliveryTimeDTO getAverageDeliveryTimeDTO(LocalDateTime start, LocalDateTime end) {
+        OptionalDouble avgSec = getAverageDeliveryTimeInSeconds(start, end);
+        if (avgSec.isPresent()) {
+            long seconds = Math.round(avgSec.getAsDouble());
+            long hours = seconds / 3600;
+            long minutes = (seconds % 3600) / 60;
+            long secs = seconds % 60;
+            String text = String.format("%02d:%02d:%02d", hours, minutes, secs);
+            return AverageDeliveryTimeDTO.toResponse(seconds, text);
+        } else {
+            return AverageDeliveryTimeDTO.toResponse(0L, "00:00:00");
+        }
+    }
+
+    public OrderPeaksDTO getOrderPeaksDTO(LocalDateTime start, LocalDateTime end) {
+        return OrderPeaksDTO.builder().peaks(getOrderPeaks(start, end)).build();
+    }
+
+    public long getCancelledOrdersCount(LocalDateTime start, LocalDateTime end) {
+        start = normalizeStart(start);
+        end = normalizeEnd(end);
+        return orderRepository.countByStatusAndCreatedAtBetween(com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO, start, end);
+    }
 }

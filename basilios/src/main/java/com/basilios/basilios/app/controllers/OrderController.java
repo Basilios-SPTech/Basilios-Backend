@@ -23,8 +23,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
-@SecurityRequirement(name = "bearer-jwt")
 @Tag(name = "Pedidos", description = "Endpoints públicos/admin para pedidos")
 public class OrderController {
 
