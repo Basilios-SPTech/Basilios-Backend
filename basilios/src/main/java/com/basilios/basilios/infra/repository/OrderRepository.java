@@ -126,5 +126,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COALESCE(SUM(o.total), 0) FROM Order o WHERE o.createdAt BETWEEN :start AND :end AND o.status <> com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO")
     BigDecimal sumTotalByCreatedAtBetweenExcludeCancelled(LocalDateTime start, LocalDateTime end);
 
-}
+    /**
+     * Busca pares dispatchedAt e deliveredAt de pedidos ENTREGUES no período
+     */
+    @Query("SELECT o.dispatchedAt, o.deliveredAt FROM Order o WHERE o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.ENTREGUE AND o.dispatchedAt IS NOT NULL AND o.deliveredAt IS NOT NULL AND o.createdAt BETWEEN :start AND :end")
+    List<Object[]> findDispatchedAndDeliveredTimesOfDeliveredOrders(LocalDateTime start, LocalDateTime end);
 
+}

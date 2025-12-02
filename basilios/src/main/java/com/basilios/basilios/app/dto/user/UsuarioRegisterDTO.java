@@ -43,6 +43,7 @@ public class UsuarioRegisterDTO {
     private String telefone;
 
 
-    private LocalDate dataNascimento;
+    // Data de nascimento opcional
+    private LocalDate dataNascimento; // já está sem anotação obrigatória
 
 }

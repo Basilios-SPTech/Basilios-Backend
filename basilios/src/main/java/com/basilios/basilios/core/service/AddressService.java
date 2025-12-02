@@ -309,8 +309,13 @@ public class AddressService {
      * Converte Address para AddressResponseDTO
      */
     private AddressResponseDTO toResponse(Address address) {
+        if (address == null) {
+            throw new IllegalArgumentException("Address não pode ser nulo");
+        }
         Usuario usuario = address.getUsuario();
-
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário do endereço não pode ser nulo");
+        }
         return AddressResponseDTO.builder()
                 .id(address.getIdAddress())
                 .rua(address.getRua())
@@ -349,4 +354,3 @@ public class AddressService {
         return toResponse(address);
     }
 }
-

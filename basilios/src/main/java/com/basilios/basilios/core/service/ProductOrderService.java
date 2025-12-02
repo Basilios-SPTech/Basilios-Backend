@@ -19,21 +19,5 @@ public class ProductOrderService {
         this.productRepository = productRepository;
     }
 
-    /**
-     * Retorna a soma das quantidades vendidas no período; aceita nulls e delega defaults para a query nativa
-     */
-    public long getItemsSold(LocalDateTime start, LocalDateTime end) {
-        Long qty = productOrderRepository.sumItemsQuantityBetweenWithDefaults(start, end);
-        return qty == null ? 0L : qty;
-    }
-
-    /**
-     * Conta quantos produtos não tiveram vendas no período (baseado em ProductOrder.createdAt)
-     */
-    public long getProductsNotSold(LocalDateTime start, LocalDateTime end) {
-        // Note: service normaliza dates if necessary outside; repository expects concrete datetimes
-        Long count = productRepository.countProductsNotSoldBetween(start, end);
-        return count == null ? 0L : count;
-    }
 }
 

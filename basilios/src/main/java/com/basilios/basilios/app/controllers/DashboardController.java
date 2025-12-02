@@ -52,7 +52,7 @@ public class DashboardController {
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        return ResponseEntity.ok(dashboardService.getRevenueDTO(start, end));
+        return ResponseEntity.ok(dashboardService.getRevenue(start, end));
     }
 
     @GetMapping("/orders")
@@ -61,16 +61,16 @@ public class DashboardController {
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        return ResponseEntity.ok(dashboardService.getOrdersCountDTO(start, end));
+        return ResponseEntity.ok(dashboardService.getOrdersCount(start, end));
     }
 
     @GetMapping("/average-ticket")
-    public ResponseEntity<AverageTicketDTO> getAverageTicket(
+    public ResponseEntity<AverageDeliveryTimeDTO> getAverageDeliveryTime(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        return ResponseEntity.ok(dashboardService.getAverageTicketDTO(start, end));
+        return ResponseEntity.ok(dashboardService.getAverageDeliveryTime(start, end));
     }
 
     @GetMapping("/items-sold")
@@ -89,19 +89,10 @@ public class DashboardController {
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        long total = dashboardService.getOrdersCount(start, end);
+        long total = dashboardService.getOrdersCount(start, end).getCount();
         long cancelled = dashboardService.getCancelledOrdersCount(start, end);
         double rate = total == 0 ? 0.0 : ((double) cancelled / (double) total) * 100.0;
         return ResponseEntity.ok(CancellationRateDTO.toResponse(rate));
-    }
-
-    @GetMapping("/average-delivery-time")
-    public ResponseEntity<AverageDeliveryTimeDTO> getAverageDeliveryTime(
-            @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
-            @RequestParam(name = "dta_fim", required = false) String dtaFim) {
-        LocalDateTime start = parseStart(dtaInicio);
-        LocalDateTime end = parseEnd(dtaFim);
-        return ResponseEntity.ok(dashboardService.getAverageDeliveryTimeDTO(start, end));
     }
 
     @GetMapping("/order-peaks")
@@ -110,7 +101,7 @@ public class DashboardController {
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        return ResponseEntity.ok(dashboardService.getOrderPeaksDTO(start, end));
+        return ResponseEntity.ok(dashboardService.getOrderPeaks(start, end));
     }
 
     @GetMapping("/top-products")
@@ -120,7 +111,7 @@ public class DashboardController {
             @RequestParam(name = "limit", defaultValue = "5") int limit) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        return ResponseEntity.ok(dashboardService.getTopProductsByUnitsDTO(start, end, limit));
+        return ResponseEntity.ok(dashboardService.getTopProductsByUnits(start, end, limit));
     }
 
     @GetMapping("/champion")
@@ -129,7 +120,7 @@ public class DashboardController {
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Optional<ChampionDTO> opt = dashboardService.getChampionOfPeriodDTO(start, end);
+        Optional<ChampionDTO> opt = dashboardService.getChampionOfPeriod(start, end);
         return opt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.ok(null));
     }
 

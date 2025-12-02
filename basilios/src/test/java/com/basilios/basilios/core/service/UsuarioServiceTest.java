@@ -1,5 +1,7 @@
 package com.basilios.basilios.core.service;
 
+import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
+import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
@@ -189,44 +191,6 @@ class UsuarioServiceTest {
             usuarioService.findByEmail("joao@email.com");
 
             verify(usuarioRepository).findByEmail("joao@email.com");
-        }
-    }
-
-    @Nested
-    @DisplayName("findByNomeUsuario Tests")
-    class FindByNomeUsuarioTests {
-
-        @Test
-        @DisplayName("Deve retornar usuário quando nomeUsuario existe")
-        void shouldReturnUserWhenNomeUsuarioExists() {
-            when(usuarioRepository.findByNomeUsuario("João Silva")).thenReturn(Optional.of(usuario));
-
-            Usuario result = usuarioService.findByNomeUsuario("João Silva");
-
-            assertNotNull(result);
-            assertEquals("João Silva", result.getNomeUsuario());
-        }
-
-        @Test
-        @DisplayName("Deve lançar NotFoundException quando nomeUsuario não existe")
-        void shouldThrowNotFoundExceptionWhenNomeUsuarioNotExists() {
-            when(usuarioRepository.findByNomeUsuario("Inexistente")).thenReturn(Optional.empty());
-
-            NotFoundException exception = assertThrows(NotFoundException.class, () ->
-                    usuarioService.findByNomeUsuario("Inexistente")
-            );
-
-            assertTrue(exception.getMessage().contains("Usuário não encontrado: Inexistente"));
-        }
-
-        @Test
-        @DisplayName("Deve buscar usuário pelo nomeUsuario correto")
-        void shouldSearchUserByCorrectNomeUsuario() {
-            when(usuarioRepository.findByNomeUsuario("João Silva")).thenReturn(Optional.of(usuario));
-
-            usuarioService.findByNomeUsuario("João Silva");
-
-            verify(usuarioRepository).findByNomeUsuario("João Silva");
         }
     }
 
@@ -524,18 +488,16 @@ class UsuarioServiceTest {
     class UpdateUsuarioTests {
 
         @Test
-        @DisplayName("Deve atualizar dados básicos do usuário com sucesso")
-        void shouldUpdateBasicUserDataSuccessfully() {
-            Usuario dadosAtualizados = new Usuario();
-            dadosAtualizados.setNomeUsuario("João Silva Atualizado");
-            dadosAtualizados.setEmail("joao@email.com");
-            dadosAtualizados.setTelefone("11999887766");
-
+        @DisplayName("Deve atualizar dados básicos do usuário com sucesso usando DTO")
+        void shouldUpdateBasicUserDataSuccessfullyWithDTO() {
+            UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+                .nomeUsuario("João Silva Atualizado")
+                .email("joao@email.com")
+                .telefone("11999887766")
+                .build();
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
-
-            Usuario result = usuarioService.updateUsuario(1L, dadosAtualizados);
-
+            UsuarioProfileResponse result = usuarioService.updateUsuario(1L, dto);
             assertNotNull(result);
             assertEquals("João Silva Atualizado", result.getNomeUsuario());
             assertEquals("11999887766", result.getTelefone());
@@ -543,39 +505,116 @@ class UsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar BusinessException quando email já existe")
-        void shouldThrowBusinessExceptionWhenEmailAlreadyExists() {
-            Usuario dadosAtualizados = new Usuario();
-            dadosAtualizados.setNomeUsuario("João Silva");
-            dadosAtualizados.setEmail("outro@email.com");
-            dadosAtualizados.setTelefone("11987654321");
-
+        @DisplayName("Deve lançar BusinessException quando email já existe usando DTO")
+        void shouldThrowBusinessExceptionWhenEmailAlreadyExistsWithDTO() {
+            UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+                .nomeUsuario("João Silva")
+                .email("outro@email.com")
+                .telefone("11987654321")
+                .build();
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmail("outro@email.com")).thenReturn(true);
-
             BusinessException exception = assertThrows(BusinessException.class, () ->
-                    usuarioService.updateUsuario(1L, dadosAtualizados)
+                usuarioService.updateUsuario(1L, dto)
             );
-
             assertEquals("Email já cadastrado", exception.getMessage());
         }
 
         @Test
-        @DisplayName("Deve lançar BusinessException quando nomeUsuario já existe")
-        void shouldThrowBusinessExceptionWhenNomeUsuarioAlreadyExists() {
-            Usuario dadosAtualizados = new Usuario();
-            dadosAtualizados.setNomeUsuario("Maria Santos");
-            dadosAtualizados.setEmail("joao@email.com");
-            dadosAtualizados.setTelefone("11987654321");
-
+        @DisplayName("Deve lançar BusinessException quando nomeUsuario já existe usando DTO")
+        void shouldThrowBusinessExceptionWhenNomeUsuarioAlreadyExistsWithDTO() {
+            UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+                .nomeUsuario("Maria Santos")
+                .email("joao@email.com")
+                .telefone("11987654321")
+                .build();
             when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByNomeUsuario("Maria Santos")).thenReturn(true);
-
             BusinessException exception = assertThrows(BusinessException.class, () ->
-                    usuarioService.updateUsuario(1L, dadosAtualizados)
+                usuarioService.updateUsuario(1L, dto)
             );
-
             assertEquals("Nome de usuário já existe", exception.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("updateUsuarioPatch Tests")
+    class UpdateUsuarioPatchTests {
+
+        @Test
+        @DisplayName("Deve atualizar apenas campos permitidos (PATCH)")
+        void shouldPatchOnlyAllowedFields() {
+            UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+                .nomeUsuario("Novo Nome")
+                .email("novo@email.com")
+                .telefone("11999999999")
+                .cpf("99999999999") // não deve alterar
+                .dataNascimento(java.time.LocalDate.of(2000,1,1)) // não deve alterar
+                .build();
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmail("novo@email.com")).thenReturn(false);
+            when(usuarioRepository.existsByNomeUsuario("Novo Nome")).thenReturn(false);
+            when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+            UsuarioProfileResponse result = usuarioService.updateUsuarioPatch(1L, dto);
+            assertNotNull(result);
+            assertEquals("Novo Nome", result.getNomeUsuario());
+            assertEquals("novo@email.com", result.getEmail());
+            assertEquals("11999999999", result.getTelefone());
+            // CPF e dataNascimento originais não mudam
+            assertEquals("12345678900", result.getCpf());
+            assertNotEquals(dto.getDataNascimento(), result.getDataNascimento());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException se email já existe (PATCH)")
+        void shouldThrowBusinessExceptionIfEmailExistsPatch() {
+            UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+                .nomeUsuario("Novo Nome")
+                .email("outro@email.com")
+                .telefone("11999999999")
+                .build();
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmail("outro@email.com")).thenReturn(true);
+            BusinessException exception = assertThrows(BusinessException.class, () ->
+                usuarioService.updateUsuarioPatch(1L, dto)
+            );
+            assertEquals("Email já cadastrado", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException se nomeUsuario já existe (PATCH)")
+        void shouldThrowBusinessExceptionIfNomeUsuarioExistsPatch() {
+            UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+                .nomeUsuario("Maria Santos")
+                .email("joao@email.com")
+                .telefone("11999999999")
+                .build();
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByNomeUsuario("Maria Santos")).thenReturn(true);
+            BusinessException exception = assertThrows(BusinessException.class, () ->
+                usuarioService.updateUsuarioPatch(1L, dto)
+            );
+            assertEquals("Nome de usuário já existe", exception.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteUsuario (soft delete) Tests")
+    class DeleteUsuarioTests {
+
+        @Test
+        @DisplayName("Deve fazer soft delete e retornar DTO de listagem")
+        void shouldSoftDeleteAndReturnListDTO() {
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+            UsuarioListarDTO result = usuarioService.deleteUsuario(1L);
+            assertNotNull(result);
+            assertEquals("João Silva", result.getNomeUsuario());
+            assertEquals("joao@email.com", result.getEmail());
+            assertEquals("12345678900", result.getCpf());
+            assertEquals("11987654321", result.getTelefone());
+            assertNotNull(usuario.getDeletedAt());
+            verify(usuarioRepository).save(usuario);
         }
     }
 
@@ -614,47 +653,6 @@ class UsuarioServiceTest {
             usuarioService.desativarUsuario(1L);
 
             assertNotNull(usuario.getDeletedAt());
-        }
-    }
-
-    @Nested
-    @DisplayName("reativarUsuario Tests")
-    class ReativarUsuarioTests {
-
-        @Test
-        @DisplayName("Deve reativar usuário desativado com sucesso")
-        void shouldReactivateDeactivatedUserSuccessfully() {
-            usuario.setDeletedAt(LocalDateTime.now());
-            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-            when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
-
-            Usuario result = usuarioService.reativarUsuario(1L);
-
-            assertNotNull(result);
-            assertNull(result.getDeletedAt());
-            verify(usuarioRepository).save(usuario);
-        }
-
-        @Test
-        @DisplayName("Deve lançar BusinessException quando usuário já está ativo")
-        void shouldThrowBusinessExceptionWhenUserAlreadyActive() {
-            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-
-            BusinessException exception = assertThrows(BusinessException.class, () ->
-                    usuarioService.reativarUsuario(1L)
-            );
-
-            assertEquals("Usuário já está ativo", exception.getMessage());
-        }
-
-        @Test
-        @DisplayName("Deve lançar NotFoundException quando usuário não existe")
-        void shouldThrowNotFoundExceptionWhenUserNotExists() {
-            when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
-
-            assertThrows(NotFoundException.class, () ->
-                    usuarioService.reativarUsuario(999L)
-            );
         }
     }
 
@@ -711,7 +709,7 @@ class UsuarioServiceTest {
         void shouldReturnUsersWithSpecificRole() {
             Usuario usuario2 = new Usuario();
             usuario2.setId(2L);
-            usuario2.setRoles(new ArrayList<>(Arrays.asList(RoleEnum.ROLE_FUNCIONARIO)));
+            usuario2.setRoles(new ArrayList<>(Collections.singleton(RoleEnum.ROLE_FUNCIONARIO)));
 
             when(usuarioRepository.findAll()).thenReturn(Arrays.asList(usuario, usuario2));
 
@@ -737,7 +735,7 @@ class UsuarioServiceTest {
             usuario.getRoles().add(RoleEnum.ROLE_FUNCIONARIO);
             Usuario usuario2 = new Usuario();
             usuario2.setId(2L);
-            usuario2.setRoles(new ArrayList<>(Arrays.asList(RoleEnum.ROLE_CLIENTE)));
+            usuario2.setRoles(new ArrayList<>(Collections.singleton(RoleEnum.ROLE_CLIENTE)));
 
             when(usuarioRepository.findAll()).thenReturn(Arrays.asList(usuario, usuario2));
 

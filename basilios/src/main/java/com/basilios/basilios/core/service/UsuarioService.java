@@ -1,5 +1,7 @@
 package com.basilios.basilios.core.service;
 
+import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
+import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
@@ -49,14 +51,6 @@ public class UsuarioService {
                 .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + email));
     }
 
-    /**
-     * Busca usuário por nomeUsuario
-     */
-    @Transactional(readOnly = true)
-    public Usuario findByNomeUsuario(String nomeUsuario) {
-        return usuarioRepository.findByNomeUsuario(nomeUsuario)
-                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + nomeUsuario));
-    }
 
     /**
      * Busca usuário por CPF
@@ -165,56 +159,101 @@ public class UsuarioService {
     }
 
     /**
-     * Atualiza dados básicos do usuário
+     * Atualiza parcialmente os dados do usuário (PATCH)
+     * Não permite alterar CPF e data de nascimento
      */
     @Transactional
-    public Usuario updateUsuario(Long id, Usuario dadosAtualizados) {
+    public UsuarioProfileResponse updateUsuarioPatch(Long id, UsuarioProfileResponse dto) {
         Usuario usuario = findById(id);
 
         // Validar email único (se mudou)
-        if (!usuario.getEmail().equals(dadosAtualizados.getEmail()) &&
-                usuarioRepository.existsByEmail(dadosAtualizados.getEmail())) {
+        if (!usuario.getEmail().equals(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessException("Email já cadastrado");
         }
-
         // Validar nomeUsuario único (se mudou)
-        if (!usuario.getNomeUsuario().equals(dadosAtualizados.getNomeUsuario()) &&
-                usuarioRepository.existsByNomeUsuario(dadosAtualizados.getNomeUsuario())) {
+        if (!usuario.getNomeUsuario().equals(dto.getNomeUsuario()) && usuarioRepository.existsByNomeUsuario(dto.getNomeUsuario())) {
             throw new BusinessException("Nome de usuário já existe");
         }
-
-        // Atualizar campos permitidos
-        usuario.setNomeUsuario(dadosAtualizados.getNomeUsuario());
-        usuario.setEmail(dadosAtualizados.getEmail());
-        usuario.setTelefone(dadosAtualizados.getTelefone());
-
-        return usuarioRepository.save(usuario);
+        // Atualizar apenas campos permitidos
+        usuario.setNomeUsuario(dto.getNomeUsuario());
+        usuario.setEmail(dto.getEmail());
+        usuario.setTelefone(dto.getTelefone());
+        usuarioRepository.save(usuario);
+        // Retornar DTO atualizado
+        return UsuarioProfileResponse.builder()
+                .id(usuario.getId())
+                .nomeUsuario(usuario.getNomeUsuario())
+                .email(usuario.getEmail())
+                .cpf(usuario.getCpf())
+                .telefone(usuario.getTelefone())
+                .dataNascimento(usuario.getDataNascimento())
+                .roles(new java.util.HashSet<>(usuario.getRoles()))
+                .enabled(usuario.isAtivo())
+                .createdAt(usuario.getCreatedAt())
+                .build();
     }
 
     /**
-     * Desativa usuário (soft delete)
+     * Soft delete do usuário (desativa)
+     * Retorna DTO de listagem
      */
     @Transactional
+    public UsuarioListarDTO deleteUsuario(Long id) {
+        Usuario usuario = findById(id);
+        usuario.softDelete();
+        usuarioRepository.save(usuario);
+        // Retornar DTO de listagem
+        UsuarioListarDTO dto = new UsuarioListarDTO();
+        dto.setNomeUsuario(usuario.getNomeUsuario());
+        dto.setEmail(usuario.getEmail());
+        dto.setCpf(usuario.getCpf());
+        dto.setTelefone(usuario.getTelefone());
+        dto.setDataNascimento(usuario.getDataNascimento());
+        return dto;
+    }
+
+    /**
+     * Atualiza dados básicos do usuário usando DTO
+     */
+    @Transactional
+    public UsuarioProfileResponse updateUsuario(Long id, UsuarioProfileResponse dto) {
+        Usuario usuario = findById(id);
+        // Validar email único (se mudou)
+        if (!usuario.getEmail().equals(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
+            throw new BusinessException("Email já cadastrado");
+        }
+        // Validar nomeUsuario único (se mudou)
+        if (!usuario.getNomeUsuario().equals(dto.getNomeUsuario()) && usuarioRepository.existsByNomeUsuario(dto.getNomeUsuario())) {
+            throw new BusinessException("Nome de usuário já existe");
+        }
+        // Atualizar apenas campos permitidos
+        usuario.setNomeUsuario(dto.getNomeUsuario());
+        usuario.setEmail(dto.getEmail());
+        usuario.setTelefone(dto.getTelefone());
+        usuarioRepository.save(usuario);
+        // Retornar DTO atualizado
+        return UsuarioProfileResponse.builder()
+                .id(usuario.getId())
+                .nomeUsuario(usuario.getNomeUsuario())
+                .email(usuario.getEmail())
+                .cpf(usuario.getCpf())
+                .telefone(usuario.getTelefone())
+                .dataNascimento(usuario.getDataNascimento())
+                .roles(new java.util.HashSet<>(usuario.getRoles()))
+                .enabled(usuario.isAtivo())
+                .createdAt(usuario.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * Desativa usuário (soft delete) - deprecated, use deleteUsuario
+     */
+    @Transactional
+    @Deprecated
     public void desativarUsuario(Long id) {
         Usuario usuario = findById(id);
         usuario.softDelete();
         usuarioRepository.save(usuario);
-    }
-
-    /**
-     * Reativa usuário
-     */
-    @Transactional
-    public Usuario reativarUsuario(Long id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + id));
-
-        if (usuario.isAtivo()) {
-            throw new BusinessException("Usuário já está ativo");
-        }
-
-        usuario.restaurar();
-        return usuarioRepository.save(usuario);
     }
 
     /**
