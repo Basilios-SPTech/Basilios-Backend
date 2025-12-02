@@ -1,4 +1,4 @@
-package com.basilios.basilios.core.user;
+package com.basilios.basilios.app.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

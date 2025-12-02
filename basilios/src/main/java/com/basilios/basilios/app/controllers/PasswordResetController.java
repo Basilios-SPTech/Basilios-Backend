@@ -1,8 +1,8 @@
-package com.basilios.basilios.core.controller;
+package com.basilios.basilios.app.controllers;
 
-import com.basilios.basilios.core.dto.MessageResponseDTO;
-import com.basilios.basilios.core.dto.PasswordResetDTO;
-import com.basilios.basilios.core.dto.PasswordResetRequestDTO;
+import com.basilios.basilios.app.dto.user.MessageResponseDTO;
+import com.basilios.basilios.app.dto.user.PasswordResetDTO;
+import com.basilios.basilios.app.dto.user.PasswordResetRequestDTO;
 import com.basilios.basilios.core.exception.TokenExpiredException;
 import com.basilios.basilios.core.exception.TokenNotFoundException;
 import com.basilios.basilios.core.exception.UserNotFoundException;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/password-reset")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+
 public class PasswordResetController {
 
     private final PasswordResetService passwordResetService;

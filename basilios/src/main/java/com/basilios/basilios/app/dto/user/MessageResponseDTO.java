@@ -1,4 +1,4 @@
-package com.basilios.basilios.core.dto.user;
+package com.basilios.basilios.app.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

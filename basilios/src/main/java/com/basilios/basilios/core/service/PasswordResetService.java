@@ -1,14 +1,17 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.core.dto.PasswordResetDTO;
-import com.basilios.basilios.core.dto.PasswordResetRequestDTO;
+import com.basilios.basilios.app.dto.user.PasswordResetDTO;
+import com.basilios.basilios.app.dto.user.PasswordResetRequestDTO;
+import com.basilios.basilios.app.dto.user.PasswordResetDTO;
+import com.basilios.basilios.app.dto.user.PasswordResetRequestDTO;
 import com.basilios.basilios.core.exception.TokenExpiredException;
 import com.basilios.basilios.core.exception.TokenNotFoundException;
 import com.basilios.basilios.core.exception.UserNotFoundException;
 import com.basilios.basilios.core.model.PasswordResetToken;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.core.repository.PasswordResetTokenRepository;
-import com.basilios.basilios.core.repository.UsuarioRepository;
+import com.basilios.basilios.infra.repository.UsuarioRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -32,7 +35,7 @@ public class PasswordResetService {
     private static final int EXPIRATION_HOURS = 1;
 
     @Transactional
-    public void requestPasswordReset(PasswordResetRequestDTO request) {
+    public void requestPasswordReset(@Valid PasswordResetRequestDTO request) {
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado com o email: " + request.getEmail()));
 
@@ -57,7 +60,7 @@ public class PasswordResetService {
     }
 
     @Transactional
-    public void resetPassword(PasswordResetDTO resetDTO) {
+    public void resetPassword(@Valid PasswordResetDTO resetDTO) {
         PasswordResetToken resetToken = tokenRepository.findByTokenAndUsedFalse(resetDTO.getToken())
                 .orElseThrow(() -> new TokenNotFoundException("Token inválido ou já utilizado"));
 
