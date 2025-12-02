@@ -19,4 +19,12 @@ public class AverageDeliveryTimeDTO {
                 .averageText(text)
                 .build();
     }
+
+    public long getSeconds() {
+        return this.averageSeconds;
+    }
+
+    public String getText() {
+        return this.averageText;
+    }
 }

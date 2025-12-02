@@ -15,4 +15,8 @@ public class OrdersCountDTO {
     public static OrdersCountDTO toResponse(long value) {
         return OrdersCountDTO.builder().orders(value).build();
     }
+
+    public long getCount() {
+        return this.orders;
+    }
 }
