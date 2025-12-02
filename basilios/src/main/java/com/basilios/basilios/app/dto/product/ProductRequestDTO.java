@@ -30,6 +30,9 @@ public class ProductRequestDTO {
     @Size(min = 10, max = 500, message = "Descrição deve ter entre 10 e 500 caracteres")
     private String description;
 
+    // URL da imagem do produto (opcional no back, mas o front vai preencher)
+    private String imageUrl;
+
     @NotNull(message = "Categoria é obrigatória")
     private ProductCategory category;
 

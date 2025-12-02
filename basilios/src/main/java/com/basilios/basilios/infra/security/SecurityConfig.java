@@ -76,10 +76,13 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        // arquivos estáticos de imagem → qualquer um pode ver
+                        .requestMatchers("/uploads/**").permitAll()
 
                         // Regras de acesso por role
                         .requestMatchers("/api/funcionario/**").hasRole("FUNCIONARIO")
                         .requestMatchers("/api/cliente/**").hasRole("CLIENTE")
+                        .requestMatchers("/api/upload/**").hasRole("FUNCIONARIO")
 
                         // O resto precisa de autenticação
                         .anyRequest().authenticated()

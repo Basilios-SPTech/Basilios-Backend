@@ -52,6 +52,7 @@ public class ProductService {
         Product product = Product.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
+                .imageUrl(dto.getImageUrl())
                 .category(dto.getCategory())
                 .subcategory(dto.getSubcategory())
                 .tags(dto.getTags() != null ? dto.getTags() : new ArrayList<>())
@@ -117,6 +118,7 @@ public class ProductService {
         // Atualizar campos
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
+        product.setImageUrl(dto.getImageUrl());
         product.setCategory(dto.getCategory());
         product.setSubcategory(dto.getSubcategory());
         product.setTags(dto.getTags() != null ? dto.getTags() : new ArrayList<>());
@@ -639,8 +641,17 @@ public class ProductService {
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
-                .subcategory(product.getSubcategory() != null ? product.getSubcategory().getDisplayName() : null)
-                .subcategoryCode(product.getSubcategory() != null ? product.getSubcategory().name() : null)
+                .imageUrl(product.getImageUrl())
+                // 🔥 AQUI: manda a categoria pro front
+                .category(product.getCategory() != null
+                        ? product.getCategory().name()
+                        : null)
+                .subcategory(product.getSubcategory() != null
+                        ? product.getSubcategory().getDisplayName()
+                        : null)
+                .subcategoryCode(product.getSubcategory() != null
+                        ? product.getSubcategory().name()
+                        : null)
                 .ingredients(ingredients)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
@@ -651,6 +662,9 @@ public class ProductService {
                 .updatedAt(product.getUpdatedAt())
                 .build();
     }
+
+
+
 
     /**
      * Exposição pública da conversão Product -> ProductResponseDTO

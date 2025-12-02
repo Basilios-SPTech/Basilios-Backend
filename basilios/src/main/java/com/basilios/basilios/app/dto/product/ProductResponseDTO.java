@@ -22,6 +22,10 @@ public class ProductResponseDTO {
 
     private String description;
 
+    private String imageUrl;
+
+    private String category;
+
     private String subcategory; // display name (por ex.: "Carne Bovina")
     private String subcategoryCode; // enum name (por ex.: "BEEF") - compatibilidade
 
