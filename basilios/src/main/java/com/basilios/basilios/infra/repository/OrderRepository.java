@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -101,6 +102,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     long countByStatusAndCreatedAtBetween(StatusPedidoEnum status, LocalDateTime start, LocalDateTime end);
 
     /**
+     * Conta pedidos que NÃO são do status fornecido (ex: excluir CANCELADO) dentro do período
+     */
+    long countByStatusNotAndCreatedAtBetween(StatusPedidoEnum status, LocalDateTime start, LocalDateTime end);
+
+    /**
      * Busca pedidos do período ordenados por createdAt (útil para identificar picos)
      */
     List<Order> findByCreatedAtBetweenOrderByCreatedAtAsc(LocalDateTime start, LocalDateTime end);
@@ -109,4 +115,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * Busca pedidos entregues entre duas datas (deliveredAt)
      */
     List<Order> findByDeliveredAtBetween(LocalDateTime start, LocalDateTime end);
+
+    // =========================
+    // CONSULTAS OTIMIZADAS PARA DASHBOARD
+    // =========================
+
+    /**
+     * Soma o total dos pedidos no período (exclui pedidos CANCELADO). Retorna 0 se não houver registros.
+     */
+    @Query("SELECT COALESCE(SUM(o.total), 0) FROM Order o WHERE o.createdAt BETWEEN :start AND :end AND o.status <> com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO")
+    BigDecimal sumTotalByCreatedAtBetweenExcludeCancelled(LocalDateTime start, LocalDateTime end);
+
 }
+

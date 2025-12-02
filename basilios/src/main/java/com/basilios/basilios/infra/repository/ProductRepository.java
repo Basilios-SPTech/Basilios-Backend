@@ -159,4 +159,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "GROUP BY p.id " +
             "ORDER BY totalSold DESC")
     List<Object[]> getProductsByTotalSoldQuantity();
+
+    /**
+     * Conta quantos produtos NÃO tiveram vendas dentro do período (baseado em ProductOrder.createdAt)
+     * Exclui ProductOrder cujo pedido foi CANCELADO.
+     */
+    @Query("SELECT COUNT(p) FROM Product p " +
+            "WHERE NOT EXISTS (SELECT po FROM ProductOrder po WHERE po.product = p AND po.createdAt BETWEEN :start AND :end AND po.order.status <> com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO)")
+    Long countProductsNotSoldBetween(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 }

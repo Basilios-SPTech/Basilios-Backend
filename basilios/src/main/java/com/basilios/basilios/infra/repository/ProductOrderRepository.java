@@ -193,4 +193,10 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Long
     boolean existsPromotionForProductInPeriod(@Param("productId") Long productId,
                                               @Param("startDate") LocalDateTime startDate,
                                               @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Soma quantidade de produtos vendidos em pedidos entregues no período
+     */
+    @Query("SELECT SUM(po.quantity) FROM ProductOrder po WHERE po.order.status = 'ENTREGUE' AND po.order.createdAt BETWEEN :startDate AND :endDate")
+    Long sumQuantityByDeliveredOrdersInPeriod(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

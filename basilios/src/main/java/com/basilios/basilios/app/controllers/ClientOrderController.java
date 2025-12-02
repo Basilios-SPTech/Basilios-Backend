@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,10 +25,10 @@ import java.util.Map;
 @PreAuthorize("hasRole('CLIENTE')")
 @Tag(name = "Cliente - Pedidos", description = "Gerenciamento de pedidos do cliente")
 @SecurityRequirement(name = "bearer-jwt")
+@RequiredArgsConstructor
 public class ClientOrderController {
 
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
 
     @PostMapping
     @Operation(summary = "Criar novo pedido", description = "Cliente cria um novo pedido")
