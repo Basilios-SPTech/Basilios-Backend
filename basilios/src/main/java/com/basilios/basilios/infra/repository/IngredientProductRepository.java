@@ -42,8 +42,7 @@ public interface IngredientProductRepository extends JpaRepository<IngredientPro
     /**
      * Busca uma relação específica produto-ingrediente por IDs
      */
-    @Query("SELECT ip FROM IngredientProduct ip " +
-            "WHERE ip.product.id = :productId AND ip.ingredient.id = :ingredientId")
+    @Query("SELECT ip FROM IngredientProduct ip WHERE ip.product.id = :productId AND ip.ingredient.id = :ingredientId")
     Optional<IngredientProduct> findByProductIdAndIngredientId(
             @Param("productId") Long productId,
             @Param("ingredientId") Long ingredientId

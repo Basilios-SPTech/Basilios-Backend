@@ -75,6 +75,7 @@ public class OrderService {
                 storeLatitude, storeLongitude,
                 addressEntrega.getLatitude(), addressEntrega.getLongitude()
         );
+        System.out.println("[DEBUG] Distância calculada: " + distance + addressEntrega);
 
         // Se fora da área de entrega, retornar redirecionamento
         if (distance > MAX_DELIVERY_DISTANCE_KM) {
@@ -95,7 +96,10 @@ public class OrderService {
                 .addressEntrega(addressEntrega)
                 .status(StatusPedidoEnum.PENDENTE)
                 .observations(request.getObservations())
+                .codigoPedido(generateOrderCode())
                 .build();
+
+        System.out.println("[DEBUG] Pedido criado (ainda sem items): " + order);
 
         // Processar items do pedido
         for (OrderRequestDTO.OrderItemRequest itemRequest : request.getItems()) {
@@ -133,21 +137,32 @@ public class OrderService {
                     .originalPrice(hadPromotion ? originalPrice : null)
                     .build();
 
-            // calculateSubtotal() será chamado automaticamente no @PrePersist
+            // Calcular e setar subtotal explicitamente
+            productOrder.calculateSubtotal();
+
             order.getProductOrders().add(productOrder);
+            System.out.println("[DEBUG] Item adicionado ao pedido: " + productOrder);
         }
 
         // Calcular taxa de entrega baseada na distância
         BigDecimal deliveryFee = calculateDeliveryFee(distance);
+        System.out.println("[DEBUG] Taxa de entrega calculada: " + deliveryFee);
         order.setDeliveryFee(deliveryFee);
 
         // Aplicar desconto se fornecido
         if (request.getDiscount() != null && request.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
+            System.out.println("[DEBUG] Desconto informado: " + request.getDiscount());
             order.setDiscount(request.getDiscount());
+        } else {
+            System.out.println("[DEBUG] Nenhum desconto informado ou desconto zero.");
+            order.setDiscount(BigDecimal.ZERO); // Garante desconto não nulo
         }
 
-        // calculateTotal() será chamado automaticamente no @PrePersist
+        // Calcular total do pedido antes de salvar
+        order.calculateTotal();
+        System.out.println("[DEBUG] Pedido antes de salvar: " + order);
         order = orderRepository.save(order);
+        System.out.println("[DEBUG] Pedido salvo: " + order);
 
         // Retornar resposta
         return orderMapper.toResponse(order);
@@ -426,6 +441,39 @@ public class OrderService {
     }
 
     /**
+     * Atualiza o status de um pedido, validando a transição pelo enum
+     * @param orderId ID do pedido
+     * @param novoStatus Novo status desejado
+     * @param motivo Motivo do cancelamento (opcional)
+     * @return OrderResponseDTO atualizado
+     */
+    @Transactional
+    public OrderResponseDTO atualizarStatusPedido(Long orderId, StatusPedidoEnum novoStatus, String motivo) {
+        Order order = findById(orderId);
+        StatusPedidoEnum statusAtual = order.getStatus();
+        // Valida transição pelo enum
+        if (!statusAtual.podeTransicionarPara(novoStatus)) {
+            throw new BusinessException("Transição de status inválida: " + statusAtual + " → " + novoStatus);
+        }
+        // Aplica transição conforme enum
+        if (novoStatus == StatusPedidoEnum.CONFIRMADO) {
+            order.confirmar();
+        } else if (novoStatus == StatusPedidoEnum.PREPARANDO) {
+            order.iniciarPreparo();
+        } else if (novoStatus == StatusPedidoEnum.DESPACHADO) {
+            order.despachar();
+        } else if (novoStatus == StatusPedidoEnum.ENTREGUE) {
+            order.entregar();
+        } else if (novoStatus == StatusPedidoEnum.CANCELADO) {
+            order.cancelar(motivo != null ? motivo : "Cancelado via API");
+        } else {
+            throw new BusinessException("Status não suportado para alteração: " + novoStatus);
+        }
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
+    }
+
+    /**
      * Valida se é possível transicionar para o novo status
      */
     private void validateStatusTransition(Order order, StatusPedidoEnum newStatus) {
@@ -487,5 +535,30 @@ public class OrderService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Atualiza o status de um pedido de forma genérica, validando o status recebido
+     */
+    @Transactional
+    public void updateOrderStatus(Long id, String statusStr) {
+        StatusPedidoEnum novoStatus;
+        try {
+            novoStatus = StatusPedidoEnum.valueOf(statusStr.toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Status inválido: " + statusStr);
+        }
+        // Aqui você pode adicionar regras de transição de status, se necessário
+        var pedido = orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado"));
+        pedido.setStatus(novoStatus);
+        orderRepository.save(pedido);
+    }
+
+    /**
+     * Gera um código único para o pedido
+     */
+    private String generateOrderCode() {
+        return "PED-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000);
     }
 }

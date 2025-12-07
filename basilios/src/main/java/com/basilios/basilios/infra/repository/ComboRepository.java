@@ -61,14 +61,24 @@ public interface ComboRepository extends JpaRepository<Combo, Long> {
     List<Combo> findByPriceBetweenAndIsActiveTrue(BigDecimal minPrice, BigDecimal maxPrice);
 
     /**
-     * Busca combos com preço menor ou igual
+     * Busca combos por preço máximo
      */
     List<Combo> findByPriceLessThanEqual(BigDecimal maxPrice);
 
     /**
-     * Busca combos ativos com preço menor ou igual
+     * Busca combos ativos por preço máximo
      */
     List<Combo> findByPriceLessThanEqualAndIsActiveTrue(BigDecimal maxPrice);
+
+    /**
+     * Busca combos por preço mínimo
+     */
+    List<Combo> findByPriceGreaterThanEqual(BigDecimal minPrice);
+
+    /**
+     * Busca combos ativos por preço mínimo
+     */
+    List<Combo> findByPriceGreaterThanEqualAndIsActiveTrue(BigDecimal minPrice);
 
     /**
      * Busca combos ordenados por preço (crescente)

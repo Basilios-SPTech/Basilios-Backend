@@ -69,4 +69,22 @@ public class UsuarioController {
         UsuarioListarDTO dto = usuarioService.deleteUsuario(id);
         return ResponseEntity.ok(dto);
     }
+
+    @Operation(summary = "Buscar dados do usuário autenticado", description = "Retorna os dados do usuário logado")
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioProfileResponse> getMe() {
+        var usuario = usuarioService.getCurrentUsuario();
+        UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
+            .id(usuario.getId())
+            .nomeUsuario(usuario.getNomeUsuario())
+            .email(usuario.getEmail())
+            .cpf(usuario.getCpf())
+            .telefone(usuario.getTelefone())
+            .dataNascimento(usuario.getDataNascimento())
+            .roles(new java.util.HashSet<>(usuario.getRoles()))
+            .enabled(usuario.isAtivo())
+            .createdAt(usuario.getCreatedAt())
+            .build();
+        return ResponseEntity.ok(dto);
+    }
 }

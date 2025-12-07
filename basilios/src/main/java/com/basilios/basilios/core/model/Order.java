@@ -84,6 +84,9 @@ public class Order {
     @Column(columnDefinition = "TEXT")
     private String observations;
 
+    @Column(name = "codigo_pedido", unique = true, nullable = false, length = 50)
+    private String codigoPedido;
+
     // Métodos de gerenciamento de items
 
     /**

@@ -35,16 +35,13 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Long> {
     /**
      * Busca ingredientes que são usados em um produto específico
      */
-    @Query("SELECT DISTINCT i FROM Ingredient i " +
-            "JOIN i.productIngredients pi " +
-            "WHERE pi.product.id = :productId")
+    @Query("SELECT DISTINCT i FROM Ingredient i JOIN i.productIngredients pi WHERE pi.product.id = :productId")
     List<Ingredient> findByProductId(@Param("productId") Long productId);
 
     /**
      * Busca ingredientes que NÃO são usados em nenhum produto
      */
-    @Query("SELECT i FROM Ingredient i " +
-            "WHERE i.productIngredients IS EMPTY")
+    @Query("SELECT i FROM Ingredient i WHERE i.productIngredients IS EMPTY")
     List<Ingredient> findUnusedIngredients();
 
     /**

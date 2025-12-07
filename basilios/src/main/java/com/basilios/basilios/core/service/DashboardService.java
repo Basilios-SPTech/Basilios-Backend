@@ -127,4 +127,36 @@ public class DashboardService {
             onPromo
         ));
     }
+
+    public AverageTicketDTO getAverageTicket(LocalDateTime start, LocalDateTime end) {
+        start = normalizeStart(start);
+        end = normalizeEnd(end);
+        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
+        if (orders.isEmpty()) {
+            return AverageTicketDTO.toResponse(BigDecimal.ZERO);
+        }
+        BigDecimal totalRevenue = orders.stream()
+                .map(Order::getTotal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalOrders = orders.size();
+        BigDecimal averageTicket = totalOrders > 0 ? totalRevenue.divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        return AverageTicketDTO.toResponse(averageTicket);
+    }
+
+    public ItemsSoldDTO getItemsSoldData(LocalDateTime start, LocalDateTime end) {
+        start = normalizeStart(start);
+        end = normalizeEnd(end);
+        Long totalItemsSold = productOrderRepository.sumQuantityByDeliveredOrdersInPeriod(start, end);
+        return ItemsSoldDTO.toResponse(totalItemsSold != null ? totalItemsSold : 0L);
+    }
+
+    public CancellationRateDTO getCancellationRate(LocalDateTime start, LocalDateTime end) {
+        start = normalizeStart(start);
+        end = normalizeEnd(end);
+        long totalOrders = orderRepository.countByCreatedAtBetween(start, end);
+        long cancelledOrders = orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.CANCELADO, start, end);
+        double cancellationRate = totalOrders > 0 ? ((double) cancelledOrders / totalOrders) * 100.0 : 0.0;
+        return CancellationRateDTO.toResponse(cancellationRate);
+    }
 }

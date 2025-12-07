@@ -44,10 +44,4 @@ public class AuthController {
         UsuarioTokenDTO response = authService.login(request);
         return ResponseEntity.ok(response);
     }
-
-    @GetMapping("/me")
-    public Usuario me() {
-         Usuario usuario = usuarioService.getCurrentUsuario();
-         return usuario;
-    }
 }

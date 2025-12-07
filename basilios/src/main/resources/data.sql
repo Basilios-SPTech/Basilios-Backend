@@ -8,13 +8,14 @@
 -- ===========================================
 INSERT IGNORE INTO stores (name, address, latitude, longitude, phone, opening_hours)
 VALUES (
-    'Basilios Hamburgeria',
-    'Rua das Hamburguerias, 123 - São Paulo, SP',
-    -23.550520,
-    -46.633308,
-    '(11) 99999-9999',
-    '18:00 - 02:00'
+  'Basilios Burger & Açaí',
+  'R. Basílio da Cunha, 454 — Vila Deodoro, São Paulo, SP, 01544-001',
+  -23.57694,
+  -46.62444,
+  '(11) 4801-4864',
+  '12:00–00:00 (Seg–Sáb); 18:00–00:00 (Dom)'
 );
+
 
 -- ===========================================
 -- USUÁRIOS
