@@ -122,11 +122,22 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /** Busca pedidos do período ordenados por createdAt asc */
     List<Order> findByCreatedAtBetweenOrderByCreatedAtAsc(LocalDateTime start, LocalDateTime end);
 
-    /** Soma o total dos pedidos no período (exclui pedidos CANCELADO). Retorna 0 se não houver registros. */
-    @Query("SELECT COALESCE(SUM(o.total), 0) FROM Order o WHERE o.createdAt BETWEEN :start AND :end AND o.status <> com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO")
-    BigDecimal sumTotalByCreatedAtBetweenExcludeCancelled(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    /** Soma o total dos pedidos ENTREGUES no período. Retorna 0 se não houver registros. */
+    @Query("SELECT COALESCE(SUM(o.total), 0) FROM Order o WHERE o.createdAt BETWEEN :start AND :end AND o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.ENTREGUE")
+    BigDecimal sumTotalByCreatedAtBetweenEntregue(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /** Busca pares dispatchedAt e deliveredAt de pedidos ENTREGUES no período */
     @Query("SELECT o.dispatchedAt, o.deliveredAt FROM Order o WHERE o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.ENTREGUE AND o.dispatchedAt IS NOT NULL AND o.deliveredAt IS NOT NULL AND o.createdAt BETWEEN :start AND :end")
     List<Object[]> findDispatchedAndDeliveredTimesOfDeliveredOrders(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /** Conta pedidos CANCELADOS dentro do período */
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.CANCELADO AND o.createdAt BETWEEN :start AND :end")
+    long countCancelledOrdersByCreatedAtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /** Conta pedidos ENTREGUES dentro do período */
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.ENTREGUE AND o.createdAt BETWEEN :start AND :end")
+    long countDeliveredOrdersByCreatedAtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /** Busca pedidos por status e intervalo de datas (createdAt) */
+    List<Order> findByStatusAndCreatedAtBetween(StatusPedidoEnum status, LocalDateTime start, LocalDateTime end);
 }

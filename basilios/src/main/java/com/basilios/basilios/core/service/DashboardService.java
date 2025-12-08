@@ -37,10 +37,7 @@ public class DashboardService {
     public RevenueDTO getRevenue(LocalDateTime start, LocalDateTime end) {
         start = normalizeStart(start);
         end = normalizeEnd(end);
-        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
-        BigDecimal revenue = orders.stream()
-                .map(o -> o.getTotal() != null ? o.getTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal revenue = orderRepository.sumTotalByCreatedAtBetweenEntregue(start, end);
         return RevenueDTO.toResponse(revenue);
     }
 
@@ -54,17 +51,25 @@ public class DashboardService {
     public AverageDeliveryTimeDTO getAverageDeliveryTime(LocalDateTime start, LocalDateTime end) {
         start = normalizeStart(start);
         end = normalizeEnd(end);
-        List<Object[]> times = orderRepository.findDispatchedAndDeliveredTimesOfDeliveredOrders(start, end);
-        if (times.isEmpty()) {
+        // Buscar apenas pedidos ENTREGUES no período
+        List<Order> deliveredOrders = orderRepository.findByStatusAndCreatedAtBetween(StatusPedidoEnum.ENTREGUE, start, end);
+        if (deliveredOrders.isEmpty()) {
             return AverageDeliveryTimeDTO.toResponse(0L, "00:00:00");
         }
         long totalSeconds = 0L;
-        for (Object[] pair : times) {
-            LocalDateTime dispatched = (LocalDateTime) pair[0];
-            LocalDateTime delivered = (LocalDateTime) pair[1];
-            totalSeconds += java.time.Duration.between(dispatched, delivered).getSeconds();
+        int count = 0;
+        for (Order order : deliveredOrders) {
+            LocalDateTime dispatched = order.getDispatchedAt();
+            LocalDateTime delivered = order.getDeliveredAt();
+            if (dispatched != null && delivered != null && delivered.isAfter(dispatched)) {
+                totalSeconds += java.time.Duration.between(dispatched, delivered).getSeconds();
+                count++;
+            }
         }
-        long avgSeconds = totalSeconds / times.size();
+        if (count == 0) {
+            return AverageDeliveryTimeDTO.toResponse(0L, "00:00:00");
+        }
+        long avgSeconds = totalSeconds / count;
         long hours = avgSeconds / 3600;
         long minutes = (avgSeconds % 3600) / 60;
         long secs = avgSeconds % 60;
@@ -131,15 +136,8 @@ public class DashboardService {
     public AverageTicketDTO getAverageTicket(LocalDateTime start, LocalDateTime end) {
         start = normalizeStart(start);
         end = normalizeEnd(end);
-        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
-        if (orders.isEmpty()) {
-            return AverageTicketDTO.toResponse(BigDecimal.ZERO);
-        }
-        BigDecimal totalRevenue = orders.stream()
-                .map(Order::getTotal)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long totalOrders = orders.size();
+        BigDecimal totalRevenue = getRevenue(start, end).getRevenue();
+        long totalOrders = orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.ENTREGUE, start, end);
         BigDecimal averageTicket = totalOrders > 0 ? totalRevenue.divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         return AverageTicketDTO.toResponse(averageTicket);
     }
@@ -155,8 +153,8 @@ public class DashboardService {
         start = normalizeStart(start);
         end = normalizeEnd(end);
         long totalOrders = orderRepository.countByCreatedAtBetween(start, end);
-        long cancelledOrders = orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.CANCELADO, start, end);
-        double cancellationRate = totalOrders > 0 ? ((double) cancelledOrders / totalOrders) * 100.0 : 0.0;
+        long cancelledOrders = orderRepository.countCancelledOrdersByCreatedAtBetween(start, end);
+        double cancellationRate = totalOrders > 0 ? ((double) (totalOrders - cancelledOrders) / totalOrders) * 100.0 : 0.0;
         return CancellationRateDTO.toResponse(cancellationRate);
     }
 }

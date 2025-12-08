@@ -421,7 +421,7 @@ public class OrderService {
      * Só pode cancelar se estiver PENDENTE ou CONFIRMADO
      */
     @Transactional
-    public OrderResponseDTO cancelarPedidoUsuario(Long id, String motivo) {
+    public OrderResponseDTO     cancelarPedidoUsuario(Long id, String motivo) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Order order = findById(id);
 
@@ -541,7 +541,7 @@ public class OrderService {
      * Atualiza o status de um pedido de forma genérica, validando o status recebido
      */
     @Transactional
-    public void updateOrderStatus(Long id, String statusStr) {
+    public OrderResponseDTO updateOrderStatus(Long id, String statusStr) {
         StatusPedidoEnum novoStatus;
         try {
             novoStatus = StatusPedidoEnum.valueOf(statusStr.toUpperCase());
@@ -549,10 +549,12 @@ public class OrderService {
             throw new IllegalArgumentException("Status inválido: " + statusStr);
         }
         // Aqui você pode adicionar regras de transição de status, se necessário
-        var pedido = orderRepository.findById(id)
+        var order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado"));
-        pedido.setStatus(novoStatus);
-        orderRepository.save(pedido);
+        order.setStatus(novoStatus);
+        orderRepository.save(order);
+        // Retorna o order atualizado como DTO
+        return orderMapper.toResponse(order);
     }
 
     /**

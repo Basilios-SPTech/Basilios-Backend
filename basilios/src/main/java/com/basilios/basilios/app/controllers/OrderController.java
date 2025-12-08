@@ -95,8 +95,8 @@ public class OrderController {
     @Operation(summary = "Atualizar status do pedido", description = "Atualiza o status de um pedido existente")
     public ResponseEntity<?> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateOrderStatusDTO dto) {
         try {
-            orderService.updateOrderStatus(id, dto.getStatus());
-            return ResponseEntity.ok().build();
+            OrderResponseDTO responseDTO = orderService.updateOrderStatus(id, dto.getStatus());
+            return ResponseEntity.ok(responseDTO);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
