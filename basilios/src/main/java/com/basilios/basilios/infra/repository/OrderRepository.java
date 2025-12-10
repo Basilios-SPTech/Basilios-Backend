@@ -140,4 +140,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /** Busca pedidos por status e intervalo de datas (createdAt) */
     List<Order> findByStatusAndCreatedAtBetween(StatusPedidoEnum status, LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT o.id FROM Order o WHERE o.status = :status AND o.createdAt BETWEEN :startDate AND :endDate")
+    List<Long> findIdsByStatusAndCreatedAtBetween(@Param("status") StatusPedidoEnum status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }
