@@ -35,6 +35,13 @@ VALUES (
     NOW()
 );
 
+-- Endereço para o usuário de id 1
+INSERT IGNORE INTO endereco (
+    bairro, cep, cidade, complemento, created_at, deleted_at, estado, latitude, longitude, numero, rua, updated_at, usuario_id
+) VALUES (
+    'Vila Deodoro', '01544001', 'São Paulo', NULL, NOW(), NULL, 'SP', -23.57694, -46.62444, '454', 'R. Basílio da Cunha', NOW(), 1
+);
+
 -- Roles do Funcionário
 INSERT IGNORE INTO usuario_roles (usuario_id, role)
 SELECT u.id, 'ROLE_FUNCIONARIO'
@@ -242,125 +249,52 @@ VALUES
      0, 'Combo X-Bacon Salada', 45.00, NULL, '2025-12-07 03:34:03.133372',
      '/uploads/9ff9351e-bc05-47c4-93e5-18d489be2584.jpg');
 
--- ===========================================
--- PEDIDOS DE 1 A 11 DE DEZEMBRO DE 2025
--- ===========================================
+-- ORDERS DE 11 A 30 DE NOVEMBRO DE 2025 (IDs fixos iniciando em 1)
+INSERT IGNORE INTO orders (
+    id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id
+) VALUES
+(1, NULL, NULL, 'PED-20251111-0001', '2025-11-11 12:10:00', '2025-11-11 12:00:00', '2025-11-11 12:40:00', 7.00, 0.00, '2025-11-11 12:20:00', 'Sem cebola', '2025-11-11 12:10:00', 'ENTREGUE', 54.00, 61.00, 1, 1),
+(2, NULL, NULL, 'PED-20251112-0001', '2025-11-12 13:10:00', '2025-11-12 13:00:00', '2025-11-12 13:50:00', 7.00, 0.00, '2025-11-12 13:30:00', 'Com maionese à parte', '2025-11-12 13:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
+(3, NULL, NULL, 'PED-20251113-0001', '2025-11-13 14:10:00', '2025-11-13 14:00:00', '2025-11-13 14:50:00', 7.00, 0.00, '2025-11-13 14:30:00', 'Sem tomate', '2025-11-13 14:15:00', 'ENTREGUE', 36.00, 43.00, 1, 1),
+(4, NULL, NULL, 'PED-20251114-0001', '2025-11-14 15:10:00', '2025-11-14 15:00:00', '2025-11-14 15:50:00', 7.00, 0.00, '2025-11-14 15:30:00', 'Com bacon extra', '2025-11-14 15:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1),
+(5, NULL, NULL, 'PED-20251115-0001', '2025-11-15 16:10:00', '2025-11-15 16:00:00', '2025-11-15 16:50:00', 7.00, 0.00, '2025-11-15 16:30:00', 'Com cheddar extra', '2025-11-15 16:15:00', 'ENTREGUE', 38.00, 45.00, 1, 1),
+(6, NULL, NULL, 'PED-20251116-0001', '2025-11-16 17:10:00', '2025-11-16 17:00:00', '2025-11-16 17:50:00', 7.00, 0.00, '2025-11-16 17:30:00', 'Sem maionese', '2025-11-16 17:15:00', 'ENTREGUE', 27.00, 34.00, 1, 1),
+(7, NULL, NULL, 'PED-20251117-0001', '2025-11-17 18:10:00', '2025-11-17 18:00:00', '2025-11-17 18:50:00', 7.00, 0.00, '2025-11-17 18:30:00', NULL, '2025-11-17 18:15:00', 'ENTREGUE', 35.00, 42.00, 1, 1),
+(8, NULL, NULL, 'PED-20251118-0001', '2025-11-18 19:10:00', '2025-11-18 19:00:00', '2025-11-18 19:50:00', 7.00, 0.00, '2025-11-18 19:30:00', 'Com salada extra', '2025-11-18 19:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
+(9, NULL, NULL, 'PED-20251119-0001', '2025-11-19 20:10:00', '2025-11-19 20:00:00', '2025-11-19 20:50:00', 7.00, 0.00, '2025-11-19 20:30:00', 'Com picles extra', '2025-11-19 20:15:00', 'ENTREGUE', 45.00, 52.00, 1, 1),
+(10, NULL, NULL, 'PED-20251120-0001', '2025-11-20 21:10:00', '2025-11-20 21:00:00', '2025-11-20 21:50:00', 7.00, 0.00, '2025-11-20 21:30:00', NULL, '2025-11-20 21:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1),
+(11, NULL, NULL, 'PED-20251121-0001', '2025-11-21 12:10:00', '2025-11-21 12:00:00', '2025-11-21 12:40:00', 7.00, 0.00, '2025-11-21 12:20:00', 'Sem cebola', '2025-11-21 12:10:00', 'ENTREGUE', 54.00, 61.00, 1, 1),
+(12, NULL, NULL, 'PED-20251122-0001', '2025-11-22 13:10:00', '2025-11-22 13:00:00', '2025-11-22 13:50:00', 7.00, 0.00, '2025-11-22 13:30:00', 'Com maionese à parte', '2025-11-22 13:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
+(13, NULL, NULL, 'PED-20251123-0001', '2025-11-23 14:10:00', '2025-11-23 14:00:00', '2025-11-23 14:50:00', 7.00, 0.00, '2025-11-23 14:30:00', 'Sem tomate', '2025-11-23 14:15:00', 'ENTREGUE', 36.00, 43.00, 1, 1),
+(14, NULL, NULL, 'PED-20251124-0001', '2025-11-24 15:10:00', '2025-11-24 15:00:00', '2025-11-24 15:50:00', 7.00, 0.00, '2025-11-24 15:30:00', 'Com bacon extra', '2025-11-24 15:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1),
+(15, NULL, NULL, 'PED-20251125-0001', '2025-11-25 16:10:00', '2025-11-25 16:00:00', '2025-11-25 16:50:00', 7.00, 0.00, '2025-11-25 16:30:00', 'Com cheddar extra', '2025-11-25 16:15:00', 'ENTREGUE', 38.00, 45.00, 1, 1),
+(16, NULL, NULL, 'PED-20251126-0001', '2025-11-26 17:10:00', '2025-11-26 17:00:00', '2025-11-26 17:50:00', 7.00, 0.00, '2025-11-26 17:30:00', 'Sem maionese', '2025-11-26 17:15:00', 'ENTREGUE', 27.00, 34.00, 1, 1),
+(17, NULL, NULL, 'PED-20251127-0001', '2025-11-27 18:10:00', '2025-11-27 18:00:00', '2025-11-27 18:50:00', 7.00, 0.00, '2025-11-27 18:30:00', NULL, '2025-11-27 18:15:00', 'ENTREGUE', 35.00, 42.00, 1, 1),
+(18, NULL, NULL, 'PED-20251128-0001', '2025-11-28 19:10:00', '2025-11-28 19:00:00', '2025-11-28 19:50:00', 7.00, 0.00, '2025-11-28 19:30:00', 'Com salada extra', '2025-11-28 19:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
+(19, NULL, NULL, 'PED-20251129-0001', '2025-11-29 20:10:00', '2025-11-29 20:00:00', '2025-11-29 20:50:00', 7.00, 0.00, '2025-11-29 20:30:00', 'Com picles extra', '2025-11-29 20:15:00', 'ENTREGUE', 45.00, 52.00, 1, 1),
+(20, NULL, NULL, 'PED-20251130-0001', '2025-11-30 21:10:00', '2025-11-30 21:00:00', '2025-11-30 21:50:00', 7.00, 0.00, '2025-11-30 21:30:00', NULL, '2025-11-30 21:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1);
 
--- Dia 1 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (101, NULL, NULL, 'PED-20251201-0001', '2025-12-01 12:05:00', '2025-12-01 12:00:00', '2025-12-01 12:40:00', 5.00, 0.00, '2025-12-01 12:20:00', 'Sem cebola', '2025-12-01 12:10:00', 'ENTREGUE', 54.00, 59.00, 1, 1),
-  (102, NULL, NULL, 'PED-20251201-0002', NULL, '2025-12-01 19:30:00', NULL, 5.00, 0.00, NULL, 'Com maionese à parte', NULL, 'PENDENTE', 33.00, 38.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (201, '2025-12-01 12:00:00', 0x00, 'Sem cebola', NULL, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 101, 10),
-  (202, '2025-12-01 19:30:00', 0x00, 'Com maionese à parte', NULL, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 102, 12);
-
--- Dia 2 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (103, NULL, NULL, 'PED-20251202-0001', '2025-12-02 13:10:00', '2025-12-02 13:00:00', '2025-12-02 13:50:00', 5.00, 0.00, '2025-12-02 13:30:00', 'Sem tomate', '2025-12-02 13:15:00', 'ENTREGUE', 36.00, 41.00, 1, 1),
-  (104, 'Pedido duplicado', '2025-12-02 20:10:00', 'PED-20251202-0002', NULL, '2025-12-02 20:00:00', NULL, 5.00, 0.00, NULL, 'Cancelar, pedido duplicado', NULL, 'CANCELADO', 45.00, 50.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (203, '2025-12-02 13:00:00', 0x00, 'Sem tomate', NULL, 'Klabin', NULL, 1, 36.00, 36.00, 103, 7),
-  (204, '2025-12-02 20:00:00', 0x00, NULL, NULL, 'Paraiso', NULL, 1, 45.00, 45.00, 104, 5);
-
--- Dia 3 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (105, NULL, NULL, 'PED-20251203-0001', '2025-12-03 11:10:00', '2025-12-03 11:00:00', '2025-12-03 11:40:00', 5.00, 0.00, '2025-12-03 11:20:00', 'Com bacon extra', '2025-12-03 11:12:00', 'ENTREGUE', 30.00, 35.00, 1, 1),
-  (106, NULL, NULL, 'PED-20251203-0002', NULL, '2025-12-03 18:00:00', NULL, 5.00, 0.00, NULL, NULL, NULL, 'PENDENTE', 31.00, 36.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (205, '2025-12-03 11:00:00', 0x01, 'Com bacon extra', 35.00, 'X-Burger Bacon', 'Promoção Bacon Day', 1, 27.00, 27.00, 105, 14),
-  (206, '2025-12-03 18:00:00', 0x00, NULL, NULL, 'X-burger cheddar', NULL, 1, 31.00, 31.00, 106, 8);
-
--- Dia 4 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (107, NULL, NULL, 'PED-20251204-0001', '2025-12-04 12:10:00', '2025-12-04 12:00:00', '2025-12-04 12:45:00', 5.00, 0.00, '2025-12-04 12:20:00', 'Com cheddar extra', '2025-12-04 12:12:00', 'ENTREGUE', 38.00, 43.00, 1, 1),
-  (108, NULL, NULL, 'PED-20251204-0002', NULL, '2025-12-04 19:00:00', NULL, 5.00, 0.00, NULL, 'Sem maionese', NULL, 'PENDENTE', 27.00, 32.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (207, '2025-12-04 12:00:00', 0x00, 'Com cheddar extra', NULL, 'Vila Mariana', NULL, 1, 38.00, 38.00, 107, 6),
-  (208, '2025-12-04 19:00:00', 0x00, 'Sem maionese', NULL, 'X-Burger Simples', NULL, 1, 27.00, 27.00, 108, 10);
-
--- Dia 5 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (109, NULL, NULL, 'PED-20251205-0001', '2025-12-05 13:10:00', '2025-12-05 13:00:00', '2025-12-05 13:50:00', 5.00, 0.00, '2025-12-05 13:30:00', NULL, '2025-12-05 13:15:00', 'ENTREGUE', 35.00, 40.00, 1, 1),
-  (110, 'Cliente desistiu', '2025-12-05 20:10:00', 'PED-20251205-0002', NULL, '2025-12-05 20:00:00', NULL, 5.00, 0.00, NULL, 'Desistiu após pedido', NULL, 'CANCELADO', 28.00, 33.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (209, '2025-12-05 13:00:00', 0x00, NULL, NULL, 'Basilios', NULL, 1, 35.00, 35.00, 109, 3),
-  (210, '2025-12-05 20:00:00', 0x00, NULL, NULL, 'Vila Monumento', NULL, 1, 28.00, 28.00, 110, 2);
-
--- Dia 6 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (111, NULL, NULL, 'PED-20251206-0001', '2025-12-06 12:10:00', '2025-12-06 12:00:00', '2025-12-06 12:45:00', 5.00, 0.00, '2025-12-06 12:20:00', NULL, '2025-12-06 12:12:00', 'ENTREGUE', 32.00, 37.00, 1, 1),
-  (112, NULL, NULL, 'PED-20251206-0002', NULL, '2025-12-06 19:00:00', NULL, 5.00, 0.00, NULL, 'Com salada extra', NULL, 'PENDENTE', 33.00, 38.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (211, '2025-12-06 12:00:00', 0x00, NULL, NULL, 'Cambuci', NULL, 1, 32.00, 32.00, 111, 4),
-  (212, '2025-12-06 19:00:00', 0x01, 'Com salada extra', 33.00, 'X-burger egg salada', 'Promoção Salada', 1, 28.00, 28.00, 112, 12);
-
--- Dia 7 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (113, 'Mudança de planos', '2025-12-08 20:19:27', 'PED-20251207-0001', NULL, '2025-12-07 05:55:48', NULL, 5.00, 0.00, NULL, 'Entregar na portaria', NULL, 'CANCELADO', 87.00, 92.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (213, '2025-12-07 05:55:48', 0x00, 'Sem cebola', NULL, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 113, 10),
-  (214, '2025-12-07 05:55:48', 0x00, NULL, NULL, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 113, 12);
-
--- Dia 8 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (114, NULL, NULL, 'PED-20251208-0001', NULL, '2025-12-08 20:52:34', NULL, 5.00, 0.00, NULL, 'Entregar na portaria', NULL, 'PENDENTE', 87.00, 92.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (215, '2025-12-08 20:52:34', 0x00, 'Sem cebola', NULL, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 114, 10),
-  (216, '2025-12-08 20:52:34', 0x00, NULL, NULL, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 114, 12);
-
--- Dia 9 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (115, NULL, NULL, 'PED-20251209-0001', '2025-12-09 13:10:00', '2025-12-09 13:00:00', '2025-12-09 13:50:00', 5.00, 0.00, '2025-12-09 13:30:00', 'Com ovo extra', '2025-12-09 13:15:00', 'ENTREGUE', 29.00, 34.00, 1, 1),
-  (116, NULL, NULL, 'PED-20251209-0002', NULL, '2025-12-09 20:00:00', NULL, 5.00, 0.00, NULL, NULL, NULL, 'PENDENTE', 30.00, 35.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (217, '2025-12-09 13:00:00', 0x01, 'Com ovo extra', 29.00, 'X-burger egg', 'Promoção Ovo Extra', 1, 24.00, 24.00, 115, 11),
-  (218, '2025-12-09 20:00:00', 0x00, NULL, NULL, 'X-burger acebolado', NULL, 1, 30.00, 30.00, 116, 17);
-
--- Dia 10 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (117, NULL, NULL, 'PED-20251210-0001', '2025-12-10 12:10:00', '2025-12-10 12:00:00', '2025-12-10 12:45:00', 5.00, 0.00, '2025-12-10 12:20:00', NULL, '2025-12-10 12:12:00', 'ENTREGUE', 36.00, 41.00, 1, 1),
-  (118, NULL, NULL, 'PED-20251210-0002', NULL, '2025-12-10 19:00:00', NULL, 5.00, 0.00, NULL, 'Com cheddar extra', NULL, 'PENDENTE', 31.00, 36.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (219, '2025-12-10 12:00:00', 0x00, NULL, NULL, 'Klabin', NULL, 1, 36.00, 36.00, 117, 7),
-  (220, '2025-12-10 19:00:00', 0x00, 'Com cheddar extra', NULL, 'X-burger Catupiry', NULL, 1, 31.00, 31.00, 118, 9);
-
--- Dia 11 de dezembro
-INSERT IGNORE INTO orders (id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id)
-VALUES
-  (119, NULL, NULL, 'PED-20251211-0001', '2025-12-11 13:10:00', '2025-12-11 13:00:00', '2025-12-11 13:50:00', 5.00, 0.00, '2025-12-11 13:30:00', 'Com picles extra', '2025-12-11 13:15:00', 'ENTREGUE', 45.00, 50.00, 1, 1),
-  (120, NULL, NULL, 'PED-20251211-0002', NULL, '2025-12-11 20:00:00', NULL, 5.00, 0.00, NULL, NULL, NULL, 'PENDENTE', 30.00, 35.00, 1, 1);
-
-INSERT IGNORE INTO product_order (id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id)
-VALUES
-  (221, '2025-12-11 13:00:00', 0x01, 'Com picles extra', 45.00, 'Paraiso', 'Black Friday', 1, 35.00, 35.00, 119, 5),
-  (222, '2025-12-11 20:00:00', 0x00, NULL, NULL, 'X-burger tártaro', NULL, 1, 30.00, 30.00, 120, 19);
+-- ITENS DOS PEDIDOS (product_order) IDs fixos iniciando em 1
+INSERT IGNORE INTO product_order (
+    id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id
+) VALUES
+(1, '2025-11-11 12:00:00', 0x00, 'Sem cebola', 27.00, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 1, 10),
+(2, '2025-11-12 13:00:00', 0x00, 'Com maionese à parte', 33.00, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 2, 12),
+(3, '2025-11-13 14:00:00', 0x00, 'Sem tomate', 36.00, 'Klabin', NULL, 1, 36.00, 36.00, 3, 7),
+(4, '2025-11-14 15:00:00', 0x00, 'Com bacon extra', 30.00, 'X-Burger Bacon', NULL, 1, 30.00, 30.00, 4, 14),
+(5, '2025-11-15 16:00:00', 0x00, 'Com cheddar extra', 38.00, 'Vila Mariana', NULL, 1, 38.00, 38.00, 5, 6),
+(6, '2025-11-16 17:00:00', 0x00, 'Sem maionese', 27.00, 'X-Burger Simples', NULL, 1, 27.00, 27.00, 6, 10),
+(7, '2025-11-17 18:00:00', 0x00, NULL, 35.00, 'Basilios', NULL, 1, 35.00, 35.00, 7, 3),
+(8, '2025-11-18 19:00:00', 0x01, 'Com salada extra', 33.00, 'X-burger egg salada', 'Promoção Salada', 1, 28.00, 28.00, 8, 12),
+(9, '2025-11-19 20:00:00', 0x01, 'Com picles extra', 45.00, 'Paraiso', 'Black Friday', 1, 35.00, 35.00, 9, 5),
+(10, '2025-11-20 21:00:00', 0x00, NULL, 30.00, 'X-Burger Salada', NULL, 1, 30.00, 30.00, 10, 16),
+(11, '2025-11-21 12:00:00', 0x00, 'Sem cebola', 27.00, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 11, 10),
+(12, '2025-11-22 13:00:00', 0x00, 'Com maionese à parte', 33.00, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 12, 12),
+(13, '2025-11-23 14:00:00', 0x00, 'Sem tomate', 36.00, 'Klabin', NULL, 1, 36.00, 36.00, 13, 7),
+(14, '2025-11-24 15:00:00', 0x00, 'Com bacon extra', 30.00, 'X-Burger Bacon', NULL, 1, 30.00, 30.00, 14, 14),
+(15, '2025-11-25 16:00:00', 0x00, 'Com cheddar extra', 38.00, 'Vila Mariana', NULL, 1, 38.00, 38.00, 15, 6),
+(16, '2025-11-26 17:00:00', 0x00, 'Sem maionese', 27.00, 'X-Burger Simples', NULL, 1, 27.00, 27.00, 16, 10),
+(17, '2025-11-27 18:00:00', 0x00, NULL, 35.00, 'Basilios', NULL, 1, 35.00, 35.00, 17, 3),
+(18, '2025-11-28 19:00:00', 0x01, 'Com salada extra', 33.00, 'X-burger egg salada', 'Promoção Salada', 1, 28.00, 28.00, 18, 12),
+(19, '2025-11-29 20:00:00', 0x01, 'Com picles extra', 45.00, 'Paraiso', 'Black Friday', 1, 35.00, 35.00, 19, 5),
+(20, '2025-11-30 21:00:00', 0x00, NULL, 30.00, 'X-Burger Salada', NULL, 1, 30.00, 30.00, 20, 16);
