@@ -63,6 +63,7 @@ public class AuthService {
                 .telefone(telefoneNormalizado)
                 .roles(List.of(RoleEnum.ROLE_CLIENTE)) // padrão
                 .enabled(true)
+                .dataNascimento(request.getDataNascimento()) // Adicionado campo dataNascimento
                 .build();
 
         usuario = usuarioRepository.save(usuario);

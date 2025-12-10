@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.controllers;
 
+import com.basilios.basilios.app.dto.dashboard.*;
 import com.basilios.basilios.core.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -45,87 +47,56 @@ public class DashboardController {
     }
 
     @GetMapping("/revenue")
-    @Operation(summary = "Receita (período)", description = "Soma total do valor (dinheiro) de todos os pedidos realizados no período")
-    public ResponseEntity<Map<String, Object>> getRevenue(
+    public ResponseEntity<RevenueDTO> getRevenue(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Map<String, Object> res = Map.of("revenue", dashboardService.getRevenue(start, end));
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(dashboardService.getRevenue(start, end));
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "Quantidade de pedidos (período)", description = "Quantidade total de pedidos realizados no período")
-    public ResponseEntity<Map<String, Object>> getOrdersCount(
+    public ResponseEntity<OrdersCountDTO> getOrdersCount(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Map<String, Object> res = Map.of("orders", dashboardService.getOrdersCount(start, end));
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(dashboardService.getOrdersCount(start, end));
     }
 
     @GetMapping("/average-ticket")
-    @Operation(summary = "Ticket médio (período)", description = "Valor da Receita total dividido pela quantidade de Pedidos")
-    public ResponseEntity<Map<String, Object>> getAverageTicket(
+    public ResponseEntity<AverageDeliveryTimeDTO> getAverageDeliveryTime(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Map<String, Object> res = Map.of("averageTicket", dashboardService.getAverageTicket(start, end));
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(dashboardService.getAverageDeliveryTime(start, end));
     }
 
     @GetMapping("/items-sold")
-    @Operation(summary = "Itens vendidos (período)", description = "Quantidade total de itens vendidos dentro do período")
-    public ResponseEntity<Map<String, Object>> getItemsSold(
+    public ResponseEntity<ItemsSoldDTO> getItemsSold(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Map<String, Object> res = Map.of("itemsSold", dashboardService.getItemsSold(start, end));
-        return ResponseEntity.ok(res);
+        long itemsSold = dashboardService.getItemsSold(start, end);
+        return ResponseEntity.ok(ItemsSoldDTO.toResponse(itemsSold));
     }
 
     @GetMapping("/cancellation-rate")
-    @Operation(summary = "% Cancelamento (período)", description = "Percentual de pedidos cancelados no período")
-    public ResponseEntity<Map<String, Object>> getCancellationRate(
+    public ResponseEntity<CancellationRateDTO> getCancellationRate(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Map<String, Object> res = Map.of("cancellationRate", dashboardService.getCancellationRate(start, end));
-        return ResponseEntity.ok(res);
-    }
-
-    @GetMapping("/average-delivery-time")
-    @Operation(summary = "Tempo médio de entrega (período)", description = "Média do tempo entre despacho e entrega para pedidos entregues no período (retorna segundos e texto)")
-    public ResponseEntity<Map<String, Object>> getAverageDeliveryTime(
-            @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
-            @RequestParam(name = "dta_fim", required = false) String dtaFim) {
-        LocalDateTime start = parseStart(dtaInicio);
-        LocalDateTime end = parseEnd(dtaFim);
-
-        OptionalDouble avgSec = dashboardService.getAverageDeliveryTimeInSeconds(start, end);
-        Map<String, Object> res;
-        if (avgSec.isPresent()) {
-            long seconds = (long) Math.round(avgSec.getAsDouble());
-            long hours = seconds / 3600;
-            long minutes = (seconds % 3600) / 60;
-            long secs = seconds % 60;
-            String text = String.format("%02d:%02d:%02d", hours, minutes, secs);
-            res = Map.of("averageSeconds", seconds, "averageText", text);
-        } else {
-            res = Map.of("averageSeconds", 0, "averageText", "00:00:00");
-        }
-
-        return ResponseEntity.ok(res);
+        long total = dashboardService.getOrdersCount(start, end).getCount();
+        long cancelled = dashboardService.getCancelledOrdersCount(start, end);
+        double rate = total == 0 ? 0.0 : ((double) cancelled / (double) total) * 100.0;
+        return ResponseEntity.ok(CancellationRateDTO.toResponse(rate));
     }
 
     @GetMapping("/order-peaks")
-    @Operation(summary = "Picos de pedidos (período)", description = "Timestamps (createdAt) de pedidos no período para identificar horários de maior movimento")
-    public ResponseEntity<List<LocalDateTime>> getOrderPeaks(
+    public ResponseEntity<OrderPeaksDTO> getOrderPeaks(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
@@ -134,8 +105,7 @@ public class DashboardController {
     }
 
     @GetMapping("/top-products")
-    @Operation(summary = "Top produtos (unidades)", description = "Top N produtos por unidades vendidas no período. Parâmetro 'limit' opcional (default 5)")
-    public ResponseEntity<List<Map<String, Object>>> getTopProducts(
+    public ResponseEntity<List<TopProductDTO>> getTopProducts(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim,
             @RequestParam(name = "limit", defaultValue = "5") int limit) {
@@ -145,14 +115,13 @@ public class DashboardController {
     }
 
     @GetMapping("/champion")
-    @Operation(summary = "Campeão do período", description = "Produto mais vendido no período; inclui se esteve em promoção")
-    public ResponseEntity<Map<String, Object>> getChampion(
+    public ResponseEntity<ChampionDTO> getChampion(
             @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
             @RequestParam(name = "dta_fim", required = false) String dtaFim) {
         LocalDateTime start = parseStart(dtaInicio);
         LocalDateTime end = parseEnd(dtaFim);
-        Optional<Map<String, Object>> opt = dashboardService.getChampionOfPeriod(start, end);
-        return opt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.ok(Collections.emptyMap()));
+        Optional<ChampionDTO> opt = dashboardService.getChampionOfPeriod(start, end);
+        return opt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.ok(null));
     }
 
 }

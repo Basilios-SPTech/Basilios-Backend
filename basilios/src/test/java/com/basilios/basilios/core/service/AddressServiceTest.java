@@ -471,12 +471,12 @@ class AddressServiceTest {
         @Test
         @DisplayName("Deve lançar BusinessException ao restaurar endereço já ativo")
         void shouldThrowBusinessExceptionWhenRestoringActiveAddress() {
+            assertNotNull(address1, "address1 não pode ser nulo");
             address1.setDeletedAt(null);
-
+            address1.setUsuario(usuario); // Garante que o usuário está sempre presente
             when(addressRepository.findById(1L)).thenReturn(Optional.of(address1));
-
-            // Service does not throw; restore on an active address should simply return the DTO
             AddressResponseDTO result = addressService.restoreAddress(1L);
+
             assertNotNull(result);
             verify(addressRepository).save(address1);
         }

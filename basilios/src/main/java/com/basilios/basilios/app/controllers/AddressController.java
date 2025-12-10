@@ -26,9 +26,6 @@ public class AddressController {
     private final AddressService addressService;
     private final OrderService orderService;
 
-    // ========== GET - LISTAGEM ==========
-
-
     @Operation(
             summary = "Listar todos os endereços",
             description = "Retorna TODOS os endereços cadastrados no sistema."
@@ -69,8 +66,6 @@ public class AddressController {
         return ResponseEntity.ok(address);
     }
 
-    // ========== POST - CRIAR ==========
-
     @Operation(
             summary = "Criar novo endereço",
             description = "Cria um novo endereço para o usuário autenticado."
@@ -81,8 +76,6 @@ public class AddressController {
         AddressResponseDTO response = addressService.createAddress(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-    // ========== PATCH - ATUALIZAR ==========
 
     @Operation(
             summary = "Atualizar endereço",
@@ -105,8 +98,6 @@ public class AddressController {
         AddressResponseDTO response = addressService.setAsPrincipal(id);
         return ResponseEntity.ok(response);
     }
-
-    // ========== DELETE ==========
 
     @Operation(
             summary = "Deletar endereço",

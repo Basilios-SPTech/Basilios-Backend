@@ -1,4 +1,4 @@
-package com.basilios.basilios.app.controller;
+package com.basilios.basilios.app.controllers;
 
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +22,10 @@ import java.util.Map;
 @PreAuthorize("hasRole('FUNCIONARIO')")
 @Tag(name = "Funcionário - Pedidos", description = "Gerenciamento de pedidos para funcionários")
 @SecurityRequirement(name = "bearer-jwt")
-public class  StaffOrderController {
+@RequiredArgsConstructor
+public class StaffOrderController {
 
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
 
     // ========== LISTAGEM DE PEDIDOS ==========
 

@@ -2,6 +2,7 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
+import com.basilios.basilios.app.dto.order.OrderUpdateDTO;
 import com.basilios.basilios.app.mapper.OrderMapper;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
@@ -11,8 +12,10 @@ import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.util.DistanceCalculator;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,26 +27,18 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class OrderService {
 
     private static final double MAX_DELIVERY_DISTANCE_KM = 7.0;
     private static final BigDecimal BASE_DELIVERY_FEE = new BigDecimal("5.00");
     private static final BigDecimal DELIVERY_FEE_PER_KM = new BigDecimal("2.00");
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private AddressRepository addressRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private UsuarioService usuarioService;
-
-    @Autowired
-    private OrderMapper orderMapper;
+    private final OrderRepository orderRepository;
+    private final AddressRepository addressRepository;
+    private final ProductRepository productRepository;
+    private final UsuarioService usuarioService;
+    private final OrderMapper orderMapper;
 
     @Value("${store.latitude:#{-23.550520}}")
     private Double storeLatitude;
@@ -251,9 +246,68 @@ public class OrderService {
      * Lista todos os pedidos (admin) — inclui todos os pedidos do sistema
      */
     @Transactional(readOnly = true)
+    public Page<OrderResponseDTO> getAllOrders(Pageable pageable) {
+        Page<Order> page = orderRepository.findAll(pageable);
+        return page.map(orderMapper::toResponse);
+    }
+
+    /**
+     * Compatibilidade: retorna todos (sem paginação)
+     */
+    @Transactional(readOnly = true)
     public List<OrderResponseDTO> getAllOrders() {
         List<Order> orders = orderRepository.findAll();
         return orderMapper.toResponseList(orders);
+    }
+
+    /**
+     * Atualiza parcialmente um pedido com as regras básicas (status e alguns campos)
+     */
+    @Transactional
+    public OrderResponseDTO updateOrder(Long id, OrderUpdateDTO dto) {
+        Order order = findById(id);
+
+        // Atualizar status se informado
+        if (dto.getStatus() != null) {
+            validateStatusTransition(order, dto.getStatus());
+            switch (dto.getStatus()) {
+                case CONFIRMADO -> order.confirmar();
+                case PREPARANDO -> order.iniciarPreparo();
+                case DESPACHADO -> order.despachar();
+                case ENTREGUE -> order.entregar();
+                case CANCELADO -> order.cancelar(dto.getMotivo() != null ? dto.getMotivo() : "Cancelado via API");
+                default -> throw new BusinessException("Transição de status não suportada via endpoint genérico");
+            }
+        }
+
+        // Atualizar campos simples
+        if (dto.getDeliveryFee() != null) {
+            order.setDeliveryFee(dto.getDeliveryFee());
+        }
+        if (dto.getDiscount() != null) {
+            order.setDiscount(dto.getDiscount());
+        }
+        if (dto.getObservations() != null) {
+            order.setObservations(dto.getObservations());
+        }
+        if (dto.getAddressId() != null) {
+            Address address = addressRepository.findById(dto.getAddressId())
+                    .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + dto.getAddressId()));
+            order.setAddressEntrega(address);
+        }
+
+        order = orderRepository.save(order);
+        return orderMapper.toResponse(order);
+    }
+
+    /**
+     * Soft delete (marca deletedAt via JPA @SQLDelete ou via serviço se for necessário)
+     */
+    @Transactional
+    public void softDelete(Long id) {
+        Order order = findById(id);
+        // usar repository.delete para acionar @SQLDelete
+        orderRepository.delete(order);
     }
 
     /**
