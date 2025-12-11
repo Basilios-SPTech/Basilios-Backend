@@ -19,13 +19,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/products")
-@PreAuthorize("hasRole('FUNCIONARIO')")
 @Tag(name = "Products", description = "CRUD e operações administrativas sobre produtos")
 public class ProductController {
 
     @Autowired
     private ProductService productService;
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PostMapping
     @Operation(summary = "Criar produto", description = "Cria um novo produto (ROLE_FUNCIONARIO)")
     public ResponseEntity<ProductResponseDTO> createProduct(
@@ -41,14 +40,14 @@ public class ProductController {
         List<ProductResponseDTO> list = productService.getAllProducts(activeOnly);
         return ResponseEntity.ok(list);
     }
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @GetMapping("/{id}")
     @Operation(summary = "acha por id o produto", description = "Retorna o produto por id")
     public ResponseEntity<ProductResponseDTO> getProduct(@PathVariable Long id) {
         ProductResponseDTO dto = productService.getProductById(id);
         return ResponseEntity.ok(dto);
     }
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PatchMapping("/{id}")
     @Operation(summary = "Atualizar produto", description = "Atualiza dados do produto")
     public ResponseEntity<ProductResponseDTO> updateProduct(
@@ -57,7 +56,7 @@ public class ProductController {
         ProductResponseDTO updated = productService.updateProduct(id, dto);
         return ResponseEntity.ok(updated);
     }
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @DeleteMapping("/{id}")
     @Operation(summary = "Deletar produto", description = "Deleta produto se permitido")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
@@ -66,7 +65,7 @@ public class ProductController {
     }
 
     // ========== Status e Preço ===========
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PatchMapping("/{id}/status")
     @Operation(summary = "Atualizar status do produto", description = "Atualiza apenas o campo isPaused do produto (true/false)")
     public ResponseEntity<ProductResponseDTO> updateStatus(
@@ -75,7 +74,7 @@ public class ProductController {
         ProductResponseDTO dto = productService.updateStatus(id, statusDTO.getIsPaused());
         return ResponseEntity.ok(dto);
     }
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PatchMapping("/{id}/price")
     @Operation(summary = "Atualizar preço", description = "Atualiza apenas o preço do produto")
     public ResponseEntity<ProductResponseDTO> updatePrice(
@@ -93,14 +92,14 @@ public class ProductController {
     }
 
     // ========== Ingredientes ==========
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @GetMapping("/{id}/ingredients")
     @Operation(summary = "Listar ingredientes", description = "Lista ingredientes de um produto")
     public ResponseEntity<List<Map<String, Object>>> getIngredients(@PathVariable Long id) {
         List<Map<String, Object>> list = productService.getProductIngredients(id);
         return ResponseEntity.ok(list);
     }
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PostMapping("/{id}/ingredients")
     @Operation(summary = "Adicionar ingrediente", description = "Adiciona ingrediente ao produto")
     public ResponseEntity<ProductResponseDTO> addIngredient(
@@ -112,7 +111,7 @@ public class ProductController {
         ProductResponseDTO dto = productService.addIngredient(id, name, qty, unit);
         return ResponseEntity.ok(dto);
     }
-
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @DeleteMapping("/{id}/ingredients/{ingredientId}")
     @Operation(summary = "Remover ingrediente", description = "Remove ingrediente do produto")
     public ResponseEntity<ProductResponseDTO> removeIngredient(
