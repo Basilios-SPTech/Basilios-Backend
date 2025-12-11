@@ -258,48 +258,73 @@ VALUES
 INSERT IGNORE INTO orders (
     id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id
 ) VALUES
-(1, NULL, NULL, 'PED-20251111-0001', '2025-11-11 12:10:00', '2025-11-11 12:00:00', '2025-11-11 12:40:00', 7.00, 0.00, '2025-11-11 12:20:00', 'Sem cebola', '2025-11-11 12:10:00', 'ENTREGUE', 54.00, 61.00, 1, 1),
-(2, NULL, NULL, 'PED-20251112-0001', '2025-11-12 13:10:00', '2025-11-12 13:00:00', '2025-11-12 13:50:00', 7.00, 0.00, '2025-11-12 13:30:00', 'Com maionese à parte', '2025-11-12 13:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
-(3, NULL, NULL, 'PED-20251113-0001', '2025-11-13 14:10:00', '2025-11-13 14:00:00', '2025-11-13 14:50:00', 7.00, 0.00, '2025-11-13 14:30:00', 'Sem tomate', '2025-11-13 14:15:00', 'ENTREGUE', 36.00, 43.00, 1, 1),
-(4, NULL, NULL, 'PED-20251114-0001', '2025-11-14 15:10:00', '2025-11-14 15:00:00', '2025-11-14 15:50:00', 7.00, 0.00, '2025-11-14 15:30:00', 'Com bacon extra', '2025-11-14 15:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1),
-(5, NULL, NULL, 'PED-20251115-0001', '2025-11-15 16:10:00', '2025-11-15 16:00:00', '2025-11-15 16:50:00', 7.00, 0.00, '2025-11-15 16:30:00', 'Com cheddar extra', '2025-11-15 16:15:00', 'ENTREGUE', 38.00, 45.00, 1, 1),
-(6, NULL, NULL, 'PED-20251116-0001', '2025-11-16 17:10:00', '2025-11-16 17:00:00', '2025-11-16 17:50:00', 7.00, 0.00, '2025-11-16 17:30:00', 'Sem maionese', '2025-11-16 17:15:00', 'ENTREGUE', 27.00, 34.00, 1, 1),
-(7, NULL, NULL, 'PED-20251117-0001', '2025-11-17 18:10:00', '2025-11-17 18:00:00', '2025-11-17 18:50:00', 7.00, 0.00, '2025-11-17 18:30:00', NULL, '2025-11-17 18:15:00', 'ENTREGUE', 35.00, 42.00, 1, 1),
-(8, NULL, NULL, 'PED-20251118-0001', '2025-11-18 19:10:00', '2025-11-18 19:00:00', '2025-11-18 19:50:00', 7.00, 0.00, '2025-11-18 19:30:00', 'Com salada extra', '2025-11-18 19:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
-(9, NULL, NULL, 'PED-20251119-0001', '2025-11-19 20:10:00', '2025-11-19 20:00:00', '2025-11-19 20:50:00', 7.00, 0.00, '2025-11-19 20:30:00', 'Com picles extra', '2025-11-19 20:15:00', 'ENTREGUE', 45.00, 52.00, 1, 1),
-(10, NULL, NULL, 'PED-20251120-0001', '2025-11-20 21:10:00', '2025-11-20 21:00:00', '2025-11-20 21:50:00', 7.00, 0.00, '2025-11-20 21:30:00', NULL, '2025-11-20 21:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1),
-(11, NULL, NULL, 'PED-20251121-0001', '2025-11-21 12:10:00', '2025-11-21 12:00:00', '2025-11-21 12:40:00', 7.00, 0.00, '2025-11-21 12:20:00', 'Sem cebola', '2025-11-21 12:10:00', 'ENTREGUE', 54.00, 61.00, 1, 1),
-(12, NULL, NULL, 'PED-20251122-0001', '2025-11-22 13:10:00', '2025-11-22 13:00:00', '2025-11-22 13:50:00', 7.00, 0.00, '2025-11-22 13:30:00', 'Com maionese à parte', '2025-11-22 13:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
-(13, NULL, NULL, 'PED-20251123-0001', '2025-11-23 14:10:00', '2025-11-23 14:00:00', '2025-11-23 14:50:00', 7.00, 0.00, '2025-11-23 14:30:00', 'Sem tomate', '2025-11-23 14:15:00', 'ENTREGUE', 36.00, 43.00, 1, 1),
-(14, NULL, NULL, 'PED-20251124-0001', '2025-11-24 15:10:00', '2025-11-24 15:00:00', '2025-11-24 15:50:00', 7.00, 0.00, '2025-11-24 15:30:00', 'Com bacon extra', '2025-11-24 15:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1),
-(15, NULL, NULL, 'PED-20251125-0001', '2025-11-25 16:10:00', '2025-11-25 16:00:00', '2025-11-25 16:50:00', 7.00, 0.00, '2025-11-25 16:30:00', 'Com cheddar extra', '2025-11-25 16:15:00', 'ENTREGUE', 38.00, 45.00, 1, 1),
-(16, NULL, NULL, 'PED-20251126-0001', '2025-11-26 17:10:00', '2025-11-26 17:00:00', '2025-11-26 17:50:00', 7.00, 0.00, '2025-11-26 17:30:00', 'Sem maionese', '2025-11-26 17:15:00', 'ENTREGUE', 27.00, 34.00, 1, 1),
-(17, NULL, NULL, 'PED-20251127-0001', '2025-11-27 18:10:00', '2025-11-27 18:00:00', '2025-11-27 18:50:00', 7.00, 0.00, '2025-11-27 18:30:00', NULL, '2025-11-27 18:15:00', 'ENTREGUE', 35.00, 42.00, 1, 1),
-(18, NULL, NULL, 'PED-20251128-0001', '2025-11-28 19:10:00', '2025-11-28 19:00:00', '2025-11-28 19:50:00', 7.00, 0.00, '2025-11-28 19:30:00', 'Com salada extra', '2025-11-28 19:15:00', 'ENTREGUE', 33.00, 40.00, 1, 1),
-(19, NULL, NULL, 'PED-20251129-0001', '2025-11-29 20:10:00', '2025-11-29 20:00:00', '2025-11-29 20:50:00', 7.00, 0.00, '2025-11-29 20:30:00', 'Com picles extra', '2025-11-29 20:15:00', 'ENTREGUE', 45.00, 52.00, 1, 1),
-(20, NULL, NULL, 'PED-20251130-0001', '2025-11-30 21:10:00', '2025-11-30 21:00:00', '2025-11-30 21:50:00', 7.00, 0.00, '2025-11-30 21:30:00', NULL, '2025-11-30 21:15:00', 'ENTREGUE', 30.00, 37.00, 1, 1);
+-- 1) 2025-11-11 ENTREGUE - total 59.80
+(1, NULL, NULL, 'PED-0001', '2025-12-01 19:31:00', '2025-12-01 19:30:00', '2025-12-01 20:30:00', 7.00, 0.00, '2025-12-11 20:00:00', 'Pedido automático dia 11/11', '2025-11-11 19:32:00', 'ENTREGUE', 52.80, 59.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 2) 2025-11-12 ENTREGUE - total 89.70
+(2, NULL, NULL, 'PED-0002', '2025-12-02 20:10:00', '2025-12-02 20:09:00', '2025-12-02 20:50:00', 7.00, 0.00, '2025-12-02 20:10:00', 'Pedido automático dia 12/11', '2025-12-02 20:10:00', 'ENTREGUE', 82.70, 89.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 3) 2025-11-13 CANCELADO - total 0.00
+(3, 'Pedido cancelado', '2025-12-03 18:05:00', 'PED-0003', NULL, '2025-12-03 18:03:00', NULL, 0.00, 0.00, NULL, 'Pedido cancelado dia 03/12', NULL, 'CANCELADO', 0.00, 0.00, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 4) 2025-11-14 ENTREGUE - total 45.80
+(4, NULL, NULL, 'PED-0004', '2025-12-04 21:15:00', '2025-12-04 21:13:00', '2025-12-04 21:50:00', 7.00, 0.00, '2025-12-04 21:30:00', 'Pedido automático dia 14/11', '2025-12-04 21:16:00', 'ENTREGUE', 38.80, 45.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 5) 2025-11-15 ENTREGUE - total 120.60
+(5, NULL, NULL, 'PED-0005', '2025-12-05 19:45:00', '2025-12-05 19:43:00', '2025-12-05 20:45:00', 7.00, 0.00, '2025-12-05 20:05:00', 'Pedido automático dia 15/11', '2025-11-15 19:46:00', 'ENTREGUE', 113.60, 120.60, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 6) 2025-11-16 ENTREGUE - total 32.90
+(6, NULL, NULL, 'PED-0006', '2025-12-06 18:30:50', '2025-12-06 18:30:00', '2025-12-06 20:30:00', 7.00, 0.00, '2025-12-06 20:31:00', 'Pedido automático dia 16/11', '2025-12-06 18:34:00', 'ENTREGUE', 25.90, 32.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 7) 2025-11-17 ENTREGUE - total 65.80
+(7, NULL, NULL, 'PED-0007', '2025-12-07 20:30:00', '2025-12-07 20:00:00', '2025-12-07 21:00:00', 7.00, 0.00, '2025-12-07 20:50:00', 'Pedido automático dia 17/11', '2025-12-07 20:32:00', 'ENTREGUE', 58.80, 65.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 8) 2025-11-18 ENTREGUE - total 25.90
+(8, NULL, NULL, 'PED-0008', '2025-12-08 19:00:00', '2025-12-08 18:50:00', '2025-12-08 20:00:00', 7.00, 0.00, '2025-12-08 19:30:00', 'Pedido automático dia 18/11', '2025-12-08 19:01:00', 'ENTREGUE', 18.90, 25.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 9) 2025-11-19 ENTREGUE - total 78.70
+(9, NULL, NULL, 'PED-0009', '2025-12-09 20:45:00', '2025-12-09 20:35:00', '2025-12-09 22:45:00', 7.00, 0.00, '2025-12-09 21:45:00', 'Pedido automático dia 19/11', '2025-12-09 20:46:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 10) 2025-11-20 ENTREGUE - total 42.80
+(10, NULL, NULL, 'PED-0010', '2025-12-10 18:51:00', '2025-12-10 18:50:00', '2025-12-10 19:50:00', 7.00, 0.00, '2025-12-10 19:30:00', 'Pedido automático dia 20/11', '2025-12-10 18:52:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 11) 2025-11-21 ENTREGUE - total 59.80
+(11, NULL, NULL, 'PED-0011', '2025-12-11 19:30:20', '2025-12-11 19:30:00', '2025-12-11 20:30:00', 7.00, 0.00, '2025-12-11 19:32:00', 'Pedido automático dia 21/11', '2025-12-11 20:10:00', 'ENTREGUE', 52.80, 59.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 12) 2025-11-22 ENTREGUE - total 89.70
+(12, NULL, NULL, 'PED-0012', '2025-12-12 20:11:00', '2025-12-12 20:10:00', '2025-12-12 20:40:00', 7.00, 0.00, '2025-12-12 20:30:00', 'Pedido automático dia 22/11', '2025-12-12 20:12:00', 'ENTREGUE', 82.70, 89.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 13) 2025-11-23 ENTREGUE - total 45.80
+(13, NULL, NULL, 'PED-0013', '2025-12-13 21:16:00', '2025-12-13 21:15:00', '2025-12-13 22:15:00', 7.00, 0.00, '2025-12-13 22:00:00', 'Pedido automático dia 23/11', '2025-11-23 21:17:00', 'ENTREGUE', 38.80, 45.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 14) 2025-11-24 CANCELADO - total 0.00
+(14, 'Pedido cancelado', '2025-12-14 18:05:00', 'PED-0014', NULL, '2025-12-24 18:02:00', NULL, 0.00, 0.00, NULL, 'Pedido cancelado dia 24/11', NULL, 'CANCELADO', 0.00, 0.00, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 15) 2025-11-25 ENTREGUE - total 120.60
+(15, NULL, NULL, 'PED-0015', '2025-12-15 19:46:00', '2025-12-15 19:45:00', '2025-12-15 20:45:00', 7.00, 0.00, '2025-12-15 20:15:00', 'Pedido automático dia 25/11', '2025-12-15 19:49:00', 'ENTREGUE', 113.60, 120.60, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 16) 2025-11-26 ENTREGUE - total 32.90
+(16, NULL, NULL, 'PED-0016', '2025-12-16 18:32:00', '2025-12-16 18:30:00', '2025-12-16 19:30:00', 7.00, 0.00, '2025-12-16 19:00:00', 'Pedido automático dia 26/11', '2025-12-16 18:33:00', 'ENTREGUE', 25.90, 32.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 17) 2025-11-27 ENTREGUE - total 65.80
+(17, NULL, NULL, 'PED-0017', '2025-12-17 20:01:00', '2025-12-17 20:00:00', '2025-12-17 20:59:00', 7.00, 0.00, '2025-12-17 20:30:00', 'Pedido automático dia 27/11', '2025-12-17 20:04:00', 'ENTREGUE', 58.80, 65.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 18) 2025-11-28 ENTREGUE - total 25.90
+(18, NULL, NULL, 'PED-0018', '2025-12-18 19:01:00', '2025-12-18 19:00:00', '2025-12-18 20:00:00', 7.00, 0.00, '2025-12-18 19:50:00', 'Pedido automático dia 28/11', '2025-12-18 19:05:00', 'ENTREGUE', 18.90, 25.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 19) 2025-11-29 ENTREGUE - total 78.70
+(19, NULL, NULL, 'PED-0019', '2025-12-19 20:46:00', '2025-12-19 20:45:00', '2025-12-19 22:45:00', 7.00, 0.00, '2025-12-19 21:45:00', 'Pedido automático dia 29/11', '2025-12-19 20:47:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+-- 20) 2025-11-30 ENTREGUE - total 42.80
+(20, NULL, NULL, 'PED-0020', '2025-12-20 18:51:00', '2025-12-20 18:50:00', '2025-12-20 19:50:00', 7.00, 0.00, '2025-12-20 19:30:00', 'Pedido automático dia 30/11', '2025-12-20 18:54:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1));
 
--- ITENS DOS PEDIDOS (product_order) IDs fixos iniciando em 1
-INSERT IGNORE INTO product_order (
-    id, created_at, had_promotion, observations, original_price, product_name, promotion_name, quantity, subtotal, unit_price, order_id, product_id
-) VALUES
-(1, '2025-11-11 12:00:00', 0x00, 'Sem cebola', 27.00, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 1, 10),
-(2, '2025-11-12 13:00:00', 0x00, 'Com maionese à parte', 33.00, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 2, 12),
-(3, '2025-11-13 14:00:00', 0x00, 'Sem tomate', 36.00, 'Klabin', NULL, 1, 36.00, 36.00, 3, 7),
-(4, '2025-11-14 15:00:00', 0x00, 'Com bacon extra', 30.00, 'X-Burger Bacon', NULL, 1, 30.00, 30.00, 4, 14),
-(5, '2025-11-15 16:00:00', 0x00, 'Com cheddar extra', 38.00, 'Vila Mariana', NULL, 1, 38.00, 38.00, 5, 6),
-(6, '2025-11-16 17:00:00', 0x00, 'Sem maionese', 27.00, 'X-Burger Simples', NULL, 1, 27.00, 27.00, 6, 10),
-(7, '2025-11-17 18:00:00', 0x00, NULL, 35.00, 'Basilios', NULL, 1, 35.00, 35.00, 7, 3),
-(8, '2025-11-18 19:00:00', 0x01, 'Com salada extra', 33.00, 'X-burger egg salada', 'Promoção Salada', 1, 28.00, 28.00, 8, 12),
-(9, '2025-11-19 20:00:00', 0x01, 'Com picles extra', 45.00, 'Paraiso', 'Black Friday', 1, 35.00, 35.00, 9, 5),
-(10, '2025-11-20 21:00:00', 0x00, NULL, 30.00, 'X-Burger Salada', NULL, 1, 30.00, 30.00, 10, 16),
-(11, '2025-11-21 12:00:00', 0x00, 'Sem cebola', 27.00, 'X-Burger Simples', NULL, 2, 54.00, 27.00, 11, 10),
-(12, '2025-11-22 13:00:00', 0x00, 'Com maionese à parte', 33.00, 'X-burger egg salada', NULL, 1, 33.00, 33.00, 12, 12),
-(13, '2025-11-23 14:00:00', 0x00, 'Sem tomate', 36.00, 'Klabin', NULL, 1, 36.00, 36.00, 13, 7),
-(14, '2025-11-24 15:00:00', 0x00, 'Com bacon extra', 30.00, 'X-Burger Bacon', NULL, 1, 30.00, 30.00, 14, 14),
-(15, '2025-11-25 16:00:00', 0x00, 'Com cheddar extra', 38.00, 'Vila Mariana', NULL, 1, 38.00, 38.00, 15, 6),
-(16, '2025-11-26 17:00:00', 0x00, 'Sem maionese', 27.00, 'X-Burger Simples', NULL, 1, 27.00, 27.00, 16, 10),
-(17, '2025-11-27 18:00:00', 0x00, NULL, 35.00, 'Basilios', NULL, 1, 35.00, 35.00, 17, 3),
-(18, '2025-11-28 19:00:00', 0x01, 'Com salada extra', 33.00, 'X-burger egg salada', 'Promoção Salada', 1, 28.00, 28.00, 18, 12),
-(19, '2025-11-29 20:00:00', 0x01, 'Com picles extra', 45.00, 'Paraiso', 'Black Friday', 1, 35.00, 35.00, 19, 5),
-(20, '2025-11-30 21:00:00', 0x00, NULL, 30.00, 'X-Burger Salada', NULL, 1, 30.00, 30.00, 20, 16);
+-- ===========================================
+-- ITENS DOS PEDIDOS (product_order)
+-- ===========================================
+-- ORDER 1 - 2025-12-01
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-01 19:31:00', 1, 'Item gerado via seed', 35.00, 'Basilios', 'Promo Basilios Day',   2, 60.00, 30.00, 1, 3),
+('2025-12-01 19:31:00', 0, 'Item gerado via seed', 31.00, 'X-burger cheddar', NULL,   1, 31.00, 31.00, 1, 8);
+-- ORDER 2 - 2025-12-02
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-02 20:10:00', 1, 'Item gerado via seed', 35.00, 'Basilios', 'Promo Basilios Day',   1, 30.00, 30.00, 2, 3),
+('2025-12-02 20:10:00', 0, 'Item gerado via seed', 14.00, 'Batata Frita', NULL,   2, 28.00, 14.00, 2, 26);
+-- ORDER 3 - 2025-12-03 (CANCELADO, mas teve item criado)
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-03 18:03:00', 0, 'Item gerado via seed', 29.00, 'X-burger egg', NULL,   1, 29.00, 29.00, 3, 11);
+-- ORDER 4 - 2025-12-04
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-04 21:15:00', 1, 'Item gerado via seed', 30.00, 'X-Burger Bacon', 'Promo Bacon Day',   2, 54.00, 27.00, 4, 13),
+('2025-12-04 21:15:00', 0, 'Item gerado via seed', 23.00, 'Dog Premium', NULL,   1, 23.00, 23.00, 4, 24);
+-- ORDER 5 - 2025-12-05
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-05 19:45:00', 1, 'Item gerado via seed', 35.00, 'Basilios', 'Promo Basilios Day',   3, 90.00, 30.00, 5, 3),
+('2025-12-05 19:45:00', 0, 'Item gerado via seed', 22.00, 'Batata Frita c/ Cheddar e Bacon', NULL,   1, 22.00, 22.00, 5, 28);
+-- ORDER 11 - 2025-12-11
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-11 19:30:20', 1, 'Item gerado via seed', 35.00, 'Basilios', 'Promo Basilios Day',   1, 30.00, 30.00, 11, 3),
+('2025-12-11 19:30:20', 0, 'Item gerado via seed', 45.00, 'Combo X-Bacon Salada', NULL,   1, 45.00, 45.00, 11, 32);
+-- ORDER 12 - 2025-12-12
+INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
+('2025-12-12 20:11:00', 0, 'Item gerado via seed', 42.00, 'Combo X-Salada', NULL,   2, 84.00, 42.00, 12, 31);
