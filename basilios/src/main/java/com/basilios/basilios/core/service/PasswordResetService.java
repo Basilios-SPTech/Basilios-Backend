@@ -25,7 +25,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${http://localhost:5173/}")
     private String frontendUrl;
 
     @Transactional
@@ -42,7 +42,7 @@ public class PasswordResetService {
         tokenRepository.save(resetToken);
 
         // Envia email com o link de reset
-        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        String resetLink = frontendUrl + "/ls ?token=" + token;
         emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
 
         log.info("Token de reset de senha gerado para o usuário: {}", user.getEmail());
