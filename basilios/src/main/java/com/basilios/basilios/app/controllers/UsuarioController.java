@@ -4,11 +4,9 @@ import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
 import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
 import com.basilios.basilios.core.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +32,7 @@ public class UsuarioController {
         List<UsuarioListarDTO> usuarios = usuarioService.findAll().stream()
             .map(u -> {
                 UsuarioListarDTO dto = new UsuarioListarDTO();
+                dto.setId(u.getId());
                 dto.setNomeUsuario(u.getNomeUsuario());
                 dto.setEmail(u.getEmail());
                 dto.setCpf(u.getCpf());
