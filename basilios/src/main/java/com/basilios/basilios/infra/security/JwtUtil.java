@@ -44,6 +44,12 @@ public class JwtUtil {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    @SuppressWarnings("unchecked")
+    public java.util.List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("roles", java.util.List.class);
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -63,6 +69,10 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        // Adiciona as roles do usuário no token
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .toList());
         return createToken(claims, userDetails.getUsername());
     }
 

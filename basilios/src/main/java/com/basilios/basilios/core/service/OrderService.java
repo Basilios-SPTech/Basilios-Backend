@@ -101,10 +101,7 @@ public class OrderService {
                 .addressEntrega(addressEntrega)
                 .status(StatusPedidoEnum.PENDENTE)
                 .observations(request.getObservations())
-                .codigoPedido(generateOrderCode())
                 .build();
-
-        System.out.println("[DEBUG] Pedido criado (ainda sem items): " + order);
 
         // Processar items do pedido
         for (OrderRequestDTO.OrderItemRequest itemRequest : request.getItems()) {
@@ -142,32 +139,21 @@ public class OrderService {
                     .originalPrice(hadPromotion ? originalPrice : null)
                     .build();
 
-            // Calcular e setar subtotal explicitamente
-            productOrder.calculateSubtotal();
-
+            // calculateSubtotal() será chamado automaticamente no @PrePersist
             order.getProductOrders().add(productOrder);
-            System.out.println("[DEBUG] Item adicionado ao pedido: " + productOrder);
         }
 
         // Calcular taxa de entrega baseada na distância
         BigDecimal deliveryFee = calculateDeliveryFee(distance);
-        System.out.println("[DEBUG] Taxa de entrega calculada: " + deliveryFee);
         order.setDeliveryFee(deliveryFee);
 
         // Aplicar desconto se fornecido
         if (request.getDiscount() != null && request.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
-            System.out.println("[DEBUG] Desconto informado: " + request.getDiscount());
             order.setDiscount(request.getDiscount());
-        } else {
-            System.out.println("[DEBUG] Nenhum desconto informado ou desconto zero.");
-            order.setDiscount(BigDecimal.ZERO); // Garante desconto não nulo
         }
 
-        // Calcular total do pedido antes de salvar
-        order.calculateTotal();
-        System.out.println("[DEBUG] Pedido antes de salvar: " + order);
+        // calculateTotal() será chamado automaticamente no @PrePersist
         order = orderRepository.save(order);
-        System.out.println("[DEBUG] Pedido salvo: " + order);
 
         // Retornar resposta
         return orderMapper.toResponse(order);
