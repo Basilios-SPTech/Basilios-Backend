@@ -8,12 +8,15 @@ import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.*;
+import com.basilios.basilios.core.model.events.OrderStatusChangedEvent;
 import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.util.DistanceCalculator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private static final double MAX_DELIVERY_DISTANCE_KM = 7.0;
@@ -39,6 +43,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final UsuarioService usuarioService;
     private final OrderMapper orderMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${store.latitude:#{-23.550520}}")
     private Double storeLatitude;
@@ -96,10 +101,7 @@ public class OrderService {
                 .addressEntrega(addressEntrega)
                 .status(StatusPedidoEnum.PENDENTE)
                 .observations(request.getObservations())
-                .codigoPedido(generateOrderCode())
                 .build();
-
-        System.out.println("[DEBUG] Pedido criado (ainda sem items): " + order);
 
         // Processar items do pedido
         for (OrderRequestDTO.OrderItemRequest itemRequest : request.getItems()) {
@@ -137,32 +139,21 @@ public class OrderService {
                     .originalPrice(hadPromotion ? originalPrice : null)
                     .build();
 
-            // Calcular e setar subtotal explicitamente
-            productOrder.calculateSubtotal();
-
+            // calculateSubtotal() será chamado automaticamente no @PrePersist
             order.getProductOrders().add(productOrder);
-            System.out.println("[DEBUG] Item adicionado ao pedido: " + productOrder);
         }
 
         // Calcular taxa de entrega baseada na distância
         BigDecimal deliveryFee = calculateDeliveryFee(distance);
-        System.out.println("[DEBUG] Taxa de entrega calculada: " + deliveryFee);
         order.setDeliveryFee(deliveryFee);
 
         // Aplicar desconto se fornecido
         if (request.getDiscount() != null && request.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
-            System.out.println("[DEBUG] Desconto informado: " + request.getDiscount());
             order.setDiscount(request.getDiscount());
-        } else {
-            System.out.println("[DEBUG] Nenhum desconto informado ou desconto zero.");
-            order.setDiscount(BigDecimal.ZERO); // Garante desconto não nulo
         }
 
-        // Calcular total do pedido antes de salvar
-        order.calculateTotal();
-        System.out.println("[DEBUG] Pedido antes de salvar: " + order);
+        // calculateTotal() será chamado automaticamente no @PrePersist
         order = orderRepository.save(order);
-        System.out.println("[DEBUG] Pedido salvo: " + order);
 
         // Retornar resposta
         return orderMapper.toResponse(order);
@@ -362,9 +353,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO confirmarPedido(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.CONFIRMADO);
         order.confirmar();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CONFIRMADO);
+        log.info("Pedido {} confirmado", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -374,9 +371,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO iniciarPreparo(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.PREPARANDO);
         order.iniciarPreparo();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.PREPARANDO);
+        log.info("Pedido {} em preparo", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -386,9 +389,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO despacharPedido(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.DESPACHADO);
         order.despachar();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.DESPACHADO);
+        log.info("Pedido {} despachado para entrega", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -398,9 +407,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO entregarPedido(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.ENTREGUE);
         order.entregar();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.ENTREGUE);
+        log.info("Pedido {} entregue com sucesso", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -410,9 +425,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO cancelarPedido(Long id, String motivo) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.CANCELADO);
         order.cancelar(motivo);
         order = orderRepository.save(order);
+        
+        // Publica evento após commit (com motivo do cancelamento)
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CANCELADO, motivo);
+        log.info("Pedido {} cancelado. Motivo: {}", order.getCodigoPedido(), motivo);
+        
         return orderMapper.toResponse(order);
     }
 
@@ -421,7 +442,7 @@ public class OrderService {
      * Só pode cancelar se estiver PENDENTE ou CONFIRMADO
      */
     @Transactional
-    public OrderResponseDTO     cancelarPedidoUsuario(Long id, String motivo) {
+    public OrderResponseDTO cancelarPedidoUsuario(Long id, String motivo) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Order order = findById(id);
 
@@ -435,8 +456,14 @@ public class OrderService {
             throw new BusinessException("Não é possível cancelar pedido neste status: " + order.getStatus());
         }
 
+        StatusPedidoEnum oldStatus = order.getStatus();
         order.cancelar(motivo);
         order = orderRepository.save(order);
+        
+        // Publica evento após commit (com motivo do cancelamento)
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CANCELADO, motivo);
+        log.info("Pedido {} cancelado pelo usuário. Motivo: {}", order.getCodigoPedido(), motivo);
+        
         return orderMapper.toResponse(order);
     }
 
@@ -562,5 +589,28 @@ public class OrderService {
      */
     private String generateOrderCode() {
         return "PED-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000);
+    }
+
+    // ========== EVENTOS ==========
+
+    /**
+     * Publica evento de mudança de status do pedido
+     */
+    private void publishStatusChangedEvent(Order order, StatusPedidoEnum oldStatus, StatusPedidoEnum newStatus) {
+        publishStatusChangedEvent(order, oldStatus, newStatus, null);
+    }
+
+    /**
+     * Publica evento de mudança de status do pedido (com motivo opcional)
+     */
+    private void publishStatusChangedEvent(Order order, StatusPedidoEnum oldStatus, StatusPedidoEnum newStatus, String motivo) {
+        try {
+            OrderStatusChangedEvent event = new OrderStatusChangedEvent(order, oldStatus, newStatus, motivo);
+            eventPublisher.publishEvent(event);
+            log.debug("Evento publicado: {}", event);
+        } catch (Exception e) {
+            log.error("Erro ao publicar evento de status do pedido {}: {}", order.getId(), e.getMessage());
+            // Não relança exceção para não impactar o fluxo principal
+        }
     }
 }

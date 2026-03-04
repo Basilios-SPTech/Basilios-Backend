@@ -7,14 +7,14 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "endereco")
 @SQLDelete(sql = "UPDATE endereco SET deleted_at = NOW() WHERE id_endereco = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 @Data
 @Builder
 @NoArgsConstructor

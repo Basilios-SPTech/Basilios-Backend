@@ -2,9 +2,13 @@ package com.basilios.basilios;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-public class 	BasiliosApplication {
+@EnableAsync
+@EnableRetry
+public class BasiliosApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(BasiliosApplication.class, args);

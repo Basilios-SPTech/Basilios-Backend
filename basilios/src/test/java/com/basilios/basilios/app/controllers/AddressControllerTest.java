@@ -4,7 +4,6 @@ import com.basilios.basilios.app.dto.endereco.AddressRequestDTO;
 import com.basilios.basilios.app.dto.endereco.AddressResponseDTO;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.service.AddressService;
-import com.basilios.basilios.core.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,7 +14,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,7 +24,6 @@ class AddressControllerTest {
     private ObjectMapper objectMapper;
 
     private AddressService addressService; // mock manual
-    private OrderService orderService;     // mock manual
 
     private AddressRequestDTO addressRequest;
     private AddressResponseDTO addressResponse;
@@ -37,10 +34,9 @@ class AddressControllerTest {
 
         // Criar mocks
         addressService = mock(AddressService.class);
-        orderService = mock(OrderService.class);
 
         // Instanciar controller com mocks
-        AddressController controller = new AddressController(addressService, orderService);
+        AddressController controller = new AddressController(addressService);
 
         // Criar MockMvc standalone (não usa Spring context)
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();

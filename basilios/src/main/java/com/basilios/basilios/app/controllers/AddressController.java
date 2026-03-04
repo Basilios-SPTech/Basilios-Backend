@@ -3,11 +3,7 @@ package com.basilios.basilios.app.controllers;
 import com.basilios.basilios.app.dto.endereco.AddressRequestDTO;
 import com.basilios.basilios.app.dto.endereco.AddressResponseDTO;
 import com.basilios.basilios.core.service.AddressService;
-import com.basilios.basilios.core.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +20,6 @@ import java.util.List;
 public class AddressController {
 
     private final AddressService addressService;
-    private final OrderService orderService;
 
     @Operation(
             summary = "Listar todos os endereços",
