@@ -1,7 +1,5 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.app.dto.reset.PasswordResetDTOs;
-import com.basilios.basilios.core.model.PasswordResetToken;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.PasswordResetTokenRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
@@ -9,6 +7,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,6 +23,7 @@ class PasswordResetServiceTest {
     private final PasswordResetService passwordResetService =
             new PasswordResetService(tokenRepository, userRepository, passwordEncoder, emailService);
 
+
     @Test
     @DisplayName("Deve solicitar o reset de senha com sucesso quando o email existir")
     void shouldRequestPasswordResetSuccessfully() {
@@ -33,7 +34,7 @@ class PasswordResetServiceTest {
         Usuario user = new Usuario();
         user.setEmail(email);
 
-        when(userRepository.findByEmail(email)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
         // Captura token salvo
         ArgumentCaptor<PasswordResetToken> tokenCaptor =

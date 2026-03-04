@@ -1,5 +1,7 @@
 package com.basilios.basilios.core.service;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
@@ -38,4 +40,6 @@ public class EmailService {
                 "Atenciosamente,\n" +
                 "Equipe de Suporte";
     }
+
+
 }

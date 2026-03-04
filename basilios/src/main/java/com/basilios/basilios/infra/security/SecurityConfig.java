@@ -71,10 +71,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/register",
                                 "/auth/login",
+                                "/auth/esqueci-senha",
+                                "/auth/reset-senha",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/api/upload/image"
+
                         ).permitAll()
                         // arquivos estáticos de imagem → qualquer um pode ver
                         .requestMatchers("/uploads/**").permitAll()
