@@ -27,8 +27,9 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
-        System.out.println("JWT Secret size: " + secret.length());
-        System.out.println("JWT Expiration: " + expiration);
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters long");
+        }
     }
 
 
@@ -64,6 +65,11 @@ public class JwtUtil {
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userDetails.getUsername());
+    }
+
+    public String generateToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {

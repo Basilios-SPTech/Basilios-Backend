@@ -167,7 +167,6 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("error", "Internal Server Error");
         body.put("message", "An unexpected error occurred. Please try again later.");
-        body.put("debugMessage", ex.getMessage()); // Remove in production
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

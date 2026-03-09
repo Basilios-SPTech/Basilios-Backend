@@ -27,6 +27,9 @@ public class SecurityConfig {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
+    private RateLimitFilter rateLimitFilter;
+
+    @Autowired
     private UserDetailsService userDetailsService;
 
     @Bean
@@ -76,7 +79,6 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/api/upload/image"
-
                         ).permitAll()
                         // arquivos estáticos de imagem → qualquer um pode ver
                         .requestMatchers("/uploads/**").permitAll()
@@ -94,7 +96,18 @@ public class SecurityConfig {
 
                 // 🧩 Autenticação com JWT
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // 🛡️ Security Headers (OWASP)
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.deny())
+                        .contentTypeOptions(Customizer.withDefaults())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                );
 
         return http.build();
     }

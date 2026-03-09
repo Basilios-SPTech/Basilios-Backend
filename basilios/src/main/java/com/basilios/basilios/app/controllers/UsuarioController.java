@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class UsuarioController {
 
     @Operation(summary = "Atualizar parcialmente usuário", description = "Atualiza dados permitidos do usuário via PATCH")
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO') or @usuarioService.getCurrentUsuario().id == #id")
     public ResponseEntity<UsuarioProfileResponse> updateUserPatch(@PathVariable Long id, @Valid @RequestBody UsuarioProfileResponse dto) {
         UsuarioProfileResponse updated = usuarioService.updateUsuarioPatch(id, dto);
         return ResponseEntity.ok(updated);
@@ -28,6 +30,7 @@ public class UsuarioController {
 
     @Operation(summary = "Listar todos os usuários", description = "Retorna todos os usuários cadastrados")
     @GetMapping
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     public ResponseEntity<List<UsuarioListarDTO>> getAllUsers() {
         List<UsuarioListarDTO> usuarios = usuarioService.findAll().stream()
             .map(u -> {
@@ -46,6 +49,7 @@ public class UsuarioController {
 
     @Operation(summary = "Buscar usuário por ID", description = "Retorna detalhes do usuário pelo ID")
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO') or @usuarioService.getCurrentUsuario().id == #id")
     public ResponseEntity<UsuarioProfileResponse> getUserById(@PathVariable Long id) {
         var usuario = usuarioService.findById(id);
         UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
@@ -64,6 +68,7 @@ public class UsuarioController {
 
     @Operation(summary = "Soft delete de usuário", description = "Desativa o usuário (soft delete)")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     public ResponseEntity<UsuarioListarDTO> deleteUser(@PathVariable Long id) {
         UsuarioListarDTO dto = usuarioService.deleteUsuario(id);
         return ResponseEntity.ok(dto);

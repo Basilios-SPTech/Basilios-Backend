@@ -82,7 +82,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode("123")).thenReturn("encoded");
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
         when(userDetailsService.loadUserByUsername(usuario.getEmail())).thenReturn(userDetails);
-        when(jwtUtil.generateToken(userDetails)).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(userDetails.getUsername())).thenReturn("jwt-token");
 
         UsuarioTokenDTO result = authService.register(dto);
 
@@ -124,7 +124,7 @@ class AuthServiceTest {
 
         when(usuarioRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(usuario));
         when(userDetailsService.loadUserByUsername(usuario.getEmail())).thenReturn(userDetails);
-        when(jwtUtil.generateToken(userDetails)).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(userDetails.getUsername())).thenReturn("jwt-token");
 
         UsuarioTokenDTO result = authService.login(dto);
 

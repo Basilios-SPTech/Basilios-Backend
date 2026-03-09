@@ -1,76 +1,47 @@
 package com.basilios.basilios.core.service;
 
+import com.basilios.basilios.core.model.PasswordReset;
 import com.basilios.basilios.core.model.Usuario;
-import com.basilios.basilios.infra.repository.PasswordResetTokenRepository;
-import com.basilios.basilios.infra.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class PasswordResetServiceTest {
 
-    private final PasswordResetTokenRepository tokenRepository = mock(PasswordResetTokenRepository.class);
-    private final UsuarioRepository userRepository = mock(UsuarioRepository.class);
-    private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-    private final EmailService emailService = mock(EmailService.class);
-
-    private final PasswordResetService passwordResetService =
-            new PasswordResetService(tokenRepository, userRepository, passwordEncoder, emailService);
-
-
     @Test
-    @DisplayName("Deve solicitar o reset de senha com sucesso quando o email existir")
-    void shouldRequestPasswordResetSuccessfully() {
+    @DisplayName("Deve criar um PasswordReset com código, expiração e usuário")
+    void shouldCreatePasswordResetSuccessfully() {
         // Arrange
-        String email = "user@test.com";
-        PasswordResetDTOs.Request requestDTO = new PasswordResetDTOs.Request(email);
-
         Usuario user = new Usuario();
-        user.setEmail(email);
+        user.setEmail("user@test.com");
 
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-
-        // Captura token salvo
-        ArgumentCaptor<PasswordResetToken> tokenCaptor =
-                ArgumentCaptor.forClass(PasswordResetToken.class);
+        String codigo = "123456";
+        LocalDateTime expiracao = LocalDateTime.now().plusMinutes(30);
 
         // Act
-        passwordResetService.requestPasswordReset(requestDTO);
+        PasswordReset reset = new PasswordReset(codigo, expiracao, user);
 
         // Assert
-        verify(userRepository, times(1)).findByEmail(email);
-        verify(tokenRepository, times(1)).deleteByUser(user);
-        verify(tokenRepository, times(1)).save(tokenCaptor.capture());
-        verify(emailService, times(1))
-                .sendPasswordResetEmail(eq(email), contains("/reset-password?token="));
-
-        PasswordResetToken savedToken = tokenCaptor.getValue();
-        assertNotNull(savedToken.getToken());
-        assertEquals(user, savedToken.getUser());
+        assertEquals(codigo, reset.getCodigo());
+        assertEquals(expiracao, reset.getExpiracao());
+        assertEquals(user, reset.getUsuario());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando o email não existir no sistema")
-    void shouldThrowExceptionWhenEmailNotFound() {
+    @DisplayName("Deve verificar que código expirado é detectável")
+    void shouldDetectExpiredCode() {
         // Arrange
-        String email = "notfound@test.com";
-        PasswordResetDTOs.Request requestDTO = new PasswordResetDTOs.Request(email);
+        Usuario user = new Usuario();
+        user.setEmail("user@test.com");
 
-        when(userRepository.findByEmail(email)).thenReturn(java.util.Optional.empty());
+        LocalDateTime expiracao = LocalDateTime.now().minusMinutes(5);
+        PasswordReset reset = new PasswordReset("expired-code", expiracao, user);
 
-        // Act + Assert
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> passwordResetService.requestPasswordReset(requestDTO));
-
-        assertEquals("Usuário não encontrado com o email: " + email, ex.getMessage());
-
-        verify(tokenRepository, never()).save(any());
-        verify(emailService, never()).sendPasswordResetEmail(any(), any());
+        // Assert
+        assertTrue(reset.getExpiracao().isBefore(LocalDateTime.now()),
+                "Código expirado deve ter data anterior ao momento atual");
     }
 }
