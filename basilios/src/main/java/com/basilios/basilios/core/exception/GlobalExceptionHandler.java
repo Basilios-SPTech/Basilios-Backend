@@ -143,8 +143,10 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Type Mismatch");
+        Class<?> requiredType = ex.getRequiredType();
+        String expectedType = requiredType != null ? requiredType.getSimpleName() : "unknown";
         body.put("message", String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
-                ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName()));
+                ex.getValue(), ex.getName(), expectedType));
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
@@ -165,7 +167,6 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("error", "Internal Server Error");
         body.put("message", "An unexpected error occurred. Please try again later.");
-        body.put("debugMessage", ex.getMessage()); // Remove in production
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

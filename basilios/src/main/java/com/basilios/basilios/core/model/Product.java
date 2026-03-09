@@ -218,6 +218,10 @@ public class Product {
         productIngredients.clear();
     }
 
+    public void setIsPaused(Boolean isPaused) {
+        this.isPaused = isPaused;
+    }
+
     @Override
     public String toString() {
         return "Product{" +

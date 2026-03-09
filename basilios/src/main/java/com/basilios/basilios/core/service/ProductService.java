@@ -205,6 +205,17 @@ public class ProductService {
         return convertToResponseDTO(product);
     }
 
+    /**
+     * Atualiza status do produto
+     */
+    public ProductResponseDTO updateStatus(Long id, Boolean isPaused) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Produto não encontrado"));
+        product.setIsPaused(isPaused);
+        productRepository.save(product);
+        return convertToResponseDTO(product);
+    }
+
     // ========== GERENCIAMENTO DE INGREDIENTES ==========
 
     /**

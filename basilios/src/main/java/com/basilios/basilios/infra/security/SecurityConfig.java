@@ -27,6 +27,9 @@ public class SecurityConfig {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
+    private RateLimitFilter rateLimitFilter;
+
+    @Autowired
     private UserDetailsService userDetailsService;
 
     @Bean
@@ -42,8 +45,7 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -71,13 +73,17 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/register",
                                 "/auth/login",
-                                "/api/menu",
+                                "/auth/esqueci-senha",
+                                "/auth/reset-senha",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/upload/image"
                         ).permitAll()
                         // arquivos estáticos de imagem → qualquer um pode ver
                         .requestMatchers("/uploads/**").permitAll()
+                        // Permite acesso público ao endpoint de produtos
+                        .requestMatchers("/products", "/products/**").permitAll()
 
                         // Regras de acesso por role
                         .requestMatchers("/api/funcionario/**").hasRole("FUNCIONARIO")
@@ -90,7 +96,18 @@ public class SecurityConfig {
 
                 // 🧩 Autenticação com JWT
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // 🛡️ Security Headers (OWASP)
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.deny())
+                        .contentTypeOptions(Customizer.withDefaults())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                );
 
         return http.build();
     }

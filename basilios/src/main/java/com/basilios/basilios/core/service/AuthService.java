@@ -70,8 +70,7 @@ public class AuthService {
 
         // Gera o token JWT
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
-        String token = jwtUtil.generateToken(userDetails);
-
+        String token = jwtUtil.generateToken(userDetails.getUsername());
         return UsuarioTokenDTO.builder()
                 .token(token)
                 .id(usuario.getId())
@@ -100,8 +99,7 @@ public class AuthService {
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
-        String token = jwtUtil.generateToken(userDetails);
-
+        String token = jwtUtil.generateToken(userDetails.getUsername());
         return UsuarioTokenDTO.builder()
                 .token(token)
                 .id(usuario.getId())
