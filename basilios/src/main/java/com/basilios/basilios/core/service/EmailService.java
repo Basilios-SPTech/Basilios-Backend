@@ -1,12 +1,15 @@
 package com.basilios.basilios.core.service;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -15,14 +18,27 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username:}")
+    private String mailFrom;
+
     // ========== RESET DE SENHA ==========
 
     public void sendPasswordResetEmail(String to, String resetLink) {
+        sendPasswordResetEmail(to, resetLink, "", "1 hora", "tel:+551148014864");
+    }
+
+    // Sobrecarga para manter compatibilidade de testes e futuras variacoes de template.
+    public void sendPasswordResetEmail(String to, String resetLink, String userName, String expiresIn, String supportEmailValue) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject("Redefinição de Senha - Basilios");
-            message.setText(buildPasswordResetContent(resetLink));
+            String textBody = buildPasswordResetContent(resetLink);
+            String htmlBody = buildPasswordResetHtml(resetLink, userName, expiresIn, supportEmailValue);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+            helper.setFrom(mailFrom);
+            helper.setTo(to);
+            helper.setSubject("Redefinição de Senha - Basilios");
+            helper.setText(textBody, htmlBody);
 
             mailSender.send(message);
             log.info("Email de redefinição de senha enviado para: {}", to);
@@ -41,6 +57,61 @@ public class EmailService {
                 "Se você não solicitou esta redefinição, ignore este email.\n\n" +
                 "Atenciosamente,\n" +
                 "Equipe Basilios";
+    }
+
+    private String buildPasswordResetHtml(String resetUrl, String userName, String expiresIn, String supportEmailValue) {
+        String safeName = (userName == null || userName.isBlank()) ? "" : " " + userName;
+        String safeExpires = (expiresIn == null || expiresIn.isBlank()) ? "1 hora" : expiresIn;
+
+        String template = """
+                <!doctype html>
+                <html lang="pt-BR">
+                  <head>
+                    <meta charset="UTF-8" />
+                    <meta name="x-apple-disable-message-reformatting" />
+                    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+                    <title>Redefinição de senha - Basilios</title>
+                  </head>
+                  <body style="margin:0;padding:0;background:#f5f5f5;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:24px 12px;">
+                      <tr>
+                        <td align="center">
+                          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+                            <tr>
+                              <td style="padding:28px 24px 10px 24px;color:#111111;">
+                                <h1 style="margin:0 0 10px 0;font-size:24px;line-height:1.3;">Redefinição de senha</h1>
+                                <p style="margin:0 0 14px 0;font-size:15px;line-height:1.6;color:#374151;">Olá{{userName}},</p>
+                                <p style="margin:0 0 18px 0;font-size:15px;line-height:1.6;color:#374151;">Recebemos uma solicitação para redefinir a senha da sua conta Basilios.</p>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 22px 0;">
+                                  <tr><td align="center"><a href="{{resetUrl}}" style="display:inline-block;background:#BB3530;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;line-height:1;padding:14px 24px;border-radius:10px;">Redefinir senha</a></td></tr>
+                                </table>
+                                <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#6b7280;">Este link expira em <strong style="color:#111111;">{{expiresIn}}</strong>.</p>
+                                <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#6b7280;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+                                <p style="margin:0 0 18px 0;word-break:break-all;"><a href="{{resetUrl}}" style="font-size:13px;color:#BB3530;text-decoration:underline;">{{resetUrl}}</a></p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:0 24px 20px 24px;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff7f7;border:1px solid #f2d2d0;border-radius:10px;">
+                                  <tr><td style="padding:12px 14px;font-size:12px;line-height:1.6;color:#7f1d1d;">Se você não solicitou esta redefinição, pode ignorar este e-mail com segurança.</td></tr>
+                                </table>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="border-top:1px solid #e5e7eb;padding:16px 24px 24px 24px;color:#6b7280;font-size:12px;line-height:1.6;">Atenciosamente,<br /><strong style="color:#111111;">Equipe Basilios</strong><br /><a href="tel:+551148014864" style="color:#BB3530;text-decoration:none;">(11) 4801-4864</a></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </body>
+                </html>
+                """;
+
+        return template
+                .replace("{{userName}}", safeName)
+                .replace("{{resetUrl}}", resetUrl)
+                .replace("{{expiresIn}}", safeExpires);
     }
 
     // ========== NOTIFICAÇÕES DE PEDIDO ==========
@@ -142,6 +213,7 @@ public class EmailService {
     private void sendEmail(String to, String subject, String content) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(mailFrom);
             message.setTo(to);
             message.setSubject(subject);
             message.setText(content);

@@ -6,10 +6,13 @@ import com.basilios.basilios.app.dto.user.UsuarioRegisterDTO;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.AuthenticationException;
 import com.basilios.basilios.core.exception.BusinessException;
+import com.basilios.basilios.core.model.PasswordReset;
 import com.basilios.basilios.core.model.Usuario;
+import com.basilios.basilios.infra.repository.PasswordResetRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import com.basilios.basilios.infra.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,13 +21,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 
 @Service
 public class AuthService {
 
+    private static final int TOKEN_BYTES = 32;
+
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PasswordResetRepository passwordResetRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -38,6 +52,15 @@ public class AuthService {
     @Autowired
     private UserDetailsService userDetailsService;
 
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${app.password-reset.ttl-minutes:60}")
+    private long passwordResetTtlMinutes;
+
+    @Value("${app.password-reset.base-url:http://localhost:3000/reset-password?token=}")
+    private String passwordResetBaseUrl;
+
     /**
      * Registra um novo usuário (cliente por padrão)
      */
@@ -48,10 +71,10 @@ public class AuthService {
 
         // Valida duplicidade
         if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("Email já cadastrado");
+            throw new BusinessException("Email ja cadastrado");
         }
         if (usuarioRepository.existsByCpf(cpfNormalizado)) {
-            throw new BusinessException("CPF já cadastrado");
+            throw new BusinessException("CPF ja cadastrado");
         }
 
         // Cria o novo usuário
@@ -88,14 +111,14 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (Exception e) {
-            throw new AuthenticationException("Credenciais inválidas");
+            throw new AuthenticationException("Credenciais invalidas");
         }
 
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AuthenticationException("Usuário não encontrado"));
+                .orElseThrow(() -> new AuthenticationException("Usuario nao encontrado"));
 
         if (!usuario.getEnabled()) {
-            throw new AuthenticationException("Usuário desativado");
+            throw new AuthenticationException("Usuario desativado");
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
@@ -106,6 +129,86 @@ public class AuthService {
                 .nomeUsuario(usuario.getNomeUsuario())
                 .email(usuario.getEmail())
                 .build();
+    }
+
+    /**
+     * Inicia o reset sem revelar se o email existe (anti-enumeracao).
+     */
+    @Transactional
+    public void requestPasswordReset(String email) {
+        passwordResetRepository.deleteByExpiracaoBefore(LocalDateTime.now());
+
+        usuarioRepository.findByEmail(email).ifPresent(usuario -> {
+            passwordResetRepository.deleteByUsuarioId(usuario.getId());
+
+            String rawToken = generateToken();
+            String tokenHash = sha256(rawToken);
+            LocalDateTime expiracao = LocalDateTime.now().plusMinutes(passwordResetTtlMinutes);
+
+            PasswordReset reset = new PasswordReset(tokenHash, expiracao, usuario);
+            passwordResetRepository.save(reset);
+
+            try {
+                emailService.sendPasswordResetEmail(usuario.getEmail(), buildResetLink(rawToken));
+            } catch (RuntimeException ex) {
+                // Nao vaza erro de infraestrutura para o cliente no endpoint de recuperacao.
+                org.slf4j.LoggerFactory.getLogger(AuthService.class)
+                        .error("Falha ao enviar email de reset para usuarioId={}", usuario.getId(), ex);
+            }
+        });
+    }
+
+    /**
+     * Conclui o reset com token de uso unico e valida expiracao.
+     */
+    @Transactional
+    public void resetPassword(String rawToken, String novaSenha) {
+        String tokenHash = sha256(rawToken);
+
+        PasswordReset reset = passwordResetRepository.findByCodigo(tokenHash)
+                .orElseThrow(() -> new BusinessException("Codigo de redefinicao invalido ou expirado"));
+
+        if (reset.getExpiracao().isBefore(LocalDateTime.now())) {
+            passwordResetRepository.delete(reset);
+            throw new BusinessException("Codigo de redefinicao invalido ou expirado");
+        }
+
+        Usuario usuario = reset.getUsuario();
+        usuario.setPassword(passwordEncoder.encode(novaSenha));
+        usuarioRepository.save(usuario);
+
+        passwordResetRepository.deleteByUsuarioId(usuario.getId());
+    }
+
+    private String buildResetLink(String rawToken) {
+        if (passwordResetBaseUrl.contains("{token}")) {
+            return passwordResetBaseUrl.replace("{token}", rawToken);
+        }
+        return passwordResetBaseUrl + rawToken;
+    }
+
+    private String generateToken() {
+        byte[] bytes = new byte[TOKEN_BYTES];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String sha256(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 nao disponivel", e);
+        }
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
     private String normalizarCpf(String cpf) {
