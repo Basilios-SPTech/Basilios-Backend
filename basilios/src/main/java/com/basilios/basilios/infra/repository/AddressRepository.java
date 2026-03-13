@@ -50,20 +50,4 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
      */
     long countByUsuarioAndDeletedAtIsNull(Usuario usuario);
 
-    /**
-     * Verifica se usuário possui endereço principal
-     */
-    @Query("""
-        SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
-        FROM Address a
-        WHERE a.usuario = :usuario
-          AND a = a.usuario.addressPrincipal
-          AND a.deletedAt IS NULL
-    """)
-    boolean hasPrincipalAddress(@Param("usuario") Usuario usuario);
-
-    /**
-     * Verifica se existe endereço ativo para o usuário
-     */
-    boolean existsByUsuarioAndDeletedAtIsNull(Usuario usuario);
 }

@@ -40,13 +40,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint principal - com SockJS para fallback em browsers antigos
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")  // Em produção, especificar origens permitidas
+                .setAllowedOriginPatterns(
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://localhost:3000"
+                )
                 .withSockJS();
-        
-        // Endpoint alternativo sem SockJS (para clientes nativos)
+
         registry.addEndpoint("/ws-native")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns(
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://localhost:3000"
+                );
     }
 }

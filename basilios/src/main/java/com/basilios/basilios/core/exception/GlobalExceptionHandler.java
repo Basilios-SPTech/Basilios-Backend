@@ -117,6 +117,30 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(InvalidMenuFilterException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidMenuFilter(InvalidMenuFilterException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Invalid Menu Filter");
+        body.put("message", ex.getMessage());
+        body.put("filterType", ex.getFilterType());
+        body.put("filterValue", ex.getFilterValue());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MenuOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleMenuOperation(MenuOperationException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Menu Operation Failed");
+        body.put("message", ex.getMessage());
+        body.put("operation", ex.getOperation());
+        body.put("productId", ex.getProductId());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {

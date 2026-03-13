@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -21,15 +20,10 @@ public class DashboardControllerTest {
     private FakeDashboardService fakeDashboardService;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         fakeDashboardService = new FakeDashboardService();
 
-        DashboardController controller = new DashboardController();
-
-        // ==== INJETAR O SERVICE POR REFLECTION ====
-        Field serviceField = DashboardController.class.getDeclaredField("dashboardService");
-        serviceField.setAccessible(true);
-        serviceField.set(controller, fakeDashboardService);
+        DashboardController controller = new DashboardController(fakeDashboardService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
@@ -67,6 +61,10 @@ public class DashboardControllerTest {
 
 class FakeDashboardService extends DashboardService {
 
+    FakeDashboardService() {
+        super(null, null);
+    }
+
     public Optional<ChampionDTO> returnChampion = Optional.empty();
 
     @Override
@@ -78,7 +76,7 @@ class FakeDashboardService extends DashboardService {
     @Override public com.basilios.basilios.app.dto.dashboard.RevenueDTO getRevenue(LocalDate start, LocalDate end) { return null; }
     @Override public com.basilios.basilios.app.dto.dashboard.OrdersCountDTO getOrdersCount(LocalDate start, LocalDate end) { return null; }
     @Override public com.basilios.basilios.app.dto.dashboard.AverageTicketDTO getAverageTicket(LocalDate start, LocalDate end) { return null; }
-    @Override public long getItemsSold(java.time.LocalDateTime start, java.time.LocalDateTime end) { return 0; }
+    @Override public long getItemsSold(LocalDate start, LocalDate end) { return 0; }
     @Override public com.basilios.basilios.app.dto.dashboard.CancellationRateDTO getCancellationRate(LocalDate start, LocalDate end) { return null; }
     @Override public com.basilios.basilios.app.dto.dashboard.AverageDeliveryTimeDTO getAverageDeliveryTime(LocalDate start, LocalDate end) { return null; }
     @Override public com.basilios.basilios.app.dto.dashboard.OrderPeaksDTO getOrderPeaks(LocalDate start, LocalDate end) { return null; }

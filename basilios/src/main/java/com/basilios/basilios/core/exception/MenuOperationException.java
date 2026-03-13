@@ -1,5 +1,8 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.Getter;
+
+@Getter
 public class MenuOperationException extends RuntimeException {
     private final String operation;
     private final Long productId;
@@ -32,13 +35,5 @@ public class MenuOperationException extends RuntimeException {
                 "DELETE",
                 productId
         );
-    }
-
-    public String getOperation() {
-        return operation;
-    }
-
-    public Long getProductId() {
-        return productId;
     }
 }

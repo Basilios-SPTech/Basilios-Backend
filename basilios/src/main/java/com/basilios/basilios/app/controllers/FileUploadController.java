@@ -3,34 +3,28 @@ package com.basilios.basilios.app.controllers;
 import com.basilios.basilios.infra.storage.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/upload")
+@RequiredArgsConstructor
 @Tag(name = "Upload", description = "Upload de arquivos (imagens de produtos)")
 public class FileUploadController {
 
     private final FileStorageService fileStorageService;
 
-    public FileUploadController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
-    }
-
     @PostMapping("/image")
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @Operation(summary = "Upload de imagem de produto")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
-        try {
-            String fileName = fileStorageService.storeFile(file);
-
-            // URL que o front vai usar. Ex: /uploads/uuid.jpg
-            String fileUrl = "/uploads/" + fileName;
-
-            return ResponseEntity.ok(fileUrl);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Erro ao subir imagem");
-        }
+    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
+        String fileName = fileStorageService.storeFile(file);
+        String fileUrl = "/uploads/" + fileName;
+        return ResponseEntity.ok(fileUrl);
     }
 }

@@ -1,13 +1,11 @@
 package com.basilios.basilios.app.dto.order;
 
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
 public class UpdateOrderStatusDTO {
+
+    @NotBlank(message = "Status é obrigatório")
     private String status;
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }

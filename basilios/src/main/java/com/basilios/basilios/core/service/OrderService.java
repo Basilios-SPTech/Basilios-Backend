@@ -80,7 +80,7 @@ public class OrderService {
                 storeLatitude, storeLongitude,
                 addressEntrega.getLatitude(), addressEntrega.getLongitude()
         );
-        System.out.println("[DEBUG] Distância calculada: " + distance + addressEntrega);
+        log.debug("Distância calculada: {} - Endereço: {}", distance, addressEntrega);
 
         // Se fora da área de entrega, retornar redirecionamento
         if (distance > MAX_DELIVERY_DISTANCE_KM) {
@@ -468,39 +468,6 @@ public class OrderService {
     }
 
     /**
-     * Atualiza o status de um pedido, validando a transição pelo enum
-     * @param orderId ID do pedido
-     * @param novoStatus Novo status desejado
-     * @param motivo Motivo do cancelamento (opcional)
-     * @return OrderResponseDTO atualizado
-     */
-    @Transactional
-    public OrderResponseDTO atualizarStatusPedido(Long orderId, StatusPedidoEnum novoStatus, String motivo) {
-        Order order = findById(orderId);
-        StatusPedidoEnum statusAtual = order.getStatus();
-        // Valida transição pelo enum
-        if (!statusAtual.podeTransicionarPara(novoStatus)) {
-            throw new BusinessException("Transição de status inválida: " + statusAtual + " → " + novoStatus);
-        }
-        // Aplica transição conforme enum
-        if (novoStatus == StatusPedidoEnum.CONFIRMADO) {
-            order.confirmar();
-        } else if (novoStatus == StatusPedidoEnum.PREPARANDO) {
-            order.iniciarPreparo();
-        } else if (novoStatus == StatusPedidoEnum.DESPACHADO) {
-            order.despachar();
-        } else if (novoStatus == StatusPedidoEnum.ENTREGUE) {
-            order.entregar();
-        } else if (novoStatus == StatusPedidoEnum.CANCELADO) {
-            order.cancelar(motivo != null ? motivo : "Cancelado via API");
-        } else {
-            throw new BusinessException("Status não suportado para alteração: " + novoStatus);
-        }
-        order = orderRepository.save(order);
-        return orderMapper.toResponse(order);
-    }
-
-    /**
      * Valida se é possível transicionar para o novo status
      */
     private void validateStatusTransition(Order order, StatusPedidoEnum newStatus) {
@@ -564,8 +531,10 @@ public class OrderService {
         }
     }
 
+    // ========== EVENTOS ==========
+
     /**
-     * Atualiza o status de um pedido de forma genérica, validando o status recebido
+     * Atualiza o status de um pedido de forma genérica, validando a transição
      */
     @Transactional
     public OrderResponseDTO updateOrderStatus(Long id, String statusStr) {
@@ -573,22 +542,17 @@ public class OrderService {
         try {
             novoStatus = StatusPedidoEnum.valueOf(statusStr.toUpperCase());
         } catch (Exception e) {
-            throw new IllegalArgumentException("Status inválido: " + statusStr);
+            throw new BusinessException("Status inválido: " + statusStr);
         }
-        // Aqui você pode adicionar regras de transição de status, se necessário
-        var order = orderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado"));
-        order.setStatus(novoStatus);
-        orderRepository.save(order);
-        // Retorna o order atualizado como DTO
-        return orderMapper.toResponse(order);
-    }
 
-    /**
-     * Gera um código único para o pedido
-     */
-    private String generateOrderCode() {
-        return "PED-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000);
+        return switch (novoStatus) {
+            case CONFIRMADO -> confirmarPedido(id);
+            case PREPARANDO -> iniciarPreparo(id);
+            case DESPACHADO -> despacharPedido(id);
+            case ENTREGUE -> entregarPedido(id);
+            case CANCELADO -> cancelarPedido(id, "Cancelado via API");
+            default -> throw new BusinessException("Transição de status não suportada: " + novoStatus);
+        };
     }
 
     // ========== EVENTOS ==========

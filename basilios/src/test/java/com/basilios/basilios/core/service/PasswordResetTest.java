@@ -31,7 +31,7 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    @DisplayName("Deve verificar que código expirado é detectável")
+    @DisplayName("Deve verificar que código expirado é detectável via isExpirado()")
     void shouldDetectExpiredCode() {
         // Arrange
         Usuario user = new Usuario();
@@ -41,7 +41,20 @@ class PasswordResetServiceTest {
         PasswordReset reset = new PasswordReset("expired-code", expiracao, user);
 
         // Assert
-        assertTrue(reset.getExpiracao().isBefore(LocalDateTime.now()),
-                "Código expirado deve ter data anterior ao momento atual");
+        assertTrue(reset.isExpirado(), "Código expirado deve retornar true em isExpirado()");
+    }
+
+    @Test
+    @DisplayName("Deve verificar que código válido não está expirado via isExpirado()")
+    void shouldDetectValidCode() {
+        // Arrange
+        Usuario user = new Usuario();
+        user.setEmail("user@test.com");
+
+        LocalDateTime expiracao = LocalDateTime.now().plusMinutes(30);
+        PasswordReset reset = new PasswordReset("valid-code", expiracao, user);
+
+        // Assert
+        assertFalse(reset.isExpirado(), "Código válido deve retornar false em isExpirado()");
     }
 }

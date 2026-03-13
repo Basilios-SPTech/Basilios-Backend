@@ -11,11 +11,10 @@ import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.PasswordResetRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import com.basilios.basilios.infra.security.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,30 +29,18 @@ import java.util.Base64;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private static final int TOKEN_BYTES = 32;
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private PasswordResetRepository passwordResetRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private EmailService emailService;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordResetRepository passwordResetRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
+    private final EmailService emailService;
 
     @Value("${app.password-reset.ttl-minutes:60}")
     private long passwordResetTtlMinutes;
@@ -86,20 +73,12 @@ public class AuthService {
                 .telefone(telefoneNormalizado)
                 .roles(List.of(RoleEnum.ROLE_CLIENTE)) // padrão
                 .enabled(true)
-                .dataNascimento(request.getDataNascimento()) // Adicionado campo dataNascimento
+                .dataNascimento(request.getDataNascimento())
                 .build();
 
         usuario = usuarioRepository.save(usuario);
 
-        // Gera o token JWT
-        UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
-        String token = jwtUtil.generateToken(userDetails.getUsername());
-        return UsuarioTokenDTO.builder()
-                .token(token)
-                .id(usuario.getId())
-                .nomeUsuario(usuario.getNomeUsuario())
-                .email(usuario.getEmail())
-                .build();
+        return buildTokenResponse(usuario);
     }
 
     /**
@@ -121,13 +100,23 @@ public class AuthService {
             throw new AuthenticationException("Usuario desativado");
         }
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        return buildTokenResponse(usuario);
+    }
+
+    private UsuarioTokenDTO buildTokenResponse(Usuario usuario) {
+        List<String> roles = usuario.getRoles().stream()
+                .map(Enum::name)
+                .toList();
+        String token = jwtUtil.generateToken(
+                userDetailsService.loadUserByUsername(usuario.getEmail()).getUsername(),
+                roles
+        );
         return UsuarioTokenDTO.builder()
                 .token(token)
                 .id(usuario.getId())
                 .nomeUsuario(usuario.getNomeUsuario())
                 .email(usuario.getEmail())
+                .roles(roles)
                 .build();
     }
 

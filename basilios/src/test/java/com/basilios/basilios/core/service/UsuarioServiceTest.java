@@ -1,10 +1,21 @@
 package com.basilios.basilios.core.service;
 
-import com.basilios.basilios.core.enums.RoleEnum;
-import com.basilios.basilios.core.exception.BusinessException;
-import com.basilios.basilios.core.exception.NotFoundException;
-import com.basilios.basilios.core.model.Usuario;
-import com.basilios.basilios.infra.repository.UsuarioRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,19 +24,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.basilios.basilios.core.enums.RoleEnum;
+import com.basilios.basilios.core.exception.BusinessException;
+import com.basilios.basilios.core.exception.NotFoundException;
+import com.basilios.basilios.core.model.Usuario;
+import com.basilios.basilios.infra.repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do UsuarioService")
@@ -255,5 +262,142 @@ class UsuarioServiceTest {
         assertEquals(3, usuario.getRoles().size());
         verify(usuarioRepository, times(2)).findById(1L);
         verify(usuarioRepository, times(2)).save(usuario);
+    }
+
+    // ========== TESTES DO MÉTODO findById() ==========
+
+    @Test
+    @DisplayName("Deve retornar usuário quando ID existe")
+    void findById_DeveRetornarUsuarioQuandoIdExiste() {
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        Usuario result = usuarioService.findById(1L);
+
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals("João Silva", result.getNomeUsuario());
+        verify(usuarioRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Deve lançar NotFoundException quando ID não existe")
+    void findById_DeveLancarExcecaoQuandoIdNaoExiste() {
+        when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> usuarioService.findById(999L));
+
+        assertEquals("Usuário não encontrado: 999", exception.getMessage());
+        verify(usuarioRepository, times(1)).findById(999L);
+    }
+
+    // ========== TESTES DO MÉTODO findByEmail() ==========
+
+    @Test
+    @DisplayName("Deve retornar usuário quando email existe")
+    void findByEmail_DeveRetornarUsuarioQuandoEmailExiste() {
+        when(usuarioRepository.findByEmail("joao@email.com")).thenReturn(Optional.of(usuario));
+
+        Usuario result = usuarioService.findByEmail("joao@email.com");
+
+        assertNotNull(result);
+        assertEquals("joao@email.com", result.getEmail());
+        verify(usuarioRepository, times(1)).findByEmail("joao@email.com");
+    }
+
+    @Test
+    @DisplayName("Deve lançar NotFoundException quando email não existe")
+    void findByEmail_DeveLancarExcecaoQuandoEmailNaoExiste() {
+        when(usuarioRepository.findByEmail("naoexiste@email.com")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> usuarioService.findByEmail("naoexiste@email.com"));
+    }
+
+    // ========== TESTES DO MÉTODO removeRole() ==========
+
+    @Test
+    @DisplayName("Deve remover role do usuário com sucesso")
+    void removeRole_DeveRemoverRoleComSucesso() {
+        usuario.getRoles().add(RoleEnum.ROLE_FUNCIONARIO);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+
+        Usuario result = usuarioService.removeRole(1L, RoleEnum.ROLE_FUNCIONARIO);
+
+        assertNotNull(result);
+        assertFalse(result.hasRole(RoleEnum.ROLE_FUNCIONARIO));
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao remover role que usuário não possui")
+    void removeRole_DeveLancarExcecaoQuandoUsuarioNaoPossuiRole() {
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> usuarioService.removeRole(1L, RoleEnum.ROLE_ADMIN));
+
+        assertEquals("Usuário não possui a role: ROLE_ADMIN", exception.getMessage());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao remover ROLE_CLIENTE se for a única role")
+    void removeRole_DeveLancarExcecaoAoRemoverUnicaRoleCliente() {
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> usuarioService.removeRole(1L, RoleEnum.ROLE_CLIENTE));
+
+        assertEquals("Não é possível remover ROLE_CLIENTE se for a única role do usuário", exception.getMessage());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    // ========== TESTES DO MÉTODO deleteUsuario() ==========
+
+    @Test
+    @DisplayName("Deve desativar usuário com sucesso via soft delete")
+    void deleteUsuario_DeveDesativarUsuarioComSucesso() {
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+
+        var result = usuarioService.deleteUsuario(1L);
+
+        assertNotNull(result);
+        assertNotNull(usuario.getDeletedAt());
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    // ========== TESTES DO MÉTODO countActiveUsuarios() ==========
+
+    @Test
+    @DisplayName("Deve retornar contagem de usuários ativos")
+    void countActiveUsuarios_DeveRetornarContagem() {
+        when(usuarioRepository.countByEnabledTrue()).thenReturn(5L);
+
+        long count = usuarioService.countActiveUsuarios();
+
+        assertEquals(5L, count);
+        verify(usuarioRepository, times(1)).countByEnabledTrue();
+    }
+
+    // ========== TESTES DO MÉTODO isFuncionario() ==========
+
+    @Test
+    @DisplayName("Deve retornar true quando usuário é funcionário")
+    void isFuncionario_DeveRetornarTrueQuandoEhFuncionario() {
+        usuario.getRoles().add(RoleEnum.ROLE_FUNCIONARIO);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        assertTrue(usuarioService.isFuncionario(1L));
+    }
+
+    @Test
+    @DisplayName("Deve retornar false quando usuário não é funcionário")
+    void isFuncionario_DeveRetornarFalseQuandoNaoEhFuncionario() {
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        assertFalse(usuarioService.isFuncionario(1L));
     }
 }

@@ -2,6 +2,7 @@ package com.basilios.basilios.app.controllers;
 
 import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
 import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
+import com.basilios.basilios.app.mapper.UsuarioMapper;
 import com.basilios.basilios.core.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,16 +34,7 @@ public class UsuarioController {
     @PreAuthorize("hasRole('FUNCIONARIO')")
     public ResponseEntity<List<UsuarioListarDTO>> getAllUsers() {
         List<UsuarioListarDTO> usuarios = usuarioService.findAll().stream()
-            .map(u -> {
-                UsuarioListarDTO dto = new UsuarioListarDTO();
-                dto.setId(u.getId());
-                dto.setNomeUsuario(u.getNomeUsuario());
-                dto.setEmail(u.getEmail());
-                dto.setCpf(u.getCpf());
-                dto.setTelefone(u.getTelefone());
-                dto.setDataNascimento(u.getDataNascimento());
-                return dto;
-            })
+            .map(UsuarioMapper::toListarDTO)
             .toList();
         return ResponseEntity.ok(usuarios);
     }
@@ -52,18 +44,7 @@ public class UsuarioController {
     @PreAuthorize("hasRole('FUNCIONARIO') or @usuarioService.getCurrentUsuario().id == #id")
     public ResponseEntity<UsuarioProfileResponse> getUserById(@PathVariable Long id) {
         var usuario = usuarioService.findById(id);
-        UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
-            .id(usuario.getId())
-            .nomeUsuario(usuario.getNomeUsuario())
-            .email(usuario.getEmail())
-            .cpf(usuario.getCpf())
-            .telefone(usuario.getTelefone())
-            .dataNascimento(usuario.getDataNascimento())
-            .roles(new java.util.HashSet<>(usuario.getRoles()))
-            .enabled(usuario.isAtivo())
-            .createdAt(usuario.getCreatedAt())
-            .build();
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(UsuarioMapper.toProfileResponse(usuario));
     }
 
     @Operation(summary = "Soft delete de usuário", description = "Desativa o usuário (soft delete)")
@@ -78,17 +59,6 @@ public class UsuarioController {
     @GetMapping("/me")
     public ResponseEntity<UsuarioProfileResponse> getMe() {
         var usuario = usuarioService.getCurrentUsuario();
-        UsuarioProfileResponse dto = UsuarioProfileResponse.builder()
-            .id(usuario.getId())
-            .nomeUsuario(usuario.getNomeUsuario())
-            .email(usuario.getEmail())
-            .cpf(usuario.getCpf())
-            .telefone(usuario.getTelefone())
-            .dataNascimento(usuario.getDataNascimento())
-            .roles(new java.util.HashSet<>(usuario.getRoles()))
-            .enabled(usuario.isAtivo())
-            .createdAt(usuario.getCreatedAt())
-            .build();
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(UsuarioMapper.toProfileResponse(usuario));
     }
 }

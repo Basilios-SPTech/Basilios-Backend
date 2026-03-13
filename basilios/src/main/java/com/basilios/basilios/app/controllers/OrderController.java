@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.controllers;
 
+import com.basilios.basilios.app.dto.order.CancelOrderDTO;
 import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.dto.order.UpdateOrderStatusDTO;
@@ -18,7 +19,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/orders")
@@ -58,8 +58,8 @@ public class OrderController {
     @PreAuthorize("hasRole('CLIENTE')")
     @PatchMapping("/me/{id}/cancel")
     @Operation(summary = "Cancelar meu pedido", description = "Cliente cancela seu próprio pedido (apenas status permitido)")
-    public ResponseEntity<OrderResponseDTO> cancelMyOrder(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
-        String motivo = body != null ? body.get("motivo") : "Cancelado pelo cliente";
+    public ResponseEntity<OrderResponseDTO> cancelMyOrder(@PathVariable Long id, @RequestBody(required = false) CancelOrderDTO cancelDTO) {
+        String motivo = cancelDTO != null ? cancelDTO.getMotivo() : "Cancelado pelo cliente";
         OrderResponseDTO order = orderService.cancelarPedidoUsuario(id, motivo);
         return ResponseEntity.ok(order);
     }
@@ -93,14 +93,8 @@ public class OrderController {
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @PatchMapping("/{id}/status")
     @Operation(summary = "Atualizar status do pedido", description = "Atualiza o status de um pedido existente")
-    public ResponseEntity<?> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateOrderStatusDTO dto) {
-        try {
-            OrderResponseDTO responseDTO = orderService.updateOrderStatus(id, dto.getStatus());
-            return ResponseEntity.ok(responseDTO);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar status do pedido");
-        }
+    public ResponseEntity<OrderResponseDTO> updateOrderStatus(@PathVariable Long id, @Valid @RequestBody UpdateOrderStatusDTO dto) {
+        OrderResponseDTO responseDTO = orderService.updateOrderStatus(id, dto.getStatus());
+        return ResponseEntity.ok(responseDTO);
     }
 }

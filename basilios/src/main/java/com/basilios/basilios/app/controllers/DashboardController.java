@@ -2,26 +2,29 @@ package com.basilios.basilios.app.controllers;
 
 import com.basilios.basilios.app.dto.dashboard.*;
 import com.basilios.basilios.core.service.DashboardService;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/dashboard")
 @PreAuthorize("hasRole('FUNCIONARIO')")
+@RequiredArgsConstructor
+@Tag(name = "Dashboard", description = "Métricas e indicadores do negócio")
 public class DashboardController {
 
-    @Autowired
-    private DashboardService dashboardService;
+    private final DashboardService dashboardService;
 
     @GetMapping("/revenue")
+    @Operation(summary = "Receita do período", description = "Retorna a receita total no período informado")
     public ResponseEntity<RevenueDTO> getRevenue(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -32,6 +35,7 @@ public class DashboardController {
     }
 
     @GetMapping("/orders-period")
+    @Operation(summary = "Total de pedidos no período")
     public ResponseEntity<OrdersCountDTO> getOrdersCount(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -42,6 +46,7 @@ public class DashboardController {
     }
 
     @GetMapping("/average-ticket")
+    @Operation(summary = "Ticket médio do período")
     public ResponseEntity<AverageTicketDTO> getAverageTicket(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -52,16 +57,18 @@ public class DashboardController {
     }
 
     @GetMapping("/items-sold")
+    @Operation(summary = "Itens vendidos no período")
     public ResponseEntity<ItemsSoldDTO> getItemsSold(
-            @RequestParam(name = "dta_inicio", required = false) String dtaInicio,
-            @RequestParam(name = "dta_fim", required = false) String dtaFim) {
-        LocalDateTime start = parseStart(dtaInicio);
-        LocalDateTime end = parseEnd(dtaFim);
-        long itemsSold = dashboardService.getItemsSold(start, end);
+            @RequestParam(name = "dta_inicio", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
+            @RequestParam(name = "dta_fim", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaFim) {
+        long itemsSold = dashboardService.getItemsSold(dtaInicio, dtaFim);
         return ResponseEntity.ok(ItemsSoldDTO.toResponse(itemsSold));
     }
 
     @GetMapping("/cancellation-rate")
+    @Operation(summary = "Taxa de cancelamento")
     public ResponseEntity<CancellationRateDTO> getCancellationRate(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -72,6 +79,7 @@ public class DashboardController {
     }
 
     @GetMapping("/average-delivery-time")
+    @Operation(summary = "Tempo médio de entrega")
     public ResponseEntity<AverageDeliveryTimeDTO> getAverageDeliveryTime(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -82,6 +90,7 @@ public class DashboardController {
     }
 
     @GetMapping("/order-peaks")
+    @Operation(summary = "Picos de pedidos")
     public ResponseEntity<OrderPeaksDTO> getOrderPeaks(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -92,6 +101,7 @@ public class DashboardController {
     }
 
     @GetMapping("/top-products")
+    @Operation(summary = "Produtos mais vendidos")
     public ResponseEntity<List<TopProductDTO>> getTopProducts(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -103,6 +113,7 @@ public class DashboardController {
     }
 
     @GetMapping("/champion")
+    @Operation(summary = "Campeão de vendas do período")
     public ResponseEntity<ChampionDTO> getChampion(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
@@ -112,15 +123,4 @@ public class DashboardController {
         return champion.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    private LocalDateTime parseStart(String dateStr) {
-        if (dateStr == null || dateStr.isEmpty()) return null;
-        LocalDate date = LocalDate.parse(dateStr);
-        return date.atStartOfDay();
-    }
-
-    private LocalDateTime parseEnd(String dateStr) {
-        if (dateStr == null || dateStr.isEmpty()) return null;
-        LocalDate date = LocalDate.parse(dateStr);
-        return date.atTime(23, 59, 59);
-    }
 }

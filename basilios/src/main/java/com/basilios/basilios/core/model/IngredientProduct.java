@@ -1,15 +1,17 @@
 package com.basilios.basilios.core.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 @Entity
 @Table(name = "ingredient_product", uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "ingredient_id"}))
+@Data
+@Builder
 @NoArgsConstructor
-@Getter
-@Setter
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class IngredientProduct {
 
     @Id
@@ -17,53 +19,21 @@ public class IngredientProduct {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
+    @NotNull
+    @ToString.Exclude
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ingredient_id")
+    @JoinColumn(name = "ingredient_id", nullable = false)
+    @NotNull
+    @ToString.Exclude
     private Ingredient ingredient;
 
-    private Integer quantity; // Quantidade do ingrediente no produto
-    private String measurementUnit; // Ex: "g", "ml", "unidades"
+    @Min(value = 1, message = "Quantidade deve ser maior que zero")
+    @Column(nullable = false)
+    private Integer quantity;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public Ingredient getIngredient() {
-        return ingredient;
-    }
-
-    public void setIngredient(Ingredient ingredient) {
-        this.ingredient = ingredient;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public String getMeasurementUnit() {
-        return measurementUnit;
-    }
-
-    public void setMeasurementUnit(String measurementUnit) {
-        this.measurementUnit = measurementUnit;
-    }
+    @Column(name = "measurement_unit", length = 50)
+    private String measurementUnit;
 }

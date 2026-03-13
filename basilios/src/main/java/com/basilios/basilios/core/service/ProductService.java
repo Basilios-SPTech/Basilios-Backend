@@ -2,29 +2,30 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
+import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
 import com.basilios.basilios.core.exception.*;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ProductService {
 
-    @Autowired private ProductRepository productRepository;
-    @Autowired private IngredientRepository ingredientRepository;
-    @Autowired private IngredientProductRepository ingredientProductRepository;
-    @Autowired private ProductOrderRepository productOrderRepository;
-    @Autowired private ProductComboRepository productComboRepository;
-    @Autowired private PromotionRepository promotionRepository;
+    private final ProductRepository productRepository;
+    private final IngredientRepository ingredientRepository;
+    private final IngredientProductRepository ingredientProductRepository;
+    private final ProductOrderRepository productOrderRepository;
+    private final ProductComboRepository productComboRepository;
+    private final PromotionRepository promotionRepository;
 
     // ========== CRUD BÁSICO ==========
 
@@ -273,16 +274,16 @@ public class ProductService {
      * Lista ingredientes do produto
      */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getProductIngredients(Long productId) {
+    public List<IngredientResponseDTO> getProductIngredients(Long productId) {
         Product product = findProductOrThrow(productId);
 
         return ingredientProductRepository.findByProduct(product).stream()
-                .map(ip -> Map.of(
-                        "id", (Object) ip.getIngredient().getId(),
-                        "name", ip.getIngredient().getName(),
-                        "quantity", ip.getQuantity(),
-                        "unit", ip.getMeasurementUnit()
-                ))
+                .map(ip -> IngredientResponseDTO.builder()
+                        .id(ip.getIngredient().getId())
+                        .name(ip.getIngredient().getName())
+                        .quantity(ip.getQuantity())
+                        .unit(ip.getMeasurementUnit())
+                        .build())
                 .collect(Collectors.toList());
     }
 

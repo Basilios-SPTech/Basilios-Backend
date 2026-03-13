@@ -38,6 +38,7 @@ public class AddressController {
             description = "Busca um endereço específico pelo ID."
     )
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO') or @addressService.isOwner(#id)")
     public ResponseEntity<AddressResponseDTO> findById(@PathVariable Long id) {
         AddressResponseDTO address = addressService.findById(id);
         return ResponseEntity.ok(address);
@@ -48,6 +49,7 @@ public class AddressController {
             description = "Retorna todos os endereços de um usuário específico."
     )
     @GetMapping("/user/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO') or @usuarioService.getCurrentUsuario().id == #id")
     public ResponseEntity<List<AddressResponseDTO>> findByUserId(@PathVariable Long id) {
         List<AddressResponseDTO> addresses = addressService.findAllByUserId(id);
         return ResponseEntity.ok(addresses);

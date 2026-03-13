@@ -2,13 +2,14 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
 import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
+import com.basilios.basilios.app.mapper.UsuarioMapper;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Obtém o usuário autenticado no contexto de segurança
@@ -179,18 +180,7 @@ public class UsuarioService {
         usuario.setEmail(dto.getEmail());
         usuario.setTelefone(dto.getTelefone());
         usuarioRepository.save(usuario);
-        // Retornar DTO atualizado
-        return UsuarioProfileResponse.builder()
-                .id(usuario.getId())
-                .nomeUsuario(usuario.getNomeUsuario())
-                .email(usuario.getEmail())
-                .cpf(usuario.getCpf())
-                .telefone(usuario.getTelefone())
-                .dataNascimento(usuario.getDataNascimento())
-                .roles(new java.util.HashSet<>(usuario.getRoles()))
-                .enabled(usuario.isAtivo())
-                .createdAt(usuario.getCreatedAt())
-                .build();
+        return UsuarioMapper.toProfileResponse(usuario);
     }
 
     /**
@@ -202,58 +192,7 @@ public class UsuarioService {
         Usuario usuario = findById(id);
         usuario.softDelete();
         usuarioRepository.save(usuario);
-        // Retornar DTO de listagem
-        UsuarioListarDTO dto = new UsuarioListarDTO();
-        dto.setNomeUsuario(usuario.getNomeUsuario());
-        dto.setEmail(usuario.getEmail());
-        dto.setCpf(usuario.getCpf());
-        dto.setTelefone(usuario.getTelefone());
-        dto.setDataNascimento(usuario.getDataNascimento());
-        return dto;
-    }
-
-    /**
-     * Atualiza dados básicos do usuário usando DTO
-     */
-    @Transactional
-    public UsuarioProfileResponse updateUsuario(Long id, UsuarioProfileResponse dto) {
-        Usuario usuario = findById(id);
-        // Validar email único (se mudou)
-        if (!usuario.getEmail().equals(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new BusinessException("Email já cadastrado");
-        }
-        // Validar nomeUsuario único (se mudou)
-        if (!usuario.getNomeUsuario().equals(dto.getNomeUsuario()) && usuarioRepository.existsByNomeUsuario(dto.getNomeUsuario())) {
-            throw new BusinessException("Nome de usuário já existe");
-        }
-        // Atualizar apenas campos permitidos
-        usuario.setNomeUsuario(dto.getNomeUsuario());
-        usuario.setEmail(dto.getEmail());
-        usuario.setTelefone(dto.getTelefone());
-        usuarioRepository.save(usuario);
-        // Retornar DTO atualizado
-        return UsuarioProfileResponse.builder()
-                .id(usuario.getId())
-                .nomeUsuario(usuario.getNomeUsuario())
-                .email(usuario.getEmail())
-                .cpf(usuario.getCpf())
-                .telefone(usuario.getTelefone())
-                .dataNascimento(usuario.getDataNascimento())
-                .roles(new java.util.HashSet<>(usuario.getRoles()))
-                .enabled(usuario.isAtivo())
-                .createdAt(usuario.getCreatedAt())
-                .build();
-    }
-
-    /**
-     * Desativa usuário (soft delete) - deprecated, use deleteUsuario
-     */
-    @Transactional
-    @Deprecated
-    public void desativarUsuario(Long id) {
-        Usuario usuario = findById(id);
-        usuario.softDelete();
-        usuarioRepository.save(usuario);
+        return UsuarioMapper.toListarDTO(usuario);
     }
 
     /**
@@ -261,9 +200,7 @@ public class UsuarioService {
      */
     @Transactional(readOnly = true)
     public long countActiveUsuarios() {
-        return usuarioRepository.findAll().stream()
-                .filter(Usuario::isAtivo)
-                .count();
+        return usuarioRepository.countByEnabledTrue();
     }
 
     /**
@@ -271,9 +208,7 @@ public class UsuarioService {
      */
     @Transactional(readOnly = true)
     public List<Usuario> findByRole(RoleEnum role) {
-        return usuarioRepository.findAll().stream()
-                .filter(u -> u.hasRole(role))
-                .toList();
+        return usuarioRepository.findByRolesContaining(role);
     }
 
     /**

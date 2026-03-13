@@ -3,16 +3,18 @@ package com.basilios.basilios.core.service;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Store;
 import com.basilios.basilios.infra.repository.StoreRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StoreService {
 
-    @Autowired
-    private StoreRepository storeRepository;
+    private final StoreRepository storeRepository;
 
     public Store getMainStore() {
         List<Store> stores = storeRepository.findAll();
