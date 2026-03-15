@@ -24,7 +24,7 @@ public class FileUploadController {
     @Operation(summary = "Upload de imagem de produto")
     public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
         String fileName = fileStorageService.storeFile(file);
-        String fileUrl = "/uploads/" + fileName;
+        String fileUrl = "http://localhost:8080/uploads/" + fileName;
         return ResponseEntity.ok(fileUrl);
     }
 }
