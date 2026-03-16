@@ -33,4 +33,5 @@ public class PromotionController {
 
         return ResponseEntity.ok(promotions);
     }
+
 }
