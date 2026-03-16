@@ -254,6 +254,20 @@ VALUES
      0, 'Combo X-Bacon Salada', 45.00, NULL, '2025-12-07 03:34:03.133372',
      '/uploads/9ff9351e-bc05-47c4-93e5-18d489be2584.jpg');
 
+-- ===========================================
+-- PROMOÇÕES
+-- ===========================================
+INSERT IGNORE INTO promotion (id, title, description, discount_amount, is_active, start_date, end_date)
+VALUES (
+    1, 
+    'Combo X-Salada', 
+    'O melhor combo com promoção durante todo o mês de março!',
+    3.00,
+    1,
+    '2026-03-01',
+    '2026-03-31'
+);
+
 -- ORDERS DE 11 A 30 DE NOVEMBRO DE 2025 (IDs fixos iniciando em 1)
 INSERT IGNORE INTO orders (
     id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id
@@ -298,6 +312,16 @@ INSERT IGNORE INTO orders (
 (19, NULL, NULL, 'PED-0019', '2025-12-19 20:46:00', '2025-12-19 20:45:00', '2025-12-19 22:45:00', 7.00, 0.00, '2025-12-19 21:45:00', 'Pedido automático dia 29/11', '2025-12-19 20:47:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
 -- 20) 2025-11-30 ENTREGUE - total 42.80
 (20, NULL, NULL, 'PED-0020', '2025-12-20 18:51:00', '2025-12-20 18:50:00', '2025-12-20 19:50:00', 7.00, 0.00, '2025-12-20 19:30:00', 'Pedido automático dia 30/11', '2025-12-20 18:54:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1));
+
+-- ===========================================
+-- PROMOTION_PRODUCT ASSOCIATIONS
+-- ===========================================
+-- Associate promotion ID 1 (Combo X-Salada) with product ID 31 (Combo X-Salada)
+INSERT IGNORE INTO promotion_product (promotion_id, product_id)
+SELECT 1 AS promotion_id, p.id AS product_id
+FROM product p
+WHERE p.name = 'Combo X-Salada'
+LIMIT 1;
 
 -- ===========================================
 -- ITENS DOS PEDIDOS (product_order)

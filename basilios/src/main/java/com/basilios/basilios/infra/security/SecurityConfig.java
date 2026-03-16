@@ -73,12 +73,15 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/api/upload/image"
+                                "/api/upload/image",
+                                "/favicon.ico",
+                                "/error"
                         ).permitAll()
                         // arquivos estaticos de imagem -> qualquer um pode ver
                         .requestMatchers("/uploads/**").permitAll()
                         // Permite acesso publico ao endpoint de produtos
                         .requestMatchers("/products", "/products/**").permitAll()
+                        .requestMatchers("/promotions/current").permitAll()
 
                         // Regras de acesso por role
                         .requestMatchers("/api/funcionario/**").hasRole("FUNCIONARIO")
