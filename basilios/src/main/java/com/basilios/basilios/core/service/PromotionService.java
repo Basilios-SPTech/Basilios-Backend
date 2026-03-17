@@ -2,8 +2,11 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.promotion.CreatePromotionDTO;
 import com.basilios.basilios.app.dto.promotion.PromotionCurrentDTO;
+import com.basilios.basilios.app.dto.promotion.UpdatePromotionDTO;
+import com.basilios.basilios.app.dto.promotion.PromotionResponseDTO;
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.core.model.Promotion;
+import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.infra.repository.PromotionRepository;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,11 @@ public class PromotionService {
         return promotionRepository.save(promotion);
     }
 
+    public PromotionResponseDTO createPromotionDTO(CreatePromotionDTO dto) {
+        Promotion promotion = createPromotion(dto);
+        return convertToResponseDTO(promotion);
+    }
+
     public List<Promotion> getCurrentPromotions() {
 
         return promotionRepository.findCurrentPromotions(LocalDate.now());
@@ -71,6 +79,80 @@ public class PromotionService {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    /**
+     * Busca uma promoção por ID
+     */
+    public Promotion getPromotionById(Long id) {
+        return promotionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Promoção não encontrada com ID: " + id));
+    }
+
+    /**
+     * Atualiza uma promoção existente
+     */
+    public Promotion updatePromotion(Long id, UpdatePromotionDTO dto) {
+        Promotion promotion = getPromotionById(id);
+
+        if (dto.getTitle() != null) {
+            promotion.setTitle(dto.getTitle());
+        }
+        if (dto.getDescription() != null) {
+            promotion.setDescription(dto.getDescription());
+        }
+        if (dto.getDiscountPercentage() != null) {
+            promotion.setDiscountPercentage(dto.getDiscountPercentage());
+        }
+        if (dto.getDiscountAmount() != null) {
+            promotion.setDiscountAmount(dto.getDiscountAmount());
+        }
+        if (dto.getStartDate() != null) {
+            promotion.setStartDate(dto.getStartDate());
+        }
+        if (dto.getEndDate() != null) {
+            promotion.setEndDate(dto.getEndDate());
+        }
+        if (dto.getIsActive() != null) {
+            promotion.setIsActive(dto.getIsActive());
+        }
+        if (dto.getProductIds() != null && !dto.getProductIds().isEmpty()) {
+            List<Product> products = productRepository.findAllById(dto.getProductIds());
+            promotion.setProducts(products);
+        }
+
+        return promotionRepository.save(promotion);
+    }
+
+    public PromotionResponseDTO updatePromotionDTO(Long id, UpdatePromotionDTO dto) {
+        Promotion promotion = updatePromotion(id, dto);
+        return convertToResponseDTO(promotion);
+    }
+
+    /**
+     * Deleta uma promoção por ID
+     */
+    public void deletePromotion(Long id) {
+        Promotion promotion = getPromotionById(id);
+        promotionRepository.delete(promotion);
+    }
+
+    /**
+     * Converte uma entidade Promotion para PromotionResponseDTO
+     */
+    private PromotionResponseDTO convertToResponseDTO(Promotion promotion) {
+        return PromotionResponseDTO.builder()
+                .id(promotion.getId())
+                .title(promotion.getTitle())
+                .description(promotion.getDescription())
+                .discountPercentage(promotion.getDiscountPercentage())
+                .discountAmount(promotion.getDiscountAmount())
+                .startDate(promotion.getStartDate())
+                .endDate(promotion.getEndDate())
+                .isActive(promotion.getIsActive())
+                .createdAt(promotion.getCreatedAt())
+                .updatedAt(promotion.getUpdatedAt())
+                .build();
     }
 
     /**
