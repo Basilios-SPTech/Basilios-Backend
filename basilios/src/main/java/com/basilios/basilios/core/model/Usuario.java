@@ -34,7 +34,7 @@ public class Usuario {
 
     @NotBlank(message = "Nome de usuário é obrigatório")
     @Size(min = 3, max = 50, message = "Nome de usuário deve ter entre 3 e 50 caracteres")
-    @Column(name = "nome_usuario", nullable = false, unique = true, length = 50)
+    @Column(name = "nome_usuario", nullable = false, length = 50)
     private String nomeUsuario;
 
     @Email(message = "Email inválido")
