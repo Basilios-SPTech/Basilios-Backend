@@ -139,7 +139,8 @@ public class OrderService {
                     .originalPrice(hadPromotion ? originalPrice : null)
                     .build();
 
-            // calculateSubtotal() será chamado automaticamente no @PrePersist
+            // Calcula o subtotal do item
+            productOrder.calculateSubtotal();
             order.getProductOrders().add(productOrder);
         }
 

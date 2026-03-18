@@ -109,7 +109,8 @@ public class AuthService {
                 .toList();
         String token = jwtUtil.generateToken(
                 userDetailsService.loadUserByUsername(usuario.getEmail()).getUsername(),
-                roles
+                roles,
+                usuario.getId()
         );
         return UsuarioTokenDTO.builder()
                 .token(token)

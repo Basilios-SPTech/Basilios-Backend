@@ -191,6 +191,14 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("error", "Internal Server Error");
         body.put("message", "An unexpected error occurred. Please try again later.");
+        
+        // Log completo para debug
+        System.err.println("===== ERRO NAO CAPTURADO =====");
+        System.err.println("Tipo: " + ex.getClass().getName());
+        System.err.println("Mensagem: " + ex.getMessage());
+        ex.printStackTrace();
+        System.err.println("===== FIM DO ERRO =====");
+        
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

@@ -277,6 +277,12 @@ public class Order {
             throw new IllegalStateException("Pedido deve ter pelo menos um produto");
         }
 
+        // Gera código do pedido se não existir
+        if (this.codigoPedido == null || this.codigoPedido.isBlank()) {
+            this.codigoPedido = "PED-" + System.currentTimeMillis() + "-" + 
+                               (int)(Math.random() * 10000);
+        }
+
         // Calcula total automaticamente
         calculateTotal();
     }
