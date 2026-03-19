@@ -27,9 +27,6 @@ public class UsuarioRegisterDTO {
     private String email;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Size(min = 8, message = "Senha deve ter no mínimo 8 caracteres")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-            message = "Senha deve conter pelo menos: 1 letra maiúscula, 1 minúscula, 1 número e 1 caractere especial (@$!%*?&)")
     private String password;
 
 
@@ -45,7 +42,6 @@ public class UsuarioRegisterDTO {
     private String telefone;
 
 
-    // Data de nascimento opcional
-    private LocalDate dataNascimento; // já está sem anotação obrigatória
 
+    private LocalDate dataNascimento;
 }

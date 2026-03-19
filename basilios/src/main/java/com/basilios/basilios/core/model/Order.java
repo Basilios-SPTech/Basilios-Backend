@@ -35,7 +35,6 @@ public class Order {
     @ToString.Exclude
     private List<ProductOrder> productOrders = new ArrayList<>();
 
-    @NotNull(message = "Total é obrigatório")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal total;
 
@@ -257,6 +256,9 @@ public class Order {
      * Cancela o pedido
      */
     public void cancelar(String motivo) {
+        if (isCancelado()) {
+            throw new IllegalStateException("Pedido já está cancelado");
+        }
         if (isEntregue()) {
             throw new IllegalStateException("Pedidos entregues não podem ser cancelados");
         }
@@ -273,6 +275,12 @@ public class Order {
     private void validate() {
         if (productOrders.isEmpty()) {
             throw new IllegalStateException("Pedido deve ter pelo menos um produto");
+        }
+
+        // Gera código do pedido se não existir
+        if (this.codigoPedido == null || this.codigoPedido.isBlank()) {
+            this.codigoPedido = "PED-" + System.currentTimeMillis() + "-" + 
+                               (int)(Math.random() * 10000);
         }
 
         // Calcula total automaticamente

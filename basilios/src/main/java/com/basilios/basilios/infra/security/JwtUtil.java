@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -41,6 +42,15 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public Long extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        Object userIdObj = claims.get("userId");
+        if (userIdObj instanceof Number) {
+            return ((Number) userIdObj).longValue();
+        }
+        return null;
+    }
+
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -62,13 +72,21 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
-    }
-
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username);
+    }
+
+    public String generateToken(String username, List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        return createToken(claims, username);
+    }
+
+    public String generateToken(String username, List<String> roles, Long userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        claims.put("userId", userId);
         return createToken(claims, username);
     }
 

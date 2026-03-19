@@ -6,7 +6,7 @@ import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductOrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,13 +20,11 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class DashboardService {
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private ProductOrderRepository productOrderRepository;
+    private final OrderRepository orderRepository;
+    private final ProductOrderRepository productOrderRepository;
 
     private LocalDateTime getStartOfDay(LocalDate date) {
         return date != null ? date.atStartOfDay() : LocalDateTime.now().minusDays(30).withHour(0).withMinute(0).withSecond(0).withNano(0);
@@ -79,20 +77,10 @@ public class DashboardService {
         return AverageDeliveryTimeDTO.toResponse(avgSeconds, text);
     }
 
-    private LocalDateTime normalizeStart(LocalDateTime start) {
-        if (start != null) return start;
-        return LocalDateTime.now().minusDays(30).withHour(0).withMinute(0).withSecond(0).withNano(0);
-    }
-
-    private LocalDateTime normalizeEnd(LocalDateTime end) {
-        if (end != null) return end;
-        return LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
-    }
-
-    public long getItemsSold(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        Long qty = productOrderRepository.sumQuantityByDeliveredOrdersInPeriod(start, end);
+    public long getItemsSold(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        Long qty = productOrderRepository.sumQuantityByDeliveredOrdersInPeriod(startDt, endDt);
         return qty == null ? 0L : qty;
     }
 

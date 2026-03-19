@@ -1,5 +1,8 @@
 package com.basilios.basilios.app.controllers;
 
+import com.basilios.basilios.app.dto.product.IngredientRequestDTO;
+import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
+import com.basilios.basilios.app.dto.product.ProductPriceUpdateDTO;
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
 import com.basilios.basilios.app.dto.product.ProductStatusDTO;
@@ -7,23 +10,21 @@ import com.basilios.basilios.core.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/products")
+@RequiredArgsConstructor
 @Tag(name = "Products", description = "CRUD e operações administrativas sobre produtos")
 public class ProductController {
 
-    @Autowired
-    private ProductService productService;
+    private final ProductService productService;
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @PostMapping
     @Operation(summary = "Criar produto", description = "Cria um novo produto (ROLE_FUNCIONARIO)")
@@ -79,15 +80,8 @@ public class ProductController {
     @Operation(summary = "Atualizar preço", description = "Atualiza apenas o preço do produto")
     public ResponseEntity<ProductResponseDTO> updatePrice(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body) {
-        Object np = body.get("newPrice");
-        BigDecimal newPrice = null;
-        if (np instanceof Number) {
-            newPrice = BigDecimal.valueOf(((Number) np).doubleValue());
-        } else if (np instanceof String) {
-            newPrice = new BigDecimal((String) np);
-        }
-        ProductResponseDTO dto = productService.updatePrice(id, newPrice);
+            @Valid @RequestBody ProductPriceUpdateDTO priceDTO) {
+        ProductResponseDTO dto = productService.updatePrice(id, priceDTO.getNewPrice());
         return ResponseEntity.ok(dto);
     }
 
@@ -95,8 +89,8 @@ public class ProductController {
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @GetMapping("/{id}/ingredients")
     @Operation(summary = "Listar ingredientes", description = "Lista ingredientes de um produto")
-    public ResponseEntity<List<Map<String, Object>>> getIngredients(@PathVariable Long id) {
-        List<Map<String, Object>> list = productService.getProductIngredients(id);
+    public ResponseEntity<List<IngredientResponseDTO>> getIngredients(@PathVariable Long id) {
+        List<IngredientResponseDTO> list = productService.getProductIngredients(id);
         return ResponseEntity.ok(list);
     }
     @PreAuthorize("hasRole('FUNCIONARIO')")
@@ -104,12 +98,9 @@ public class ProductController {
     @Operation(summary = "Adicionar ingrediente", description = "Adiciona ingrediente ao produto")
     public ResponseEntity<ProductResponseDTO> addIngredient(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
-        Integer qty = body.get("qty") instanceof Number ? ((Number) body.get("qty")).intValue() : null;
-        String unit = body.get("unit") != null ? (String) body.get("unit") : null;
-        ProductResponseDTO dto = productService.addIngredient(id, name, qty, unit);
-        return ResponseEntity.ok(dto);
+            @Valid @RequestBody IngredientRequestDTO ingredientDTO) {
+        ProductResponseDTO dto = productService.addIngredient(id, ingredientDTO.getName(), ingredientDTO.getQty(), ingredientDTO.getUnit());
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @DeleteMapping("/{id}/ingredients/{ingredientId}")

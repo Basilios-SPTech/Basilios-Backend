@@ -10,6 +10,7 @@ import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
+import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -47,6 +49,12 @@ class OrderServiceTest {
 
     @Mock
     private OrderMapper orderMapper;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private NotificationEventPublisher notificationEventPublisher;
 
     @InjectMocks
     private OrderService orderService;
@@ -395,5 +403,249 @@ class OrderServiceTest {
 
         verify(orderRepository, times(1)).findByUsuario(usuario);
         verify(orderRepository, times(1)).findByUsuario(outroUsuario);
+    }
+
+    // ========== TESTES DO MÉTODO getOrderById() ==========
+
+    @Test
+    @DisplayName("Deve retornar pedido quando encontrado por ID")
+    void getOrderById_DeveRetornarPedidoQuandoEncontrado() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderMapper.toResponse(order)).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.getOrderById(1L);
+
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Deve lançar NotFoundException quando pedido não existe")
+    void getOrderById_DeveLancarException_QuandoNaoExiste() {
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> orderService.getOrderById(999L));
+    }
+
+    // ========== TESTES DO MÉTODO getUserOrderById() ==========
+
+    @Test
+    @DisplayName("Deve retornar pedido do usuário autenticado por ID")
+    void getUserOrderById_DeveRetornarPedidoDoUsuario() {
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderMapper.toResponse(order)).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.getUserOrderById(1L);
+
+        assertNotNull(result);
+        verify(orderMapper).toResponse(order);
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException quando pedido não pertence ao usuário")
+    void getUserOrderById_DeveLancarException_QuandoNaoPertenceAoUsuario() {
+        Usuario outroUsuario = new Usuario();
+        outroUsuario.setId(99L);
+        order.setUsuario(outroUsuario);
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(BusinessException.class, () -> orderService.getUserOrderById(1L));
+    }
+
+    // ========== TESTES DO MÉTODO getOrdersByStatus() ==========
+
+    @Test
+    @DisplayName("Deve retornar pedidos filtrados por status")
+    void getOrdersByStatus_DeveRetornarPedidosPorStatus() {
+        List<Order> orders = List.of(order);
+        List<OrderResponseDTO> responses = List.of(orderResponseDTO);
+
+        when(orderRepository.findByStatus(StatusPedidoEnum.PENDENTE)).thenReturn(orders);
+        when(orderMapper.toResponseList(orders)).thenReturn(responses);
+
+        List<OrderResponseDTO> result = orderService.getOrdersByStatus(StatusPedidoEnum.PENDENTE);
+
+        assertEquals(1, result.size());
+        verify(orderRepository).findByStatus(StatusPedidoEnum.PENDENTE);
+    }
+
+    // ========== TESTES DOS MÉTODOS DE MUDANÇA DE STATUS ==========
+
+    @Test
+    @DisplayName("confirmarPedido() — Deve confirmar pedido pendente")
+    void confirmarPedido_DeveConfirmarPedidoPendente() {
+        order.setStatus(StatusPedidoEnum.PENDENTE);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.confirmarPedido(1L);
+
+        assertNotNull(result);
+        assertEquals(StatusPedidoEnum.CONFIRMADO, order.getStatus());
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    @DisplayName("iniciarPreparo() — Deve iniciar preparo de pedido confirmado")
+    void iniciarPreparo_DeveIniciarPreparoPedidoConfirmado() {
+        order.setStatus(StatusPedidoEnum.CONFIRMADO);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.iniciarPreparo(1L);
+
+        assertNotNull(result);
+        assertEquals(StatusPedidoEnum.PREPARANDO, order.getStatus());
+    }
+
+    @Test
+    @DisplayName("despacharPedido() — Deve despachar pedido em preparo")
+    void despacharPedido_DeveDespacharPedidoEmPreparo() {
+        order.setStatus(StatusPedidoEnum.PREPARANDO);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.despacharPedido(1L);
+
+        assertNotNull(result);
+        assertEquals(StatusPedidoEnum.DESPACHADO, order.getStatus());
+    }
+
+    @Test
+    @DisplayName("entregarPedido() — Deve entregar pedido despachado")
+    void entregarPedido_DeveEntregarPedidoDespachado() {
+        order.setStatus(StatusPedidoEnum.DESPACHADO);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.entregarPedido(1L);
+
+        assertNotNull(result);
+        assertEquals(StatusPedidoEnum.ENTREGUE, order.getStatus());
+    }
+
+    @Test
+    @DisplayName("cancelarPedido() — Deve cancelar pedido pendente com motivo")
+    void cancelarPedido_DeveCancelarPedidoPendente() {
+        order.setStatus(StatusPedidoEnum.PENDENTE);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.cancelarPedido(1L, "Cliente desistiu");
+
+        assertNotNull(result);
+        assertEquals(StatusPedidoEnum.CANCELADO, order.getStatus());
+        assertEquals("Cliente desistiu", order.getCancellationReason());
+    }
+
+    @Test
+    @DisplayName("confirmarPedido() — Deve lançar BusinessException quando transição inválida")
+    void confirmarPedido_DeveLancarException_QuandoTransicaoInvalida() {
+        order.setStatus(StatusPedidoEnum.ENTREGUE);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(BusinessException.class, () -> orderService.confirmarPedido(1L));
+        verify(orderRepository, never()).save(any());
+    }
+
+    // ========== TESTES DO MÉTODO cancelarPedidoUsuario() ==========
+
+    @Test
+    @DisplayName("cancelarPedidoUsuario() — Deve cancelar pedido pendente do usuário")
+    void cancelarPedidoUsuario_DeveCancelarPedidoPendenteDoUsuario() {
+        order.setStatus(StatusPedidoEnum.PENDENTE);
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.cancelarPedidoUsuario(1L, "Não quero mais");
+
+        assertNotNull(result);
+        assertEquals(StatusPedidoEnum.CANCELADO, order.getStatus());
+    }
+
+    @Test
+    @DisplayName("cancelarPedidoUsuario() — Deve lançar BusinessException quando pedido não pertence ao usuário")
+    void cancelarPedidoUsuario_DeveLancarException_QuandoNaoPertenceAoUsuario() {
+        Usuario outroUsuario = new Usuario();
+        outroUsuario.setId(99L);
+        order.setUsuario(outroUsuario);
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(BusinessException.class, () -> orderService.cancelarPedidoUsuario(1L, "motivo"));
+    }
+
+    @Test
+    @DisplayName("cancelarPedidoUsuario() — Deve lançar BusinessException quando status não permite cancelamento")
+    void cancelarPedidoUsuario_DeveLancarException_QuandoStatusNaoPermiteCancelamento() {
+        order.setStatus(StatusPedidoEnum.DESPACHADO);
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(BusinessException.class, () -> orderService.cancelarPedidoUsuario(1L, "motivo"));
+    }
+
+    // ========== TESTES DO MÉTODO updateOrderStatus() ==========
+
+    @Test
+    @DisplayName("updateOrderStatus() — Deve atualizar status com string válida")
+    void updateOrderStatus_DeveAtualizarStatusComStringValida() {
+        order.setStatus(StatusPedidoEnum.PENDENTE);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        OrderResponseDTO result = orderService.updateOrderStatus(1L, "CONFIRMADO");
+
+        assertNotNull(result);
+    }
+
+    @Test
+    @DisplayName("updateOrderStatus() — Deve lançar BusinessException quando status é inválido")
+    void updateOrderStatus_DeveLancarException_QuandoStatusInvalido() {
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(1L, "INVALIDO"));
+    }
+
+    // ========== TESTES DE ESTATÍSTICAS ==========
+
+    @Test
+    @DisplayName("countUserOrders() — Deve retornar contagem de pedidos do usuário")
+    void countUserOrders_DeveRetornarContagem() {
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.countByUsuario(usuario)).thenReturn(5L);
+
+        assertEquals(5L, orderService.countUserOrders());
+    }
+
+    @Test
+    @DisplayName("canUserCancelOrder() — Deve retornar true para pedido pendente do usuário")
+    void canUserCancelOrder_DeveRetornarTrue_QuandoPedidoPendente() {
+        order.setStatus(StatusPedidoEnum.PENDENTE);
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertTrue(orderService.canUserCancelOrder(1L));
+    }
+
+    @Test
+    @DisplayName("canUserCancelOrder() — Deve retornar false para pedido em preparo")
+    void canUserCancelOrder_DeveRetornarFalse_QuandoPedidoEmPreparo() {
+        order.setStatus(StatusPedidoEnum.PREPARANDO);
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertFalse(orderService.canUserCancelOrder(1L));
     }
 }

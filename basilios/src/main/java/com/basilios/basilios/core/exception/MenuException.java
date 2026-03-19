@@ -1,5 +1,8 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.Getter;
+
+@Getter
 public class MenuException extends RuntimeException {
     private final String errorCode;
 
@@ -11,9 +14,5 @@ public class MenuException extends RuntimeException {
     public MenuException(String message) {
         super(message);
         this.errorCode = "MENU_ERROR";
-    }
-
-    public String getErrorCode() {
-        return errorCode;
     }
 }

@@ -1,7 +1,10 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.Getter;
+
 import java.util.List;
 
+@Getter
 public class ProductUnavailableException extends RuntimeException {
     private final List<String> unavailableProducts;
 
@@ -13,9 +16,5 @@ public class ProductUnavailableException extends RuntimeException {
     public ProductUnavailableException(List<String> unavailableProducts) {
         super("Os seguintes produtos não estão disponíveis: " + String.join(", ", unavailableProducts));
         this.unavailableProducts = unavailableProducts;
-    }
-
-    public List<String> getUnavailableProducts() {
-        return unavailableProducts;
     }
 }

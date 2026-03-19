@@ -353,4 +353,15 @@ public class AddressService {
 
         return toResponse(address);
     }
+
+    /**
+     * Verifica se o endereço pertence ao usuário autenticado (usado por @PreAuthorize)
+     */
+    @Transactional(readOnly = true)
+    public boolean isOwner(Long addressId) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return addressRepository.findById(addressId)
+                .map(address -> address.getUsuario().getId().equals(usuario.getId()))
+                .orElse(false);
+    }
 }

@@ -15,15 +15,15 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Listener responsável por enviar notificações por email quando o status de um pedido muda.
- * 
- * Características:
- * - @TransactionalEventListener(AFTER_COMMIT): só executa após commit da transação
- * - @Async: executa em thread separada, não bloqueia o fluxo principal
- * - @Retryable: tenta 3 vezes com backoff exponencial (1s, 2s, 4s)
- * - @Recover: após 3 falhas, salva na tabela failed_notifications para reprocessamento
+ * DESATIVADO — O envio de emails de notificação de pedido foi migrado
+ * para o microserviço email-api via RabbitMQ.
+ *
+ * O OrderDashboardListener (WebSocket) continua ativo para notificações em tempo real.
+ *
+ * Para rollback de emergência: remover @Deprecated e descomentar @Component.
  */
-@Component
+@Deprecated
+// @Component  // DESATIVADO: migrado para microserviço email-api
 @RequiredArgsConstructor
 @Slf4j
 public class OrderNotificationListener {
