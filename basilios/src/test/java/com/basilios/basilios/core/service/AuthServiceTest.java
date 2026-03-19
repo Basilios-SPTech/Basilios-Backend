@@ -8,6 +8,7 @@ import com.basilios.basilios.core.exception.AuthenticationException;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
+import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
 import com.basilios.basilios.infra.security.JwtUtil;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 class AuthServiceTest {
 
@@ -42,6 +44,12 @@ class AuthServiceTest {
 
     @Mock
     private UserDetailsService userDetailsService;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private NotificationEventPublisher notificationEventPublisher;
 
     @InjectMocks
     private AuthService authService;
@@ -82,7 +90,8 @@ class AuthServiceTest {
         when(passwordEncoder.encode("123")).thenReturn("encoded");
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
         when(userDetailsService.loadUserByUsername(usuario.getEmail())).thenReturn(userDetails);
-        when(jwtUtil.generateToken(userDetails.getUsername())).thenReturn("jwt-token");
+        when(userDetails.getUsername()).thenReturn("teste@teste.com");
+        when(jwtUtil.generateToken(eq("teste@teste.com"), anyList())).thenReturn("jwt-token");
 
         UsuarioTokenDTO result = authService.register(dto);
 
@@ -124,7 +133,8 @@ class AuthServiceTest {
 
         when(usuarioRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(usuario));
         when(userDetailsService.loadUserByUsername(usuario.getEmail())).thenReturn(userDetails);
-        when(jwtUtil.generateToken(userDetails.getUsername())).thenReturn("jwt-token");
+        when(userDetails.getUsername()).thenReturn("teste@teste.com");
+        when(jwtUtil.generateToken(eq("teste@teste.com"), anyList())).thenReturn("jwt-token");
 
         UsuarioTokenDTO result = authService.login(dto);
 

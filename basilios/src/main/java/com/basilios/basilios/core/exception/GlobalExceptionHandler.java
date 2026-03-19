@@ -1,5 +1,6 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
@@ -186,18 +188,24 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
+        log.error("===== ERRO NAO CAPTURADO =====");
+        log.error("Tipo: {} | Mensagem: {}", ex.getClass().getName(), ex.getMessage());
+        log.error("Stacktrace completo:", ex);
+        
+        // Busca causa raiz
+        Throwable rootCause = ex;
+        while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+        }
+        log.error("Causa raiz: {} | Mensagem: {}", rootCause.getClass().getName(), rootCause.getMessage());
+        
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("error", "Internal Server Error");
-        body.put("message", "An unexpected error occurred. Please try again later.");
-        
-        // Log completo para debug
-        System.err.println("===== ERRO NAO CAPTURADO =====");
-        System.err.println("Tipo: " + ex.getClass().getName());
-        System.err.println("Mensagem: " + ex.getMessage());
-        ex.printStackTrace();
-        System.err.println("===== FIM DO ERRO =====");
+        body.put("message", ex.getMessage());
+        body.put("exception", ex.getClass().getSimpleName());
+        body.put("rootCause", rootCause.getClass().getSimpleName() + ": " + rootCause.getMessage());
         
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -8,6 +8,7 @@ import com.basilios.basilios.core.exception.AuthenticationException;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.model.PasswordReset;
 import com.basilios.basilios.core.model.Usuario;
+import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
 import com.basilios.basilios.infra.repository.PasswordResetRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import com.basilios.basilios.infra.security.JwtUtil;
@@ -41,6 +42,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
     private final EmailService emailService;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Value("${app.password-reset.ttl-minutes:60}")
     private long passwordResetTtlMinutes;
@@ -139,11 +141,17 @@ public class AuthService {
             passwordResetRepository.save(reset);
 
             try {
-                emailService.sendPasswordResetEmail(usuario.getEmail(), buildResetLink(rawToken));
+                // Publica evento no RabbitMQ para o microserviço email-api
+                notificationEventPublisher.publishPasswordResetRequested(
+                        usuario.getEmail(),
+                        buildResetLink(rawToken),
+                        usuario.getNomeUsuario(),
+                        passwordResetTtlMinutes + " minutos"
+                );
             } catch (RuntimeException ex) {
                 // Nao vaza erro de infraestrutura para o cliente no endpoint de recuperacao.
                 org.slf4j.LoggerFactory.getLogger(AuthService.class)
-                        .error("Falha ao enviar email de reset para usuarioId={}", usuario.getId(), ex);
+                        .error("Falha ao publicar evento de reset para usuarioId={}", usuario.getId(), ex);
             }
         });
     }

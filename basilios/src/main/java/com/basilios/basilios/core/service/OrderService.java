@@ -9,6 +9,7 @@ import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.core.model.events.OrderStatusChangedEvent;
+import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
 import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
@@ -44,6 +45,7 @@ public class OrderService {
     private final UsuarioService usuarioService;
     private final OrderMapper orderMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Value("${store.latitude:#{-23.550520}}")
     private Double storeLatitude;
@@ -59,11 +61,23 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDTO createOrder(OrderRequestDTO request) {
+        log.info("=== CRIANDO PEDIDO ===");
+        log.info("Request recebido: addressId={}, items={}, discount={}",
+                request.getAddressId(),
+                request.getItems() != null ? request.getItems().size() : "null",
+                request.getDiscount());
+
+        log.info("Buscando usuário autenticado...");
         Usuario usuario = usuarioService.getCurrentUsuario();
+        log.info("Usuário encontrado: id={}, email={}", usuario.getId(), usuario.getEmail());
 
         // Buscar endereço de entrega
+        log.info("Buscando endereço id={}", request.getAddressId());
         Address addressEntrega = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + request.getAddressId()));
+        log.info("Endereço encontrado: id={}, ativo={}, usuarioId={}",
+                addressEntrega.getIdAddress(), addressEntrega.isAtivo(),
+                addressEntrega.getUsuario() != null ? addressEntrega.getUsuario().getId() : "null");
 
         // Verificar se endereço pertence ao usuário
         if (!addressEntrega.getUsuario().getId().equals(usuario.getId())) {
@@ -567,15 +581,23 @@ public class OrderService {
 
     /**
      * Publica evento de mudança de status do pedido (com motivo opcional)
+     * Envia tanto via Spring Events (para WebSocket/Dashboard) quanto via RabbitMQ (para email-api)
      */
     private void publishStatusChangedEvent(Order order, StatusPedidoEnum oldStatus, StatusPedidoEnum newStatus, String motivo) {
         try {
+            // Evento local Spring (para WebSocket/Dashboard listener)
             OrderStatusChangedEvent event = new OrderStatusChangedEvent(order, oldStatus, newStatus, motivo);
             eventPublisher.publishEvent(event);
-            log.debug("Evento publicado: {}", event);
+            log.debug("Evento local publicado: {}", event);
         } catch (Exception e) {
-            log.error("Erro ao publicar evento de status do pedido {}: {}", order.getId(), e.getMessage());
-            // Não relança exceção para não impactar o fluxo principal
+            log.error("Erro ao publicar evento local do pedido {}: {}", order.getId(), e.getMessage());
+        }
+
+        try {
+            // Evento RabbitMQ (para microserviço email-api)
+            notificationEventPublisher.publishOrderStatusChanged(order, oldStatus, newStatus, motivo);
+        } catch (Exception e) {
+            log.error("Erro ao publicar evento RabbitMQ do pedido {}: {}", order.getId(), e.getMessage());
         }
     }
 }
