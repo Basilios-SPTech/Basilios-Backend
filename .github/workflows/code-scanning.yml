@@ -1,0 +1,67 @@
+name: SAST Security Scan (Snyk + Semgrep)
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main # escaneia PRs DESTINADOS à main
+  workflow_dispatch: # trigger manual
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  security:
+    name: SAST - Semgrep + Snyk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ----------------
+      # SAST - Semgrep
+      # ----------------
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1 # namespace correto
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/secrets
+          generateSarif: "1" # gera o SARIF
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      # ----------------
+      # SAST - Snyk Code
+      # ----------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Snyk Code (SAST)
+        uses: snyk/actions/node@master
+        with:
+          command: code test
+          args: --severity-threshold=low --sarif-file-output=snyk-sast.sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: Upload Snyk SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk-sast.sarif
+          category: snyk # aparece em Security > Code Scanning
