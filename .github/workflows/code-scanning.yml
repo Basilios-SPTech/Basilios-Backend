@@ -15,43 +15,72 @@ permissions:
   security-events: write
 
 jobs:
-  security:
-    name: SAST - Semgrep + Snyk
+  # ──────────────────────────────────────────────
+  # Job 1 – Semgrep SARIF (sempre sucede)
+  # ──────────────────────────────────────────────
+  semgrep-sarif:
+    name: SAST - Semgrep SARIF
     runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+
     steps:
       - uses: actions/checkout@v4
 
-      # ----------------
-      # SAST - Semgrep
-      # ----------------
-      - name: Run Semgrep
-        uses: semgrep/semgrep-action@v1 # namespace correto
-        with:
-          config: >-
-            p/security-audit
-            p/owasp-top-ten
-            p/secrets
-          generateSarif: "1" # gera o SARIF
+      - name: Run Semgrep (SARIF output)
+        run: semgrep scan --sarif --output=semgrep.sarif
         env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          SEMGREP_RULES: "p/security-audit p/owasp-top-ten p/secrets"
 
-      - name: Upload Semgrep SARIF
+      - name: Upload Semgrep SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: semgrep.sarif
           category: semgrep
 
-      # ----------------
-      # SAST - Snyk Code
-      # ----------------
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+  # ──────────────────────────────────────────────
+  # Job 2 – Semgrep CI gate + semgrep.dev push
+  # ──────────────────────────────────────────────
+  semgrep-ci:
+    name: SAST - Semgrep CI Gate
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
 
-      - name: Run Snyk Code (SAST)
-        uses: snyk/actions/node@master
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep CI
+        run: semgrep ci
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  # ──────────────────────────────────────────────
+  # Job 3 – Snyk Code (SAST) + Snyk Test (SCA)
+  # ──────────────────────────────────────────────
+  snyk:
+    name: SAST + SCA - Snyk
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Java 21 + Maven (substitui o setup-node anterior)
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven # cache do ~/.m2 entre runs
+
+      # Garante que o projeto compila antes das análises do Snyk
+      - name: Build with Maven
+        run: mvn -B package -DskipTests
+
+      # ── SAST: análise de código-fonte ──
+      - name: Snyk Code (SAST)
+        uses: snyk/actions/maven@master
         with:
           command: code test
           args: --severity-threshold=low --sarif-file-output=snyk-sast.sarif
@@ -59,9 +88,26 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
 
-      - name: Upload Snyk SARIF
+      - name: Upload Snyk SAST SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: snyk-sast.sarif
-          category: snyk # aparece em Security > Code Scanning
+          category: snyk-sast
+
+      # ── SCA: análise de dependências (pom.xml) ──
+      - name: Snyk Test (SCA)
+        uses: snyk/actions/maven@master
+        with:
+          command: test
+          args: --severity-threshold=low --sarif-file-output=snyk-sca.sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: Upload Snyk SCA SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk-sca.sarif
+          category: snyk-sca # separado do SAST no painel Code Scanning
