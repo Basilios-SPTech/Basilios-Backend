@@ -62,9 +62,6 @@ jobs:
   snyk:
     name: SAST + SCA - Snyk
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: basilios # pom.xml está em /basilios
 
     steps:
       - uses: actions/checkout@v4
@@ -77,38 +74,38 @@ jobs:
           cache: maven
 
       - name: Build with Maven
+        working-directory: basilios
         run: mvn -B package -DskipTests
 
-      # ── SAST: análise de código-fonte
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      # ── SAST: análise de código-fonte ──
+      # Rodamos dentro de basilios/ e salvamos o SARIF na raiz do runner
       - name: Snyk Code (SAST)
-        uses: snyk/actions/maven@master
-        with:
-          command: code test
-          args: --severity-threshold=low --sarif-file-output=snyk-sast.sarif
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        working-directory: basilios
+        run: snyk code test --severity-threshold=low --sarif-file-output=${{ github.workspace }}/snyk-sast.sarif
         continue-on-error: true
 
       - name: Upload Snyk SAST SARIF
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: basilios/snyk-sast.sarif # path relativo à raiz do repo
+          sarif_file: snyk-sast.sarif
           category: snyk-sast
 
       # ── SCA: análise de dependências (pom.xml) ──
       - name: Snyk Test (SCA)
-        uses: snyk/actions/maven@master
-        with:
-          command: test
-          args: --severity-threshold=low --sarif-file-output=snyk-sca.sarif
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        working-directory: basilios
+        run: snyk test --severity-threshold=low --sarif-file-output=${{ github.workspace }}/snyk-sca.sarif
         continue-on-error: true
 
       - name: Upload Snyk SCA SARIF
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: basilios/snyk-sca.sarif # path relativo à raiz do repo
+          sarif_file: snyk-sca.sarif
           category: snyk-sca
