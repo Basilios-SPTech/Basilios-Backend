@@ -5,13 +5,15 @@ import com.basilios.basilios.core.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -102,13 +104,13 @@ public class DashboardController {
 
     @GetMapping("/top-products")
     @Operation(summary = "Produtos mais vendidos")
-    public ResponseEntity<List<TopProductDTO>> getTopProducts(
+    public ResponseEntity<Page<TopProductDTO>> getTopProducts(
             @RequestParam(value = "dta_inicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaInicio,
             @RequestParam(value = "dta_fim", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dtaFim,
-            @RequestParam(value = "limit", required = false, defaultValue = "5") int limit) {
-        List<TopProductDTO> dtos = dashboardService.getTopProductsByUnits(dtaInicio, dtaFim, limit);
+            @PageableDefault(size = 5) Pageable pageable) {
+        Page<TopProductDTO> dtos = dashboardService.getTopProductsByUnits(dtaInicio, dtaFim, pageable);
         return ResponseEntity.ok(dtos);
     }
 

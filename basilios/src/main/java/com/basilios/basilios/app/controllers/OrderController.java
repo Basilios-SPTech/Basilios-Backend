@@ -18,8 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
@@ -42,8 +40,9 @@ public class OrderController {
     @PreAuthorize("hasRole('CLIENTE')")
     @GetMapping("/me")
     @Operation(summary = "Listar meus pedidos", description = "Lista todos os pedidos do cliente autenticado")
-    public ResponseEntity<List<OrderResponseDTO>> getMyOrders() {
-        List<OrderResponseDTO> orders = orderService.getUserOrders();
+    public ResponseEntity<Page<OrderResponseDTO>> getMyOrders(
+            Pageable pageable) {
+        Page<OrderResponseDTO> orders = orderService.getUserOrders(pageable);
         return ResponseEntity.ok(orders);
     }
 
@@ -85,8 +84,10 @@ public class OrderController {
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @GetMapping("/by-status")
     @Operation(summary = "Listar pedidos por status", description = "Lista pedidos filtrados por status específico")
-    public ResponseEntity<List<OrderResponseDTO>> getOrdersByStatus(@RequestParam StatusPedidoEnum status) {
-        List<OrderResponseDTO> orders = orderService.getOrdersByStatus(status);
+    public ResponseEntity<Page<OrderResponseDTO>> getOrdersByStatus(
+            @RequestParam StatusPedidoEnum status,
+            Pageable pageable) {
+        Page<OrderResponseDTO> orders = orderService.getOrdersByStatus(status, pageable);
         return ResponseEntity.ok(orders);
     }
 

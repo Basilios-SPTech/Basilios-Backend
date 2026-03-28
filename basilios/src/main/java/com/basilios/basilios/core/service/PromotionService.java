@@ -9,6 +9,9 @@ import com.basilios.basilios.core.model.Promotion;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.infra.repository.PromotionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 
@@ -79,6 +82,18 @@ public class PromotionService {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    public Page<PromotionCurrentDTO> getCurrentPromotionsDTO(Pageable pageable) {
+        List<PromotionCurrentDTO> promotions = getCurrentPromotionsDTO();
+        int startIndex = (int) pageable.getOffset();
+        int endIndex = Math.min(startIndex + pageable.getPageSize(), promotions.size());
+
+        if (startIndex >= promotions.size()) {
+            return new PageImpl<>(List.of(), pageable, promotions.size());
+        }
+
+        return new PageImpl<>(promotions.subList(startIndex, endIndex), pageable, promotions.size());
     }
 
     /**

@@ -10,6 +10,8 @@ import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -68,6 +70,14 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<Usuario> findAll() {
         return usuarioRepository.findAll();
+    }
+
+    /**
+     * Lista usuários com paginação
+     */
+    @Transactional(readOnly = true)
+    public Page<Usuario> findAll(Pageable pageable) {
+        return usuarioRepository.findAll(pageable);
     }
 
     /**

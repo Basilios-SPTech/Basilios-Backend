@@ -91,7 +91,7 @@ class AuthServiceTest {
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
         when(userDetailsService.loadUserByUsername(usuario.getEmail())).thenReturn(userDetails);
         when(userDetails.getUsername()).thenReturn("teste@teste.com");
-        when(jwtUtil.generateToken(eq("teste@teste.com"), anyList())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(eq("teste@teste.com"), anyList(), eq(1L))).thenReturn("jwt-token");
 
         UsuarioTokenDTO result = authService.register(dto);
 
@@ -134,7 +134,7 @@ class AuthServiceTest {
         when(usuarioRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(usuario));
         when(userDetailsService.loadUserByUsername(usuario.getEmail())).thenReturn(userDetails);
         when(userDetails.getUsername()).thenReturn("teste@teste.com");
-        when(jwtUtil.generateToken(eq("teste@teste.com"), anyList())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(eq("teste@teste.com"), anyList(), eq(1L))).thenReturn("jwt-token");
 
         UsuarioTokenDTO result = authService.login(dto);
 

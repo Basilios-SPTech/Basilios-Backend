@@ -11,12 +11,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -36,9 +37,10 @@ public class ProductController {
 
     @GetMapping
     @Operation(summary = "Listar produtos", description = "Lista produtos; activeOnly=true por padrão")
-    public ResponseEntity<List<ProductResponseDTO>> listProducts(
-            @RequestParam(defaultValue = "true") boolean activeOnly) {
-        List<ProductResponseDTO> list = productService.getAllProducts(activeOnly);
+    public ResponseEntity<Page<ProductResponseDTO>> listProducts(
+            @RequestParam(defaultValue = "true") boolean activeOnly,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<ProductResponseDTO> list = productService.getAllProducts(activeOnly, pageable);
         return ResponseEntity.ok(list);
     }
     @PreAuthorize("hasRole('FUNCIONARIO')")
@@ -89,8 +91,10 @@ public class ProductController {
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @GetMapping("/{id}/ingredients")
     @Operation(summary = "Listar ingredientes", description = "Lista ingredientes de um produto")
-    public ResponseEntity<List<IngredientResponseDTO>> getIngredients(@PathVariable Long id) {
-        List<IngredientResponseDTO> list = productService.getProductIngredients(id);
+    public ResponseEntity<Page<IngredientResponseDTO>> getIngredients(
+            @PathVariable Long id,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<IngredientResponseDTO> list = productService.getProductIngredients(id, pageable);
         return ResponseEntity.ok(list);
     }
     @PreAuthorize("hasRole('FUNCIONARIO')")
