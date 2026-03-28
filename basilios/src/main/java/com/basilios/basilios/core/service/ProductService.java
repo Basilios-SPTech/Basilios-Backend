@@ -7,6 +7,8 @@ import com.basilios.basilios.core.exception.*;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,6 +85,15 @@ public class ProductService {
         return products.stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDTO> getAllProducts(boolean activeOnly, Pageable pageable) {
+        Page<Product> products = activeOnly
+                ? productRepository.findByIsPausedFalse(pageable)
+                : productRepository.findAll(pageable);
+
+        return products.map(this::convertToResponseDTO);
     }
 
     /**
@@ -285,6 +296,19 @@ public class ProductService {
                         .unit(ip.getMeasurementUnit())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<IngredientResponseDTO> getProductIngredients(Long productId, Pageable pageable) {
+        Product product = findProductOrThrow(productId);
+
+        return ingredientProductRepository.findByProduct(product, pageable)
+                .map(ip -> IngredientResponseDTO.builder()
+                        .id(ip.getIngredient().getId())
+                        .name(ip.getIngredient().getName())
+                        .quantity(ip.getQuantity())
+                        .unit(ip.getMeasurementUnit())
+                        .build());
     }
 
     // ========== ESTATÍSTICAS GERAIS ==========

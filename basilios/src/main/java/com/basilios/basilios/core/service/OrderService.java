@@ -200,6 +200,13 @@ public class OrderService {
         return orderMapper.toResponseList(orders);
     }
 
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDTO> getUserOrders(Pageable pageable) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        Page<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario, pageable);
+        return orders.map(orderMapper::toResponse);
+    }
+
     /**
      * Lista pedidos do usuário autenticado de forma simplificada (sem items)
      */
@@ -261,6 +268,12 @@ public class OrderService {
     public List<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status) {
         List<Order> orders = orderRepository.findByStatus(status);
         return orderMapper.toResponseList(orders);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status, Pageable pageable) {
+        Page<Order> orders = orderRepository.findByStatus(status, pageable);
+        return orders.map(orderMapper::toResponse);
     }
 
     /**

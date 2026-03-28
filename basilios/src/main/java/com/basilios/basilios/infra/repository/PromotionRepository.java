@@ -1,6 +1,5 @@
 package com.basilios.basilios.infra.repository;
 
-import com.basilios.basilios.app.dto.promotion.PromotionCurrentDTO;
 import com.basilios.basilios.core.model.Promotion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

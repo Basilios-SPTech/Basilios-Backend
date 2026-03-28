@@ -7,6 +7,9 @@ import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductOrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -114,6 +117,32 @@ public class DashboardService {
             ));
         }
         return dtos;
+    }
+
+    public Page<TopProductDTO> getTopProductsByUnits(LocalDate start, LocalDate end, Pageable pageable) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        List<Object[]> rows = productOrderRepository.findBestSellingProductsByPeriod(startDt, endDt);
+
+        List<TopProductDTO> dtos = new ArrayList<>();
+        for (Object[] row : rows) {
+            Product p = (Product) row[0];
+            Number totalSold = (Number) row[1];
+            dtos.add(new TopProductDTO(
+                    p.getId(),
+                    p.getName(),
+                    totalSold != null ? totalSold.intValue() : 0
+            ));
+        }
+
+        int startIndex = (int) pageable.getOffset();
+        int endIndex = Math.min(startIndex + pageable.getPageSize(), dtos.size());
+
+        if (startIndex >= dtos.size()) {
+            return new PageImpl<>(List.of(), pageable, dtos.size());
+        }
+
+        return new PageImpl<>(dtos.subList(startIndex, endIndex), pageable, dtos.size());
     }
 
     public Optional<ChampionDTO> getChampionOfPeriod(LocalDate start, LocalDate end) {

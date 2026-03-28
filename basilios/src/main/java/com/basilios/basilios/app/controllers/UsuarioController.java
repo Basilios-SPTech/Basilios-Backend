@@ -8,11 +8,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -29,13 +30,13 @@ public class UsuarioController {
         return ResponseEntity.ok(updated);
     }
 
-    @Operation(summary = "Listar todos os usuários", description = "Retorna todos os usuários cadastrados")
+    @Operation(summary = "Listar todos os usuários", description = "Retorna os usuários cadastrados com paginação")
     @GetMapping
     @PreAuthorize("hasRole('FUNCIONARIO')")
-    public ResponseEntity<List<UsuarioListarDTO>> getAllUsers() {
-        List<UsuarioListarDTO> usuarios = usuarioService.findAll().stream()
-            .map(UsuarioMapper::toListarDTO)
-            .toList();
+    public ResponseEntity<Page<UsuarioListarDTO>> getAllUsers(
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<UsuarioListarDTO> usuarios = usuarioService.findAll(pageable)
+            .map(UsuarioMapper::toListarDTO);
         return ResponseEntity.ok(usuarios);
     }
 
