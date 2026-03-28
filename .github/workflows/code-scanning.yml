@@ -79,7 +79,7 @@ jobs:
       - name: Build with Maven
         run: mvn -B package -DskipTests
 
-      # ── SAST: análise de código-fonte ──
+      # ── SAST: análise de código-fonte
       - name: Snyk Code (SAST)
         uses: snyk/actions/maven@master
         with:
