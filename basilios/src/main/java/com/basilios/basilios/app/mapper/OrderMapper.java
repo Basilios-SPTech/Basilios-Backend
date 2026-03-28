@@ -7,7 +7,6 @@ import com.basilios.basilios.core.model.ProductOrder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class OrderMapper {
@@ -51,7 +50,7 @@ public class OrderMapper {
         }
         return orders.stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -110,7 +109,7 @@ public class OrderMapper {
 
         return ((List<ProductOrder>) productOrders).stream()
                 .map(this::toItemResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

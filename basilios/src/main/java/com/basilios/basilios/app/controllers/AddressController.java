@@ -3,16 +3,13 @@ package com.basilios.basilios.app.controllers;
 import com.basilios.basilios.app.dto.endereco.AddressRequestDTO;
 import com.basilios.basilios.app.dto.endereco.AddressResponseDTO;
 import com.basilios.basilios.core.service.AddressService;
-import com.basilios.basilios.core.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,13 +21,13 @@ import java.util.List;
 public class AddressController {
 
     private final AddressService addressService;
-    private final OrderService orderService;
 
     @Operation(
             summary = "Listar todos os endereços",
             description = "Retorna TODOS os endereços cadastrados no sistema."
     )
     @GetMapping
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     public ResponseEntity<List<AddressResponseDTO>> findAll() {
         List<AddressResponseDTO> addresses = addressService.findAllAddress();
         return ResponseEntity.ok(addresses);
@@ -41,6 +38,7 @@ public class AddressController {
             description = "Busca um endereço específico pelo ID."
     )
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO') or @addressService.isOwner(#id)")
     public ResponseEntity<AddressResponseDTO> findById(@PathVariable Long id) {
         AddressResponseDTO address = addressService.findById(id);
         return ResponseEntity.ok(address);
@@ -51,6 +49,7 @@ public class AddressController {
             description = "Retorna todos os endereços de um usuário específico."
     )
     @GetMapping("/user/{id}")
+    @PreAuthorize("hasRole('FUNCIONARIO') or @usuarioService.getCurrentUsuario().id == #id")
     public ResponseEntity<List<AddressResponseDTO>> findByUserId(@PathVariable Long id) {
         List<AddressResponseDTO> addresses = addressService.findAllByUserId(id);
         return ResponseEntity.ok(addresses);

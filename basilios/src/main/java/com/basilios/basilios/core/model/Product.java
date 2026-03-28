@@ -2,6 +2,7 @@ package com.basilios.basilios.core.model;
 
 import com.basilios.basilios.core.enums.ProductCategory;
 import com.basilios.basilios.core.enums.ProductSubcategory;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -79,6 +80,7 @@ public class Product {
     @OneToMany(mappedBy = "product")
     @Builder.Default
     @ToString.Exclude
+    @JsonIgnore
     private List<ProductCombo> productCombos = new ArrayList<>();
 
     @NotNull(message = "Preço é obrigatório")
@@ -216,6 +218,10 @@ public class Product {
             ip.setIngredient(null);
         }
         productIngredients.clear();
+    }
+
+    public void setIsPaused(Boolean isPaused) {
+        this.isPaused = isPaused;
     }
 
     @Override

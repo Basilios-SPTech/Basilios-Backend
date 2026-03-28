@@ -1,5 +1,6 @@
 package com.basilios.basilios.infra.repository;
 
+import com.basilios.basilios.app.dto.promotion.PromotionCurrentDTO;
 import com.basilios.basilios.core.model.Promotion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,50 +13,10 @@ import java.util.List;
 @Repository
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
-    /**
-     * Busca promoções ativas
-     */
-    List<Promotion> findByIsActiveTrue();
-
-    /**
-     * Busca promoções inativas
-     */
-    List<Promotion> findByIsActiveFalse();
-
-    /**
-     * Busca promoções por título (ignora case)
-     */
-    List<Promotion> findByTitleContainingIgnoreCase(String title);
-
-    /**
-     * Busca promoções vigentes (ativas e dentro do período)
-     */
     @Query("SELECT p FROM Promotion p WHERE p.isActive = true " +
             "AND p.startDate <= :today AND p.endDate >= :today")
     List<Promotion> findCurrentPromotions(@Param("today") LocalDate today);
 
-    /**
-     * Busca promoções futuras (agendadas)
-     */
-    @Query("SELECT p FROM Promotion p WHERE p.isActive = true " +
-            "AND p.startDate > :today")
-    List<Promotion> findScheduledPromotions(@Param("today") LocalDate today);
-
-    /**
-     * Busca promoções expiradas
-     */
-    @Query("SELECT p FROM Promotion p WHERE p.endDate < :today")
-    List<Promotion> findExpiredPromotions(@Param("today") LocalDate today);
-
-    /**
-     * Busca promoções de um produto específico
-     */
-    @Query("SELECT p FROM Promotion p JOIN p.products prod WHERE prod.id = :productId")
-    List<Promotion> findByProductId(@Param("productId") Long productId);
-
-    /**
-     * Busca promoções vigentes de um produto específico
-     */
     @Query("SELECT p FROM Promotion p JOIN p.products prod " +
             "WHERE prod.id = :productId AND p.isActive = true " +
             "AND p.startDate <= :today AND p.endDate >= :today")
@@ -63,14 +24,13 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
                                                      @Param("today") LocalDate today);
 
     /**
-     * Conta promoções ativas
+     * Query otimizada usando Native SQL para evitar problemas com lazy loading
      */
-    long countByIsActiveTrue();
-
-    /**
-     * Conta promoções vigentes
-     */
-    @Query("SELECT COUNT(p) FROM Promotion p WHERE p.isActive = true " +
-            "AND p.startDate <= :today AND p.endDate >= :today")
-    long countCurrentPromotions(@Param("today") LocalDate today);
+    @Query(value = "SELECT p.id, p.title, p.description, p.discount_percentage, p.discount_amount, " +
+                   "p.start_date, p.end_date, p.is_active, p.created_at, p.updated_at, " +
+                   "(SELECT MIN(prod.id) FROM promotion_product pp JOIN product prod ON pp.product_id = prod.id WHERE pp.promotion_id = p.id) as productId " +
+                   "FROM promotion p " +
+                   "WHERE p.is_active = 1 AND p.start_date <= :today AND p.end_date >= :today",
+           nativeQuery = true)
+    List<Object[]> findCurrentPromotionsWithProductIds(@Param("today") LocalDate today);
 }

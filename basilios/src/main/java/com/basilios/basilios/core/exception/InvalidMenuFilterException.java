@@ -1,7 +1,10 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.Getter;
+
 import java.math.BigDecimal;
 
+@Getter
 public class InvalidMenuFilterException extends RuntimeException {
     private final String filterType;
     private final Object filterValue;
@@ -34,13 +37,5 @@ public class InvalidMenuFilterException extends RuntimeException {
                 "SORT_DIRECTION",
                 direction
         );
-    }
-
-    public String getFilterType() {
-        return filterType;
-    }
-
-    public Object getFilterValue() {
-        return filterValue;
     }
 }

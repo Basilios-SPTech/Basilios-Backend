@@ -1,5 +1,8 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.Getter;
+
+@Getter
 public class DuplicateProductException extends RuntimeException {
     private final String existingProductName;
 
@@ -11,9 +14,5 @@ public class DuplicateProductException extends RuntimeException {
     public DuplicateProductException(String message, String existingProductName) {
         super(message);
         this.existingProductName = existingProductName;
-    }
-
-    public String getExistingProductName() {
-        return existingProductName;
     }
 }

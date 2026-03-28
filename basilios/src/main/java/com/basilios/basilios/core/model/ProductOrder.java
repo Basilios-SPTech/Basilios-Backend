@@ -45,8 +45,6 @@ public class ProductOrder {
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
-    @NotNull(message = "Subtotal é obrigatório")
-    @DecimalMin(value = "0.00", message = "Subtotal deve ser maior ou igual a zero")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 

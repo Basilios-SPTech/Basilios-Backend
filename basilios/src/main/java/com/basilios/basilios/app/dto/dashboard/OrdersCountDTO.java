@@ -11,12 +11,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrdersCountDTO {
     private long orders;
-
-    public static OrdersCountDTO toResponse(long value) {
-        return OrdersCountDTO.builder().orders(value).build();
-    }
-
-    public long getCount() {
-        return this.orders;
-    }
 }

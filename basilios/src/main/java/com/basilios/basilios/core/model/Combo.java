@@ -43,7 +43,7 @@ public class Combo {
     private List<ProductCombo> productCombos = new ArrayList<>();
 
     @NotNull(message = "Preço do combo é obrigatório")
-    @DecimalMin(value = "0.00", message = "Preço do combo deve ser maior ou igual a zero")
+    @DecimalMin(value = "0.01", message = "Preço do combo deve ser maior que zero")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 

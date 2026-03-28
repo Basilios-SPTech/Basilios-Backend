@@ -2,20 +2,18 @@ package com.basilios.basilios.infra.security;
 
 import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
-
 @Service
+@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -34,7 +32,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .password(usuario.getPassword())
                 .authorities(usuario.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority(role.name()))
-                        .collect(Collectors.toList()))
+                        .toList())
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)

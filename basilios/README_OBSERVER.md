@@ -1,137 +1,179 @@
-Projeto PI - Padrão Observer
+# Projeto PI - Padrão Observer (Spring Events)
 
-Nome do padrão: Observer
+## Nome do padrão: Observer
 
-Resumo da implementação
+## Implementação Atual
 
-Escolhemos o padrão Observer para o projeto porque ele é ideal para cenários em que vários objetos (observadores) precisam ser notificados sobre mudanças de estado de um objeto central (sujeito/subject) sem que o sujeito precise conhecer detalhes dos observadores. No contexto do sistema Basilios (um sistema de gestão de menu, produtos, pedidos e clientes), o Observer serve para notificar clientes e serviços quando há mudanças relevantes no menu ou em produtos — por exemplo: quando um produto fica indisponível, quando uma promoção é ativada ou quando o menu do dia é atualizado.
+Utilizamos o **Spring Events** (`ApplicationEventPublisher` + `@EventListener`) como implementação do padrão Observer. Esta abordagem é mais idiomática para Spring Boot e oferece melhor integração com transações, suporte nativo a execução assíncrona e retry automático.
 
-Motivo da escolha
+### Motivo da escolha (Spring Events vs Observer manual)
 
-- Baixo acoplamento: o sujeito não precisa saber quem são os observadores — só notifica uma lista de observadores registrados.
-- Flexibilidade: novos observadores (ex.: SMS, e-mail, push) podem ser adicionados sem modificar a lógica do sujeito.
-- Coesão de responsabilidade: o sujeito mantém o estado; os observadores lidam com as ações reação (notificações, atualizações de UI, logs).
+| Aspecto | Spring Events | Observer Manual |
+|---------|---------------|-----------------|
+| **Integração** | ✅ Nativo Spring, funciona com `@Transactional` | ⚠️ Requer wiring manual |
+| **Async** | ✅ `@Async` nativo | ❌ Implementação manual |
+| **Transação** | ✅ `@TransactionalEventListener(AFTER_COMMIT)` | ⚠️ Pode causar problemas |
+| **Retry** | ✅ `@Retryable` do Spring Retry | ❌ Implementação manual |
+| **Type Safety** | ✅ Eventos fortemente tipados | ⚠️ Payload genérico `Object` |
+| **Manutenção** | ✅ Padrão da indústria | ⚠️ Código customizado |
 
-Contrato / comportamento esperado
+## Arquitetura Implementada
 
-- Inputs: eventos de mudança no estado do menu/produto (ex.: disponibilidade, promoção).
-- Outputs: notificações disparadas aos observadores cadastrados.
-- Erros: registro nulo/duplicado de observadores deve ser tratado de forma segura.
-
-Classes envolvidas (sugestão de mapeamento para o projeto atual)
-
-- Subject / Observable (interface)
-  - Responsabilidade: permitir registrar, remover e notificar observadores.
-  - Exemplo de papel no projeto: `MenuService` pode delegar um `MenuSubject` para gerenciar assinaturas de notificações.
-
-- Observer (interface)
-  - Responsabilidade: definir método `update(...)` que será chamado quando ocorrer evento.
-  - Exemplo de classes concretas: `ClientObserver`, `PromotionObserver`, `InventoryObserver`.
-
-- MenuSubject (implementação concreta do Subject)
-  - Responsabilidade: manter lista de observadores; disparar eventos quando há alteração de menu/produto.
-
-- ClientObserver (implementação concreta do Observer)
-  - Responsabilidade: receber a notificação e acionar `ClientService` (ou `NotificationService`) para avisar o cliente.
-
-- NotificationService (serviço existente ou novo)
-  - Responsabilidade: encapsular lógica de envio de e-mail / push / SMS.
-
-Mapeamento com classes já presentes no projeto
-
-- `MenuService` (src/main/java/com/basilios/basilios/service/MenuService.java) — papel de coordenador do menu.
-- `Client` / `Usuario` (src/main/java/com/basilios/basilios/model/Client.java, Usuario.java) — representações de clientes/usuários.
-- `ClientService` / `UsuarioService` (src/main/java/com/basilios/basilios/service/) — podem ser consumidores das notificações.
-- `Product` (src/main/java/com/basilios/basilios/model/Product.java) — mudanças de disponibilidade disparam eventos.
-- `NotificationService` (sugerir criação em `service/`) — envia mensagens reais para os observadores.
-
-Sugestão rápida de implementação (códigos de exemplo)
-
-1) Interface Subject (Observable)
-
-```java
-public interface Subject {
-    void registerObserver(Observer o);
-    void removeObserver(Observer o);
-    void notifyObservers(String event, Object payload);
-}
+```
+┌─────────────────┐
+│  OrderService   │
+│  (Publisher)    │
+└────────┬────────┘
+         │ publishEvent()
+         ▼
+┌─────────────────────────────────────┐
+│     OrderStatusChangedEvent         │
+│  (order, oldStatus, newStatus)      │
+└────────┬───────────────┬────────────┘
+         │               │
+         ▼               ▼
+┌─────────────────┐  ┌─────────────────────┐
+│ Notification    │  │  Dashboard          │
+│ Listener        │  │  Listener           │
+│ (@Async)        │  │  (@Async)           │
+│ (@Retryable)    │  │                     │
+└────────┬────────┘  └──────────┬──────────┘
+         │                      │
+         ▼                      ▼
+    EmailService           WebSocket
+    (com retry)         (tempo real)
+         │
+         ▼ (após 3 falhas)
+    FailedNotification
+    (tabela para reprocessamento)
 ```
 
-2) Interface Observer
+## Classes Envolvidas
 
-```java
-public interface Observer {
-    void update(String event, Object payload);
-}
+### Evento de Domínio
+- **`OrderStatusChangedEvent`** (`core/model/events/`)
+  - Contém: `Order`, `oldStatus`, `newStatus`, `timestamp`, `motivo`
+  - Métodos auxiliares: `isCreation()`, `isCancellation()`, `isDelivery()`
+
+### Publisher (Publicador)
+- **`OrderService`** (`core/service/`)
+  - Injeta `ApplicationEventPublisher`
+  - Publica evento após cada mudança de status:
+    - `confirmarPedido()` → PENDENTE → CONFIRMADO
+    - `iniciarPreparo()` → CONFIRMADO → PREPARANDO
+    - `despacharPedido()` → PREPARANDO → DESPACHADO
+    - `entregarPedido()` → DESPACHADO → ENTREGUE
+    - `cancelarPedido()` → * → CANCELADO
+
+### Listeners (Observadores)
+
+1. **`OrderNotificationListener`** (`infra/listener/`)
+   - `@TransactionalEventListener(AFTER_COMMIT)`: só executa após commit
+   - `@Async("taskExecutor")`: executa em thread separada
+   - `@Retryable(maxAttempts=3)`: retry com backoff exponencial
+   - `@Recover`: salva em `FailedNotification` após 3 falhas
+
+2. **`OrderDashboardListener`** (`infra/listener/`)
+   - Envia atualizações via WebSocket para:
+     - `/topic/orders`: painel administrativo (todos os pedidos)
+     - `/topic/orders/{id}`: pedido específico
+     - `/user/{userId}/queue/orders`: cliente do pedido
+
+### Serviços de Suporte
+
+- **`EmailService`** (`core/service/`)
+  - `sendOrderConfirmedEmail()`: pedido confirmado
+  - `sendOrderPreparingEmail()`: em preparo
+  - `sendOrderDispatchedEmail()`: saiu para entrega
+  - `sendOrderDeliveredEmail()`: entregue
+  - `sendOrderCancelledEmail()`: cancelado
+
+- **`FailedNotification`** (`core/model/`)
+  - Entidade para armazenar notificações que falharam
+  - Permite reprocessamento manual via painel
+
+### Configurações
+
+- **`AsyncConfig`** (`infra/config/`)
+  - Pool de threads: 2-5 threads, fila de 100
+  - Handler para exceções não capturadas
+
+- **`WebSocketConfig`** (`infra/config/`)
+  - Endpoint: `/ws` (com SockJS) e `/ws-native`
+  - Brokers: `/topic`, `/queue`, `/user`
+
+## Fluxo de Execução
+
+```
+1. OrderController recebe requisição de mudança de status
+2. OrderService.confirmarPedido(id) é chamado
+3. Valida transição de status
+4. Salva no banco (commit pendente)
+5. publishEvent(OrderStatusChangedEvent)
+6. Transação faz COMMIT
+7. @TransactionalEventListener(AFTER_COMMIT) é acionado
+8. OrderNotificationListener (assíncrono):
+   - Tenta enviar email
+   - Se falhar: retry até 3x com backoff (1s, 2s, 4s)
+   - Se falhar 3x: salva em FailedNotification
+9. OrderDashboardListener (assíncrono):
+   - Envia para WebSocket
+10. Response retorna imediatamente (não espera listeners)
 ```
 
-3) Implementação concreta (MenuSubject)
+## Benefícios da Implementação
+
+1. **Desacoplamento**: OrderService não conhece os listeners
+2. **Resiliência**: retry automático + fallback para DLQ local
+3. **Performance**: execução assíncrona não bloqueia resposta
+4. **Consistência**: AFTER_COMMIT garante que evento só dispara se commit OK
+5. **Observabilidade**: logs estruturados com @Slf4j
+6. **Escalabilidade**: fácil adicionar novos listeners sem modificar OrderService
+
+## Exemplo de Uso no Frontend (WebSocket)
+
+```javascript
+// Conectar ao WebSocket
+const socket = new SockJS('/ws');
+const stompClient = Stomp.over(socket);
+
+stompClient.connect({}, function(frame) {
+    // Assinar atualizações gerais (painel admin)
+    stompClient.subscribe('/topic/orders', function(message) {
+        const update = JSON.parse(message.body);
+        console.log('Pedido atualizado:', update);
+        // Atualizar painel
+    });
+    
+    // Assinar atualizações do usuário logado
+    stompClient.subscribe('/user/queue/orders', function(message) {
+        const update = JSON.parse(message.body);
+        console.log('Meu pedido atualizado:', update);
+        // Mostrar notificação
+    });
+});
+```
+
+## Extensibilidade
+
+Para adicionar um novo listener (ex: integração com cozinha):
 
 ```java
-import java.util.concurrent.CopyOnWriteArrayList;
+@Component
+@Slf4j
+public class OrderKitchenListener {
 
-public class MenuSubject implements Subject {
-    private final CopyOnWriteArrayList<Observer> observers = new CopyOnWriteArrayList<>();
-
-    @Override
-    public void registerObserver(Observer o) {
-        if (o != null && !observers.contains(o)) observers.add(o);
-    }
-
-    @Override
-    public void removeObserver(Observer o) {
-        observers.remove(o);
-    }
-
-    @Override
-    public void notifyObservers(String event, Object payload) {
-        for (Observer o : observers) {
-            try {
-                o.update(event, payload);
-            } catch (Exception ex) {
-                // log e continue
-            }
+    @Async("taskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
+        if (event.getNewStatus() == StatusPedidoEnum.CONFIRMADO) {
+            log.info("Enviando pedido {} para sistema da cozinha", 
+                    event.getOrder().getCodigoPedido());
+            // Integração com sistema da cozinha
         }
     }
-
-    // método chamado quando o menu muda
-    public void onMenuChanged(String event, Object payload) {
-        notifyObservers(event, payload);
-    }
 }
 ```
 
-4) Exemplo de Observer (ClientObserver)
-
-```java
-public class ClientObserver implements Observer {
-    private final Long clientId;
-    private final NotificationService notificationService;
-
-    public ClientObserver(Long clientId, NotificationService notificationService) {
-        this.clientId = clientId;
-        this.notificationService = notificationService;
-    }
-
-    @Override
-    public void update(String event, Object payload) {
-        // forma simples de notificação — delega ao serviço
-        notificationService.notifyClient(clientId, "Evento: " + event + " - " + String.valueOf(payload));
-    }
-}
-```
-
-Trechos de código "printados" (pelo menos 2) — exemplos acima
-
-- Print 1: Interface `Subject` (veja trecho acima)
-- Print 2: Implementação `MenuSubject` (veja trecho acima)
-
-Observações finais
-
-- Para integrar, sugiro criar os arquivos em `src/main/java/com/basilios/basilios/infra/observer/` ou `service/observer/` e registrar observadores quando um cliente se inscreve para receber atualizações (ex.: `ClientController`/`ClientService`).
-- Se desejar, posso gerar os arquivos Java completos já colocados no projeto e executar uma compilação para garantir que não haja erros. Diga se quer que eu implemente as classes diretamente no repositório.
-
-Assinatura da equipe
-
-Todos os membros devem enviar a mesma cópia deste PDF; este arquivo foi gerado automaticamente para isso.
+Não é necessário modificar `OrderService` — apenas criar o novo listener.
 
