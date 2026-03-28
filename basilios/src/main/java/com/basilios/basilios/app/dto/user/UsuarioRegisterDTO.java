@@ -27,7 +27,6 @@ public class UsuarioRegisterDTO {
     private String email;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
     private String password;
 
 
@@ -43,7 +42,6 @@ public class UsuarioRegisterDTO {
     private String telefone;
 
 
-    // Data de nascimento opcional
-    private LocalDate dataNascimento; // já está sem anotação obrigatória
 
+    private LocalDate dataNascimento;
 }

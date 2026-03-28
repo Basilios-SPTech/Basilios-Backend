@@ -6,65 +6,73 @@ import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductOrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class DashboardService {
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
+    private final ProductOrderRepository productOrderRepository;
 
-    @Autowired
-    private ProductOrderRepository productOrderRepository;
-
-    private LocalDateTime normalizeStart(LocalDateTime start) {
-        return start == null ? LocalDateTime.now().minusDays(30).withHour(0).withMinute(0).withSecond(0).withNano(0) : start;
+    private LocalDateTime getStartOfDay(LocalDate date) {
+        return date != null ? date.atStartOfDay() : LocalDateTime.now().minusDays(30).withHour(0).withMinute(0).withSecond(0).withNano(0);
     }
 
-    private LocalDateTime normalizeEnd(LocalDateTime end) {
-        return end == null ? LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999_999_999) : end;
+    private LocalDateTime getEndOfDay(LocalDate date) {
+        return date != null ? date.atTime(LocalTime.MAX) : LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
     }
 
-    public RevenueDTO getRevenue(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
-        BigDecimal revenue = orders.stream()
-                .map(o -> o.getTotal() != null ? o.getTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    public RevenueDTO getRevenue(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        BigDecimal revenue = orderRepository.sumTotalByCreatedAtBetweenEntregue(startDt, endDt);
         return RevenueDTO.toResponse(revenue);
     }
 
-    public OrdersCountDTO getOrdersCount(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        long count = orderRepository.countByCreatedAtBetween(start, end);
-        return OrdersCountDTO.toResponse(count);
+    public OrdersCountDTO getOrdersCount(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        long count = orderRepository.countByCreatedAtBetween(startDt, endDt);
+        return OrdersCountDTO.builder().orders(count).build();
     }
 
-    public AverageDeliveryTimeDTO getAverageDeliveryTime(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        List<Object[]> times = orderRepository.findDispatchedAndDeliveredTimesOfDeliveredOrders(start, end);
-        if (times.isEmpty()) {
+    public AverageDeliveryTimeDTO getAverageDeliveryTime(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        // Buscar apenas pedidos ENTREGUES no período
+        List<Order> deliveredOrders = orderRepository.findByStatusAndCreatedAtBetween(StatusPedidoEnum.ENTREGUE, startDt, endDt);
+        if (deliveredOrders.isEmpty()) {
             return AverageDeliveryTimeDTO.toResponse(0L, "00:00:00");
         }
         long totalSeconds = 0L;
-        for (Object[] pair : times) {
-            LocalDateTime dispatched = (LocalDateTime) pair[0];
-            LocalDateTime delivered = (LocalDateTime) pair[1];
-            totalSeconds += java.time.Duration.between(dispatched, delivered).getSeconds();
+        int count = 0;
+        for (Order order : deliveredOrders) {
+            LocalDateTime dispatched = order.getDispatchedAt();
+            LocalDateTime delivered = order.getDeliveredAt();
+            if (dispatched != null && delivered != null && delivered.isAfter(dispatched)) {
+                totalSeconds += java.time.Duration.between(dispatched, delivered).getSeconds();
+                count++;
+            }
         }
-        long avgSeconds = totalSeconds / times.size();
+        if (count == 0) {
+            return AverageDeliveryTimeDTO.toResponse(0L, "00:00:00");
+        }
+        long avgSeconds = totalSeconds / count;
         long hours = avgSeconds / 3600;
         long minutes = (avgSeconds % 3600) / 60;
         long secs = avgSeconds % 60;
@@ -72,32 +80,32 @@ public class DashboardService {
         return AverageDeliveryTimeDTO.toResponse(avgSeconds, text);
     }
 
-    public long getItemsSold(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        Long qty = productOrderRepository.sumQuantityByDeliveredOrdersInPeriod(start, end);
+    public long getItemsSold(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        Long qty = productOrderRepository.sumQuantityByDeliveredOrdersInPeriod(startDt, endDt);
         return qty == null ? 0L : qty;
     }
 
-    public long getCancelledOrdersCount(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        return orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.CANCELADO, start, end);
+    public long getCancelledOrdersCount(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        return orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.CANCELADO, startDt, endDt);
     }
 
-    public OrderPeaksDTO getOrderPeaks(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        List<LocalDateTime> peaks = orderRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(start, end).stream()
+    public OrderPeaksDTO getOrderPeaks(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        List<LocalDateTime> peaks = orderRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(startDt, endDt).stream()
                 .map(Order::getCreatedAt)
                 .collect(Collectors.toList());
         return OrderPeaksDTO.builder().peaks(peaks).build();
     }
 
-    public List<TopProductDTO> getTopProductsByUnits(LocalDateTime start, LocalDateTime end, int limit) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        List<Object[]> rows = productOrderRepository.findBestSellingProductsByPeriod(start, end);
+    public List<TopProductDTO> getTopProductsByUnits(LocalDate start, LocalDate end, int limit) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        List<Object[]> rows = productOrderRepository.findBestSellingProductsByPeriod(startDt, endDt);
         List<TopProductDTO> dtos = new ArrayList<>();
         for (Object[] row : rows.stream().limit(limit).toList()) {
             Product p = (Product) row[0];
@@ -111,20 +119,65 @@ public class DashboardService {
         return dtos;
     }
 
-    public Optional<ChampionDTO> getChampionOfPeriod(LocalDateTime start, LocalDateTime end) {
-        start = normalizeStart(start);
-        end = normalizeEnd(end);
-        List<Object[]> rows = productOrderRepository.findBestSellingProductsByPeriod(start, end);
+    public Page<TopProductDTO> getTopProductsByUnits(LocalDate start, LocalDate end, Pageable pageable) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        List<Object[]> rows = productOrderRepository.findBestSellingProductsByPeriod(startDt, endDt);
+
+        List<TopProductDTO> dtos = new ArrayList<>();
+        for (Object[] row : rows) {
+            Product p = (Product) row[0];
+            Number totalSold = (Number) row[1];
+            dtos.add(new TopProductDTO(
+                    p.getId(),
+                    p.getName(),
+                    totalSold != null ? totalSold.intValue() : 0
+            ));
+        }
+
+        int startIndex = (int) pageable.getOffset();
+        int endIndex = Math.min(startIndex + pageable.getPageSize(), dtos.size());
+
+        if (startIndex >= dtos.size()) {
+            return new PageImpl<>(List.of(), pageable, dtos.size());
+        }
+
+        return new PageImpl<>(dtos.subList(startIndex, endIndex), pageable, dtos.size());
+    }
+
+    public Optional<ChampionDTO> getChampionOfPeriod(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        List<Object[]> rows = productOrderRepository.findBestSellingProductsByPeriod(startDt, endDt);
         if (rows == null || rows.isEmpty()) return Optional.empty();
         Object[] top = rows.get(0);
         Product p = (Product) top[0];
         Number units = (Number) top[1];
-        boolean onPromo = productOrderRepository.existsPromotionForProductInPeriod(p.getId(), start, end);
+        boolean onPromo = productOrderRepository.existsPromotionForProductInPeriod(p.getId(), startDt, endDt);
         return Optional.of(new ChampionDTO(
             p.getId(),
             p.getName(),
             units != null ? units.intValue() : 0,
             onPromo
         ));
+    }
+
+    public AverageTicketDTO getAverageTicket(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        BigDecimal totalRevenue = getRevenue(start, end).getRevenue();
+        long totalOrders = orderRepository.countByStatusAndCreatedAtBetween(StatusPedidoEnum.ENTREGUE, startDt, endDt);
+        BigDecimal averageTicket = totalOrders > 0 ? totalRevenue.divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        return AverageTicketDTO.toResponse(averageTicket);
+    }
+
+
+    public CancellationRateDTO getCancellationRate(LocalDate start, LocalDate end) {
+        LocalDateTime startDt = getStartOfDay(start);
+        LocalDateTime endDt = getEndOfDay(end);
+        long totalOrders = orderRepository.countByCreatedAtBetween(startDt, endDt);
+        long cancelledOrders = orderRepository.countCancelledOrdersByCreatedAtBetween(startDt, endDt);
+        double cancellationRate = totalOrders > 0 ? ((double) cancelledOrders / totalOrders) * 100.0 : 0.0;
+        return CancellationRateDTO.toResponse(cancellationRate);
     }
 }

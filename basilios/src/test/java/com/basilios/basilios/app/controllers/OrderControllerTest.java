@@ -1,123 +1,161 @@
 package com.basilios.basilios.app.controllers;
 
+import com.basilios.basilios.app.dto.order.CancelOrderDTO;
 import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
-import com.basilios.basilios.app.dto.order.OrderUpdateDTO;
+import com.basilios.basilios.app.dto.order.UpdateOrderStatusDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
+import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.math.BigDecimal;
 import java.util.List;
 
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(OrderController.class)
-@Import(OrderControllerTest.TestConfig.class)
-public class OrderControllerTest {
+class OrderControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
     private OrderService orderService;
 
-    // JwtUtil mock bean provided via TestConfig to avoid deprecation of @MockBean
-    @Autowired
-    private com.basilios.basilios.infra.security.JwtUtil jwtUtil;
+    private OrderResponseDTO orderResponse;
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public OrderService orderService() {
-            return Mockito.mock(OrderService.class);
-        }
+    @BeforeEach
+    void setUp() {
+        objectMapper = new ObjectMapper();
+        orderService = mock(OrderService.class);
 
-        @Bean
-        public com.basilios.basilios.infra.security.JwtUtil jwtUtil() {
-            return Mockito.mock(com.basilios.basilios.infra.security.JwtUtil.class);
-        }
+        OrderController controller = new OrderController(orderService);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        orderResponse = new OrderResponseDTO();
+        orderResponse.setId(1L);
+        orderResponse.setStatus(StatusPedidoEnum.PENDENTE);
     }
 
-    @Test
-    void findAll_returnsPage() throws Exception {
-        OrderResponseDTO dto = OrderResponseDTO.builder()
-                .id(1L)
-                .total(BigDecimal.valueOf(10))
-                .status(StatusPedidoEnum.PENDENTE)
-                .build();
-
-        given(orderService.getAllOrders(any(Pageable.class)))
-                .willReturn(new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1));
-
-        mockMvc.perform(get("/orders?page=0&size=10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(1));
-    }
+    // ========== ENDPOINTS DE CLIENTE ==========
 
     @Test
-    void findById_returnsOrder() throws Exception {
-        OrderResponseDTO dto = OrderResponseDTO.builder().id(2L).total(BigDecimal.valueOf(20)).build();
-        given(orderService.getOrderById(2L)).willReturn(dto);
+    @DisplayName("POST /orders - Deve criar pedido com sucesso")
+    void createOrder_DeveCriarPedidoComSucesso() throws Exception {
+        OrderRequestDTO.OrderItemRequest item = new OrderRequestDTO.OrderItemRequest();
+        item.setProductId(1L);
+        item.setQuantity(2);
 
-        mockMvc.perform(get("/orders/2"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(2));
-    }
+        OrderRequestDTO request = new OrderRequestDTO();
+        request.setAddressId(1L);
+        request.setItems(List.of(item));
 
-    @Test
-    void create_returnsCreated() throws Exception {
-        OrderRequestDTO req = OrderRequestDTO.builder()
-                .addressId(1L)
-                .items(List.of())
-                .build();
-
-        OrderResponseDTO resp = OrderResponseDTO.builder().id(3L).build();
-        given(orderService.createOrder(any(OrderRequestDTO.class))).willReturn(resp);
+        when(orderService.createOrder(any(OrderRequestDTO.class))).thenReturn(orderResponse);
 
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(3));
+                .andExpect(jsonPath("$.id", is(1)));
+
+        verify(orderService).createOrder(any(OrderRequestDTO.class));
     }
 
     @Test
-    void update_returnsUpdated() throws Exception {
-        OrderUpdateDTO update = OrderUpdateDTO.builder().status(StatusPedidoEnum.CONFIRMADO).build();
-        OrderResponseDTO updated = OrderResponseDTO.builder().id(4L).status(StatusPedidoEnum.CONFIRMADO).build();
-        given(orderService.updateOrder(eq(4L), any(OrderUpdateDTO.class))).willReturn(updated);
+    @DisplayName("GET /orders/me - Deve listar pedidos do cliente")
+    void getMyOrders_DeveListarPedidosDoCliente() throws Exception {
+        when(orderService.getUserOrders()).thenReturn(List.of(orderResponse));
 
-        mockMvc.perform(patch("/orders/4")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(update)))
+        mockMvc.perform(get("/orders/me"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CONFIRMADO"));
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", is(1)));
+
+        verify(orderService).getUserOrders();
     }
 
     @Test
-    void delete_returnsNoContent() throws Exception {
-        // softDelete returns void; just ensure endpoint returns 204
-        mockMvc.perform(delete("/orders/5"))
-                .andExpect(status().isNoContent());
+    @DisplayName("GET /orders/me/{id} - Deve retornar pedido do cliente por ID")
+    void getMyOrderById_DeveRetornarPedidoDoCliente() throws Exception {
+        when(orderService.getUserOrderById(1L)).thenReturn(orderResponse);
+
+        mockMvc.perform(get("/orders/me/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)));
+
+        verify(orderService).getUserOrderById(1L);
+    }
+
+    @Test
+    @DisplayName("PATCH /orders/me/{id}/cancel - Deve cancelar pedido do cliente")
+    void cancelMyOrder_DeveCancelarPedidoDoCliente() throws Exception {
+        CancelOrderDTO cancelDTO = new CancelOrderDTO();
+        cancelDTO.setMotivo("Desisti");
+
+        when(orderService.cancelarPedidoUsuario(eq(1L), eq("Desisti"))).thenReturn(orderResponse);
+
+        mockMvc.perform(patch("/orders/me/1/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cancelDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)));
+
+        verify(orderService).cancelarPedidoUsuario(1L, "Desisti");
+    }
+
+    // ========== ENDPOINTS DE STAFF/ADMIN ==========
+
+    @Test
+    @DisplayName("GET /orders/{id} - Deve retornar pedido por ID (staff)")
+    void findById_DeveRetornarPedidoPorId() throws Exception {
+        when(orderService.getOrderById(1L)).thenReturn(orderResponse);
+
+        mockMvc.perform(get("/orders/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)));
+
+        verify(orderService).getOrderById(1L);
+    }
+
+    @Test
+    @DisplayName("GET /orders/by-status - Deve retornar pedidos por status")
+    void getOrdersByStatus_DeveRetornarPedidosPorStatus() throws Exception {
+        when(orderService.getOrdersByStatus(StatusPedidoEnum.PENDENTE))
+                .thenReturn(List.of(orderResponse));
+
+        mockMvc.perform(get("/orders/by-status")
+                        .param("status", "PENDENTE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        verify(orderService).getOrdersByStatus(StatusPedidoEnum.PENDENTE);
+    }
+
+    @Test
+    @DisplayName("PATCH /orders/{id}/status - Deve atualizar status do pedido")
+    void updateOrderStatus_DeveAtualizarStatus() throws Exception {
+        UpdateOrderStatusDTO dto = new UpdateOrderStatusDTO();
+        dto.setStatus("CONFIRMADO");
+
+        when(orderService.updateOrderStatus(eq(1L), eq("CONFIRMADO"))).thenReturn(orderResponse);
+
+        mockMvc.perform(patch("/orders/1/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)));
+
+        verify(orderService).updateOrderStatus(1L, "CONFIRMADO");
     }
 }

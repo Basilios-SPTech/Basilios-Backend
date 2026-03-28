@@ -2,6 +2,8 @@ package com.basilios.basilios.infra.repository;
 
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +19,8 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
      * Busca todos os endereços ativos de um usuário
      */
     List<Address> findByUsuarioAndDeletedAtIsNull(Usuario usuario);
+
+    Page<Address> findByUsuarioAndDeletedAtIsNull(Usuario usuario, Pageable pageable);
 
     /**
      * Busca endereço por ID e usuário (apenas ativos)
@@ -50,20 +54,4 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
      */
     long countByUsuarioAndDeletedAtIsNull(Usuario usuario);
 
-    /**
-     * Verifica se usuário possui endereço principal
-     */
-    @Query("""
-        SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
-        FROM Address a
-        WHERE a.usuario = :usuario
-          AND a = a.usuario.addressPrincipal
-          AND a.deletedAt IS NULL
-    """)
-    boolean hasPrincipalAddress(@Param("usuario") Usuario usuario);
-
-    /**
-     * Verifica se existe endereço ativo para o usuário
-     */
-    boolean existsByUsuarioAndDeletedAtIsNull(Usuario usuario);
 }

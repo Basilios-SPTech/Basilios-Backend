@@ -1,11 +1,11 @@
 package com.basilios.basilios.infra.repository;
 
+import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -46,4 +46,14 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Verifica se existe usuário com CPF
      */
     boolean existsByCpf(String cpf);
+
+    /**
+     * Conta usuários ativos (enabled = true)
+     */
+    long countByEnabledTrue();
+
+    /**
+     * Busca usuários por role
+     */
+    List<Usuario> findByRolesContaining(RoleEnum role);
 }

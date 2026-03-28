@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class ProductMapper {
@@ -40,7 +39,7 @@ public class ProductMapper {
             List<ProductResponseDTO.IngredientResponse> ingredients = product.getProductIngredients()
                     .stream()
                     .map(this::toIngredientResponse)
-                    .collect(Collectors.toList());
+                    .toList();
             builder.ingredients(ingredients);
         }
 
@@ -64,39 +63,7 @@ public class ProductMapper {
         }
         return products.stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Converte Product para ProductResponse simplificado (sem ingredientes)
-     * Útil para listagens
-     */
-    public ProductResponseDTO toSimpleResponse(Product product) {
-        if (product == null) {
-            return null;
-        }
-
-        ProductResponseDTO.ProductResponseDTOBuilder builder = ProductResponseDTO.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .description(product.getDescription())
-                .subcategory(product.getSubcategory() != null ? product.getSubcategory().getDisplayName() : null)
-                .subcategoryCode(product.getSubcategory() != null ? product.getSubcategory().name() : null)
-                .price(product.getPrice())
-                .finalPrice(product.getFinalPrice())
-                .isOnPromotion(product.isOnPromotion())
-                .isPaused(product.getIsPaused())
-                .createdAt(product.getCreatedAt());
-
-        // Adicionar promoção se houver
-        if (product.isOnPromotion()) {
-            Promotion promotion = product.getBestCurrentPromotion();
-            if (promotion != null) {
-                builder.currentPromotion(toPromotionSummary(promotion, product.getPrice()));
-            }
-        }
-
-        return builder.build();
+                .toList();
     }
 
     /**

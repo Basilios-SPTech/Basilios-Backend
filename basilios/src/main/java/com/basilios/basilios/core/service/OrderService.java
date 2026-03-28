@@ -8,12 +8,16 @@ import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.*;
+import com.basilios.basilios.core.model.events.OrderStatusChangedEvent;
+import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
 import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.util.DistanceCalculator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private static final double MAX_DELIVERY_DISTANCE_KM = 7.0;
@@ -39,6 +44,8 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final UsuarioService usuarioService;
     private final OrderMapper orderMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Value("${store.latitude:#{-23.550520}}")
     private Double storeLatitude;
@@ -54,11 +61,23 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDTO createOrder(OrderRequestDTO request) {
+        log.info("=== CRIANDO PEDIDO ===");
+        log.info("Request recebido: addressId={}, items={}, discount={}",
+                request.getAddressId(),
+                request.getItems() != null ? request.getItems().size() : "null",
+                request.getDiscount());
+
+        log.info("Buscando usuário autenticado...");
         Usuario usuario = usuarioService.getCurrentUsuario();
+        log.info("Usuário encontrado: id={}, email={}", usuario.getId(), usuario.getEmail());
 
         // Buscar endereço de entrega
+        log.info("Buscando endereço id={}", request.getAddressId());
         Address addressEntrega = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + request.getAddressId()));
+        log.info("Endereço encontrado: id={}, ativo={}, usuarioId={}",
+                addressEntrega.getIdAddress(), addressEntrega.isAtivo(),
+                addressEntrega.getUsuario() != null ? addressEntrega.getUsuario().getId() : "null");
 
         // Verificar se endereço pertence ao usuário
         if (!addressEntrega.getUsuario().getId().equals(usuario.getId())) {
@@ -75,6 +94,7 @@ public class OrderService {
                 storeLatitude, storeLongitude,
                 addressEntrega.getLatitude(), addressEntrega.getLongitude()
         );
+        log.debug("Distância calculada: {} - Endereço: {}", distance, addressEntrega);
 
         // Se fora da área de entrega, retornar redirecionamento
         if (distance > MAX_DELIVERY_DISTANCE_KM) {
@@ -133,7 +153,8 @@ public class OrderService {
                     .originalPrice(hadPromotion ? originalPrice : null)
                     .build();
 
-            // calculateSubtotal() será chamado automaticamente no @PrePersist
+            // Calcula o subtotal do item
+            productOrder.calculateSubtotal();
             order.getProductOrders().add(productOrder);
         }
 
@@ -177,6 +198,13 @@ public class OrderService {
         Usuario usuario = usuarioService.getCurrentUsuario();
         List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
         return orderMapper.toResponseList(orders);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDTO> getUserOrders(Pageable pageable) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        Page<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario, pageable);
+        return orders.map(orderMapper::toResponse);
     }
 
     /**
@@ -240,6 +268,12 @@ public class OrderService {
     public List<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status) {
         List<Order> orders = orderRepository.findByStatus(status);
         return orderMapper.toResponseList(orders);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status, Pageable pageable) {
+        Page<Order> orders = orderRepository.findByStatus(status, pageable);
+        return orders.map(orderMapper::toResponse);
     }
 
     /**
@@ -347,9 +381,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO confirmarPedido(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.CONFIRMADO);
         order.confirmar();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CONFIRMADO);
+        log.info("Pedido {} confirmado", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -359,9 +399,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO iniciarPreparo(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.PREPARANDO);
         order.iniciarPreparo();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.PREPARANDO);
+        log.info("Pedido {} em preparo", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -371,9 +417,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO despacharPedido(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.DESPACHADO);
         order.despachar();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.DESPACHADO);
+        log.info("Pedido {} despachado para entrega", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -383,9 +435,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO entregarPedido(Long id) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.ENTREGUE);
         order.entregar();
         order = orderRepository.save(order);
+        
+        // Publica evento após commit
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.ENTREGUE);
+        log.info("Pedido {} entregue com sucesso", order.getCodigoPedido());
+        
         return orderMapper.toResponse(order);
     }
 
@@ -395,9 +453,15 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO cancelarPedido(Long id, String motivo) {
         Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
         validateStatusTransition(order, StatusPedidoEnum.CANCELADO);
         order.cancelar(motivo);
         order = orderRepository.save(order);
+        
+        // Publica evento após commit (com motivo do cancelamento)
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CANCELADO, motivo);
+        log.info("Pedido {} cancelado. Motivo: {}", order.getCodigoPedido(), motivo);
+        
         return orderMapper.toResponse(order);
     }
 
@@ -420,8 +484,14 @@ public class OrderService {
             throw new BusinessException("Não é possível cancelar pedido neste status: " + order.getStatus());
         }
 
+        StatusPedidoEnum oldStatus = order.getStatus();
         order.cancelar(motivo);
         order = orderRepository.save(order);
+        
+        // Publica evento após commit (com motivo do cancelamento)
+        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CANCELADO, motivo);
+        log.info("Pedido {} cancelado pelo usuário. Motivo: {}", order.getCodigoPedido(), motivo);
+        
         return orderMapper.toResponse(order);
     }
 
@@ -486,6 +556,61 @@ public class OrderService {
             return order.isPendente() || order.isConfirmado();
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    // ========== EVENTOS ==========
+
+    /**
+     * Atualiza o status de um pedido de forma genérica, validando a transição
+     */
+    @Transactional
+    public OrderResponseDTO updateOrderStatus(Long id, String statusStr) {
+        StatusPedidoEnum novoStatus;
+        try {
+            novoStatus = StatusPedidoEnum.valueOf(statusStr.toUpperCase());
+        } catch (Exception e) {
+            throw new BusinessException("Status inválido: " + statusStr);
+        }
+
+        return switch (novoStatus) {
+            case CONFIRMADO -> confirmarPedido(id);
+            case PREPARANDO -> iniciarPreparo(id);
+            case DESPACHADO -> despacharPedido(id);
+            case ENTREGUE -> entregarPedido(id);
+            case CANCELADO -> cancelarPedido(id, "Cancelado via API");
+            default -> throw new BusinessException("Transição de status não suportada: " + novoStatus);
+        };
+    }
+
+    // ========== EVENTOS ==========
+
+    /**
+     * Publica evento de mudança de status do pedido
+     */
+    private void publishStatusChangedEvent(Order order, StatusPedidoEnum oldStatus, StatusPedidoEnum newStatus) {
+        publishStatusChangedEvent(order, oldStatus, newStatus, null);
+    }
+
+    /**
+     * Publica evento de mudança de status do pedido (com motivo opcional)
+     * Envia tanto via Spring Events (para WebSocket/Dashboard) quanto via RabbitMQ (para email-api)
+     */
+    private void publishStatusChangedEvent(Order order, StatusPedidoEnum oldStatus, StatusPedidoEnum newStatus, String motivo) {
+        try {
+            // Evento local Spring (para WebSocket/Dashboard listener)
+            OrderStatusChangedEvent event = new OrderStatusChangedEvent(order, oldStatus, newStatus, motivo);
+            eventPublisher.publishEvent(event);
+            log.debug("Evento local publicado: {}", event);
+        } catch (Exception e) {
+            log.error("Erro ao publicar evento local do pedido {}: {}", order.getId(), e.getMessage());
+        }
+
+        try {
+            // Evento RabbitMQ (para microserviço email-api)
+            notificationEventPublisher.publishOrderStatusChanged(order, oldStatus, newStatus, motivo);
+        } catch (Exception e) {
+            log.error("Erro ao publicar evento RabbitMQ do pedido {}: {}", order.getId(), e.getMessage());
         }
     }
 }

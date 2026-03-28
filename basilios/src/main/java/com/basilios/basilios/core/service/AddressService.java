@@ -9,6 +9,8 @@ import com.basilios.basilios.core.model.Usuario;
 import com.basilios.basilios.infra.repository.AddressRepository;
 import com.basilios.basilios.infra.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,14 @@ public class AddressService {
     }
 
     /**
+     * Lista TODOS os endereços do banco com paginação
+     */
+    @Transactional(readOnly = true)
+    public Page<AddressResponseDTO> findAllAddress(Pageable pageable) {
+        return addressRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    /**
      * Busca endereço por ID
      */
     @Transactional(readOnly = true)
@@ -59,6 +69,16 @@ public class AddressService {
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Lista todos os endereços de um usuário específico (DTO) com paginação
+     */
+    @Transactional(readOnly = true)
+    public Page<AddressResponseDTO> findAllByUserId(Long usuarioId, Pageable pageable) {
+        Usuario usuario = findUsuarioOrThrow(usuarioId);
+        return addressRepository.findByUsuarioAndDeletedAtIsNull(usuario, pageable)
+                .map(this::toResponse);
     }
 
     /**
@@ -352,5 +372,16 @@ public class AddressService {
         setAddressAsPrincipal(address, usuario);
 
         return toResponse(address);
+    }
+
+    /**
+     * Verifica se o endereço pertence ao usuário autenticado (usado por @PreAuthorize)
+     */
+    @Transactional(readOnly = true)
+    public boolean isOwner(Long addressId) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        return addressRepository.findById(addressId)
+                .map(address -> address.getUsuario().getId().equals(usuario.getId()))
+                .orElse(false);
     }
 }

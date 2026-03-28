@@ -1,47 +1,35 @@
 package com.basilios.basilios.app.mapper;
 
 import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
-import com.basilios.basilios.app.dto.user.UsuarioLoginDTO;
-import com.basilios.basilios.app.dto.user.UsuarioRegisterDTO;
-import com.basilios.basilios.app.dto.user.UsuarioTokenDTO;
+import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
 import com.basilios.basilios.core.model.Usuario;
+
+import java.util.HashSet;
 
 public class UsuarioMapper {
 
-    public static Usuario of(UsuarioRegisterDTO dto) {
-        return Usuario.builder()
-                .nomeUsuario(dto.getNomeUsuario())
-                .email(dto.getEmail())
-                .password(dto.getPassword())
-                .cpf(dto.getCpf())
-                .telefone(dto.getTelefone())
-                .dataNascimento(dto.getDataNascimento())
+    public static UsuarioProfileResponse toProfileResponse(Usuario usuario) {
+        return UsuarioProfileResponse.builder()
+                .id(usuario.getId())
+                .nomeUsuario(usuario.getNomeUsuario())
+                .email(usuario.getEmail())
+                .cpf(usuario.getCpf())
+                .telefone(usuario.getTelefone())
+                .dataNascimento(usuario.getDataNascimento())
+                .roles(new HashSet<>(usuario.getRoles()))
+                .enabled(usuario.isAtivo())
+                .createdAt(usuario.getCreatedAt())
                 .build();
     }
 
-    public static Usuario of(UsuarioLoginDTO dto) {
-        return Usuario.builder()
-                .email(dto.getEmail())
-                .password(dto.getPassword())
-                .build();
-    }
-
-    public static UsuarioTokenDTO of(UsuarioTokenDTO dto) {
-        return UsuarioTokenDTO.builder()
-                .id(dto.getId())
-                .nomeUsuario(dto.getNomeUsuario())
-                .email(dto.getEmail())
-                .token(dto.getToken())
-                .build();
-    }
-
-    public static UsuarioListarDTO of(UsuarioListarDTO dto) {
-        UsuarioListarDTO listarDTO = new UsuarioListarDTO();
-        listarDTO.setNomeUsuario(dto.getNomeUsuario());
-        listarDTO.setEmail(dto.getEmail());
-        listarDTO.setCpf(dto.getCpf());
-        listarDTO.setTelefone(dto.getTelefone());
-        listarDTO.setDataNascimento(dto.getDataNascimento());
-        return listarDTO;
+    public static UsuarioListarDTO toListarDTO(Usuario usuario) {
+        UsuarioListarDTO dto = new UsuarioListarDTO();
+        dto.setId(usuario.getId());
+        dto.setNomeUsuario(usuario.getNomeUsuario());
+        dto.setEmail(usuario.getEmail());
+        dto.setCpf(usuario.getCpf());
+        dto.setTelefone(usuario.getTelefone());
+        dto.setDataNascimento(usuario.getDataNascimento());
+        return dto;
     }
 }

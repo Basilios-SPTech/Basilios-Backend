@@ -1,7 +1,10 @@
 package com.basilios.basilios.core.exception;
 
+import lombok.Getter;
+
 import java.math.BigDecimal;
 
+@Getter
 public class InvalidPriceException extends RuntimeException {
     private final BigDecimal providedPrice;
     private final BigDecimal minAllowedPrice;
@@ -16,13 +19,5 @@ public class InvalidPriceException extends RuntimeException {
         super("Preço inválido: " + providedPrice + ". O preço deve ser maior que zero.");
         this.providedPrice = providedPrice;
         this.minAllowedPrice = BigDecimal.ZERO;
-    }
-
-    public BigDecimal getProvidedPrice() {
-        return providedPrice;
-    }
-
-    public BigDecimal getMinAllowedPrice() {
-        return minAllowedPrice;
     }
 }
