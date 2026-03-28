@@ -7,12 +7,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/address")
@@ -28,8 +29,9 @@ public class AddressController {
     )
     @GetMapping
     @PreAuthorize("hasRole('FUNCIONARIO')")
-    public ResponseEntity<List<AddressResponseDTO>> findAll() {
-        List<AddressResponseDTO> addresses = addressService.findAllAddress();
+    public ResponseEntity<Page<AddressResponseDTO>> findAll(
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<AddressResponseDTO> addresses = addressService.findAllAddress(pageable);
         return ResponseEntity.ok(addresses);
     }
 
@@ -50,8 +52,10 @@ public class AddressController {
     )
     @GetMapping("/user/{id}")
     @PreAuthorize("hasRole('FUNCIONARIO') or @usuarioService.getCurrentUsuario().id == #id")
-    public ResponseEntity<List<AddressResponseDTO>> findByUserId(@PathVariable Long id) {
-        List<AddressResponseDTO> addresses = addressService.findAllByUserId(id);
+    public ResponseEntity<Page<AddressResponseDTO>> findByUserId(
+            @PathVariable Long id,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<AddressResponseDTO> addresses = addressService.findAllByUserId(id, pageable);
         return ResponseEntity.ok(addresses);
     }
 

@@ -3,6 +3,8 @@ package com.basilios.basilios.infra.repository;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,9 +21,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @EntityGraph(attributePaths = {"productOrders", "productOrders.product"})
     List<Order> findByUsuarioOrderByCreatedAtDesc(Usuario usuario);
 
+    @EntityGraph(attributePaths = {"productOrders", "productOrders.product"})
+    Page<Order> findByUsuarioOrderByCreatedAtDesc(Usuario usuario, Pageable pageable);
+
     List<Order> findByUsuario(Usuario usuario);
 
     List<Order> findByStatus(StatusPedidoEnum status);
+
+    Page<Order> findByStatus(StatusPedidoEnum status, Pageable pageable);
 
     @Query("SELECT o FROM Order o WHERE o.status = com.basilios.basilios.core.enums.StatusPedidoEnum.PENDENTE ORDER BY o.createdAt ASC")
     List<Order> findPendingOrders();

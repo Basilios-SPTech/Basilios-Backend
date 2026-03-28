@@ -7,9 +7,11 @@ import com.basilios.basilios.app.dto.promotion.PromotionResponseDTO;
 import com.basilios.basilios.core.service.PromotionService;
 import com.basilios.basilios.core.model.Promotion;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/promotions")
@@ -28,10 +30,11 @@ public class PromotionController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<List<PromotionCurrentDTO>> getCurrentPromotions() {
+    public ResponseEntity<Page<PromotionCurrentDTO>> getCurrentPromotions(
+            @PageableDefault(size = 10) Pageable pageable) {
 
-        List<PromotionCurrentDTO> promotions =
-                promotionService.getCurrentPromotionsDTO();
+        Page<PromotionCurrentDTO> promotions =
+                promotionService.getCurrentPromotionsDTO(pageable);
 
         return ResponseEntity.ok(promotions);
     }
