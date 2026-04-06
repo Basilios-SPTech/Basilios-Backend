@@ -35,7 +35,6 @@ public class AddressResponseDTO {
 
     private String enderecoCompleto; // Gerado automaticamente
 
-    private Boolean isPrincipal; // Se é o endereço principal do usuário
 
     private LocalDateTime createdAt;
 }

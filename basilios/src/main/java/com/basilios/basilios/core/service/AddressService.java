@@ -2,7 +2,6 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.endereco.AddressRequestDTO;
 import com.basilios.basilios.app.dto.endereco.AddressResponseDTO;
-import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
@@ -11,6 +10,9 @@ import com.basilios.basilios.infra.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,13 +50,11 @@ public class AddressService {
     }
 
     /**
-     * Busca endereço por ID
+     * Busca endereço por ID com regra de ownership (ou funcionário)
      */
     @Transactional(readOnly = true)
     public AddressResponseDTO findById(Long id) {
-        Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
-
+        Address address = findAddressWithOwnership(id);
         return toResponse(address);
     }
 
@@ -87,7 +87,7 @@ public class AddressService {
     @Transactional(readOnly = true)
     public List<AddressResponseDTO> getUserAddresses() {
         Usuario usuario = usuarioService.getCurrentUsuario();
-        return addressRepository.findByUsuarioAndDeletedAtIsNull(usuario)
+        return addressRepository.findByUsuarioAndDeletedAtIsNullOrderByCreatedAtDescIdAddressDesc(usuario)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -127,11 +127,6 @@ public class AddressService {
         Address address = buildAddressFromRequest(request, usuario);
         address = addressRepository.save(address);
 
-        // Se é o primeiro endereço, define como principal automaticamente
-        if (addressRepository.countByUsuarioAndDeletedAtIsNull(usuario) == 1) {
-            setAddressAsPrincipal(address, usuario);
-        }
-
         return toResponse(address);
     }
 
@@ -142,8 +137,7 @@ public class AddressService {
      */
     @Transactional
     public AddressResponseDTO updateAddress(Long id, AddressRequestDTO request) {
-        Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
+        Address address = findAddressWithOwnership(id);
 
         updateAddressFields(address, request);
         address = addressRepository.save(address);
@@ -158,17 +152,7 @@ public class AddressService {
      */
     @Transactional
     public void deleteAddress(Long id) {
-        Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
-
-        Usuario usuario = address.getUsuario();
-        validateCanDeleteAddress(usuario);
-
-        // Se é o endereço principal, define outro como principal antes de deletar
-        if (isPrincipalAddress(address, usuario)) {
-            setNextAddressAsPrincipal(usuario, address.getIdAddress());
-        }
-
+        Address address = findAddressWithOwnership(id);
         address.setDeletedAt(LocalDateTime.now());
         addressRepository.save(address);
     }
@@ -262,6 +246,14 @@ public class AddressService {
     }
 
     /**
+     * Define Address como principal (legado)
+     */
+    private void setAddressAsPrincipal(Address address, Usuario usuario) {
+        usuario.setAddressPrincipal(address);
+        usuarioRepository.save(usuario);
+    }
+
+    /**
      * Atualiza campos do endereço a partir do DTO
      */
     private void updateAddressFields(Address address, AddressRequestDTO request) {
@@ -277,51 +269,12 @@ public class AddressService {
     }
 
     /**
-     * Define Address como principal
-     */
-    private void setAddressAsPrincipal(Address address, Usuario usuario) {
-        usuario.setAddressPrincipal(address);
-        usuarioRepository.save(usuario);
-    }
-
-    /**
-     * Verifica se endereço é o principal do usuário
-     */
-    private boolean isPrincipalAddress(Address address, Usuario usuario) {
-        return usuario.getAddressPrincipal() != null &&
-                usuario.getAddressPrincipal().getIdAddress().equals(address.getIdAddress());
-    }
-
-    /**
-     * Define próximo endereço disponível como principal
-     */
-    private void setNextAddressAsPrincipal(Usuario usuario, Long excludeAddressId) {
-        Address newPrincipal = addressRepository.findByUsuarioAndDeletedAtIsNull(usuario)
-                .stream()
-                .filter(a -> !a.getIdAddress().equals(excludeAddressId))
-                .findFirst()
-                .orElse(null);
-
-        usuario.setAddressPrincipal(newPrincipal);
-        usuarioRepository.save(usuario);
-    }
-
-    /**
-     * Valida se endereço pode ser deletado
-     */
-    private void validateCanDeleteAddress(Usuario usuario) {
-        long activeCount = addressRepository.countByUsuarioAndDeletedAtIsNull(usuario);
-
-        if (activeCount <= 1) {
-            throw new BusinessException("Não é possível deletar o único endereço ativo");
-        }
-    }
-
-    /**
-     * Normaliza CEP removendo hífen
+     * Normaliza CEP removendo caracteres não numéricos
      */
     private String normalizeCep(String cep) {
-        if (cep == null) return null;
+        if (cep == null) {
+            return null;
+        }
         return cep.replaceAll("[^0-9]", "");
     }
 
@@ -348,7 +301,6 @@ public class AddressService {
                 .latitude(address.getLatitude())
                 .longitude(address.getLongitude())
                 .enderecoCompleto(address.getEnderecoCompleto())
-                .isPrincipal(isPrincipalAddress(address, usuario))
                 .createdAt(address.getCreatedAt())
                 .build();
     }
@@ -383,5 +335,32 @@ public class AddressService {
         return addressRepository.findById(addressId)
                 .map(address -> address.getUsuario().getId().equals(usuario.getId()))
                 .orElse(false);
+    }
+
+    private Address findAddressWithOwnership(Long id) {
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + id));
+
+        if (isFuncionarioAuthenticated()) {
+            return address;
+        }
+
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        if (!address.getUsuario().getId().equals(usuario.getId())) {
+            throw new AccessDeniedException("Acesso negado ao endereço informado");
+        }
+
+        return address;
+    }
+
+    private boolean isFuncionarioAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return false;
+        }
+
+        return authentication.getAuthorities()
+                .stream()
+                .anyMatch(a -> "ROLE_FUNCIONARIO".equals(a.getAuthority()));
     }
 }
