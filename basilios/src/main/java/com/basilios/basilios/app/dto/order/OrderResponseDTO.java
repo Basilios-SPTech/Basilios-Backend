@@ -69,6 +69,24 @@ public class OrderResponseDTO {
         private BigDecimal originalPrice;
         private BigDecimal discount;
         private BigDecimal discountPercentage;
+
+        @Builder.Default
+        private List<AdicionalItemResponse> adicionais = new ArrayList<>();
+    }
+
+    /**
+     * DTO para representar um adicional dentro do item do pedido
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AdicionalItemResponse {
+        private Long adicionalId;
+        private String adicionalName;
+        private BigDecimal unitPrice;
+        private Integer quantity;
+        private BigDecimal subtotal;
     }
 
     /**

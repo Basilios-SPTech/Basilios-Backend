@@ -298,10 +298,7 @@ public class AddressService {
                 .cidade(address.getCidade())
                 .estado(address.getEstado())
                 .complemento(address.getComplemento())
-                .latitude(address.getLatitude())
-                .longitude(address.getLongitude())
                 .enderecoCompleto(address.getEnderecoCompleto())
-                .createdAt(address.getCreatedAt())
                 .build();
     }
 

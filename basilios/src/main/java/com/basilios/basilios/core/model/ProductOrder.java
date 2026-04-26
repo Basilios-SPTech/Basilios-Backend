@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product_order")
@@ -69,14 +71,23 @@ public class ProductOrder {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "productOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ProductOrderAdicional> adicionais = new ArrayList<>();
+
     // Métodos utilitários
 
     /**
-     * Calcula o subtotal baseado na quantidade e preço unitário
+     * Calcula o subtotal: (preço unitário × quantidade) + soma dos adicionais
      */
     public void calculateSubtotal() {
         if (quantity != null && unitPrice != null) {
-            this.subtotal = unitPrice.multiply(new BigDecimal(quantity));
+            BigDecimal base = unitPrice.multiply(new BigDecimal(quantity));
+            BigDecimal adicionaisTotal = adicionais.stream()
+                    .map(a -> a.getSubtotal() != null ? a.getSubtotal() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            this.subtotal = base.add(adicionaisTotal);
         }
     }
 

@@ -685,9 +685,6 @@ public class ProductService {
                 .subcategory(product.getSubcategory() != null
                         ? product.getSubcategory().getDisplayName()
                         : null)
-                .subcategoryCode(product.getSubcategory() != null
-                        ? product.getSubcategory().name()
-                        : null)
                 .ingredients(ingredients)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
