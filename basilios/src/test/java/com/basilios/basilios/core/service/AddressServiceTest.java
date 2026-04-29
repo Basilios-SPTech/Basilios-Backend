@@ -2,7 +2,6 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.endereco.AddressRequestDTO;
 import com.basilios.basilios.app.dto.endereco.AddressResponseDTO;
-import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Usuario;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Collections;
 import java.util.List;
@@ -129,7 +129,7 @@ class AddressServicePartialTest {
     @DisplayName("getUserAddresses() — Deve retornar os endereços do usuário autenticado")
     void getUserAddresses_DeveRetornarEnderecosDoUsuarioAutenticado() {
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(addressRepository.findByUsuarioAndDeletedAtIsNull(usuario))
+        when(addressRepository.findByUsuarioAndDeletedAtIsNullOrderByCreatedAtDescIdAddressDesc(usuario))
                 .thenReturn(List.of(address1));
 
         List<AddressResponseDTO> result = addressService.getUserAddresses();
@@ -138,14 +138,14 @@ class AddressServicePartialTest {
         assertEquals("Rua A", result.get(0).getRua());
         verify(usuarioService, times(1)).getCurrentUsuario();
         verify(addressRepository, times(1))
-                .findByUsuarioAndDeletedAtIsNull(usuario);
+                .findByUsuarioAndDeletedAtIsNullOrderByCreatedAtDescIdAddressDesc(usuario);
     }
 
     @Test
     @DisplayName("getUserAddresses() — Deve retornar lista vazia quando o usuário não tiver endereços")
     void getUserAddresses_DeveRetornarListaVazia_QuandoNenhumEnderecoExistir() {
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(addressRepository.findByUsuarioAndDeletedAtIsNull(usuario))
+        when(addressRepository.findByUsuarioAndDeletedAtIsNullOrderByCreatedAtDescIdAddressDesc(usuario))
                 .thenReturn(Collections.emptyList());
 
         List<AddressResponseDTO> result = addressService.getUserAddresses();
@@ -153,16 +153,13 @@ class AddressServicePartialTest {
         assertTrue(result.isEmpty());
         verify(usuarioService, times(1)).getCurrentUsuario();
         verify(addressRepository, times(1))
-                .findByUsuarioAndDeletedAtIsNull(usuario);
+                .findByUsuarioAndDeletedAtIsNullOrderByCreatedAtDescIdAddressDesc(usuario);
     }
 
-    // ============================================================
-    //  TESTES DE findById()
-    // ============================================================
-
     @Test
-    @DisplayName("findById() — Deve retornar endereço quando encontrado")
+    @DisplayName("findById() — Deve retornar endereço quando pertence ao usuário autenticado")
     void findById_DeveRetornarEndereco_QuandoEncontrado() {
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
 
         AddressResponseDTO result = addressService.findById(10L);
@@ -173,12 +170,16 @@ class AddressServicePartialTest {
     }
 
     @Test
-    @DisplayName("findById() — Deve lançar NotFoundException quando não encontrado")
-    void findById_DeveLancarException_QuandoNaoEncontrado() {
-        when(addressRepository.findById(999L)).thenReturn(Optional.empty());
+    @DisplayName("findById() — Deve lançar AccessDeniedException quando endereço for de outro usuário")
+    void findById_DeveLancarAccessDenied_QuandoEnderecoForDeOutroUsuario() {
+        Usuario outro = new Usuario();
+        outro.setId(77L);
+        address1.setUsuario(outro);
 
-        assertThrows(NotFoundException.class, () -> addressService.findById(999L));
-        verify(addressRepository).findById(999L);
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
+
+        assertThrows(AccessDeniedException.class, () -> addressService.findById(10L));
     }
 
     // ============================================================
@@ -201,36 +202,12 @@ class AddressServicePartialTest {
 
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.save(any(Address.class))).thenReturn(saved);
-        when(addressRepository.countByUsuarioAndDeletedAtIsNull(usuario)).thenReturn(2L);
 
         AddressResponseDTO result = addressService.createAddress(request);
 
         assertNotNull(result);
         assertEquals("Rua Nova", result.getRua());
         verify(addressRepository).save(any(Address.class));
-    }
-
-    @Test
-    @DisplayName("createAddress() — Primeiro endereço deve ser definido como principal")
-    void createAddress_PrimeiroEnderecoDeveSerPrincipal() {
-        AddressRequestDTO request = AddressRequestDTO.builder()
-                .rua("Rua Unica").numero("1").bairro("Bairro")
-                .cep("12345678").cidade("Cidade").estado("SP")
-                .latitude(-23.5).longitude(-46.6).build();
-
-        Address saved = new Address();
-        saved.setIdAddress(1L);
-        saved.setUsuario(usuario);
-        saved.setRua("Rua Unica");
-        saved.setCep("12345678");
-
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(addressRepository.save(any(Address.class))).thenReturn(saved);
-        when(addressRepository.countByUsuarioAndDeletedAtIsNull(usuario)).thenReturn(1L);
-
-        addressService.createAddress(request);
-
-        verify(usuarioRepository).save(usuario);
     }
 
     // ============================================================
@@ -245,6 +222,7 @@ class AddressServicePartialTest {
                 .cep("99999999").cidade("Rio").estado("RJ")
                 .latitude(-22.9).longitude(-43.2).build();
 
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
         when(addressRepository.save(any(Address.class))).thenReturn(address1);
 
@@ -255,16 +233,21 @@ class AddressServicePartialTest {
     }
 
     @Test
-    @DisplayName("updateAddress() — Deve lançar NotFoundException quando endereço não existe")
-    void updateAddress_DeveLancarException_QuandoEnderecoNaoExiste() {
+    @DisplayName("updateAddress() — Deve lançar AccessDeniedException quando endereço for de outro usuário")
+    void updateAddress_DeveLancarAccessDenied_QuandoEnderecoNaoPertenceAoUsuario() {
         AddressRequestDTO request = AddressRequestDTO.builder()
                 .rua("R").numero("1").bairro("B")
                 .cep("00000000").cidade("C").estado("SP")
                 .latitude(0.0).longitude(0.0).build();
 
-        when(addressRepository.findById(999L)).thenReturn(Optional.empty());
+        Usuario outro = new Usuario();
+        outro.setId(99L);
+        address1.setUsuario(outro);
 
-        assertThrows(NotFoundException.class, () -> addressService.updateAddress(999L, request));
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
+
+        assertThrows(AccessDeniedException.class, () -> addressService.updateAddress(10L, request));
     }
 
     // ============================================================
@@ -272,11 +255,10 @@ class AddressServicePartialTest {
     // ============================================================
 
     @Test
-    @DisplayName("deleteAddress() — Deve fazer soft delete quando há mais de um endereço ativo")
+    @DisplayName("deleteAddress() — Deve fazer soft delete quando endereço pertence ao usuário")
     void deleteAddress_DeveFazerSoftDelete() {
-        usuario.setAddressPrincipal(address2);
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
-        when(addressRepository.countByUsuarioAndDeletedAtIsNull(usuario)).thenReturn(2L);
 
         addressService.deleteAddress(10L);
 
@@ -285,12 +267,16 @@ class AddressServicePartialTest {
     }
 
     @Test
-    @DisplayName("deleteAddress() — Deve lançar BusinessException quando é o único endereço")
-    void deleteAddress_DeveLancarException_QuandoUnicoEndereco() {
-        when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
-        when(addressRepository.countByUsuarioAndDeletedAtIsNull(usuario)).thenReturn(1L);
+    @DisplayName("deleteAddress() — Deve lançar AccessDeniedException quando endereço for de outro usuário")
+    void deleteAddress_DeveLancarAccessDenied_QuandoEnderecoNaoPertenceAoUsuario() {
+        Usuario outroUsuario = new Usuario();
+        outroUsuario.setId(99L);
+        address1.setUsuario(outroUsuario);
 
-        assertThrows(BusinessException.class, () -> addressService.deleteAddress(10L));
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(10L)).thenReturn(Optional.of(address1));
+
+        assertThrows(AccessDeniedException.class, () -> addressService.deleteAddress(10L));
         verify(addressRepository, never()).save(any());
     }
 

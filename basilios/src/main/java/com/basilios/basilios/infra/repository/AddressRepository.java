@@ -20,6 +20,11 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
      */
     List<Address> findByUsuarioAndDeletedAtIsNull(Usuario usuario);
 
+    /**
+     * Busca todos os endereços ativos de um usuário com ordenação determinística
+     */
+    List<Address> findByUsuarioAndDeletedAtIsNullOrderByCreatedAtDescIdAddressDesc(Usuario usuario);
+
     Page<Address> findByUsuarioAndDeletedAtIsNull(Usuario usuario, Pageable pageable);
 
     /**

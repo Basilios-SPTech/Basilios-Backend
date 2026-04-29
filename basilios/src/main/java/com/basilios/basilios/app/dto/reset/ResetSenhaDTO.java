@@ -11,5 +11,6 @@ public class ResetSenhaDTO {
     private String codigo;
 
     @NotBlank(message = "Nova senha é obrigatória")
+    @Size(max = 128, message = "Nova senha deve ter no máximo 128 caracteres")
     private String novaSenha;
 }

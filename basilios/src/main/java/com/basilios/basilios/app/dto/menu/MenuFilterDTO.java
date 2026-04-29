@@ -1,5 +1,7 @@
 package com.basilios.basilios.app.dto.menu;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -33,15 +35,18 @@ public class MenuFilterDTO {
     private boolean activeOnly = true;
 
     @Builder.Default
-    private String sortBy = "name"; // name, price, createdAt
+    @Pattern(regexp = "name|price|category|createdAt", message = "sortBy inválido. Use: name, price, category ou createdAt")
+    private String sortBy = "name";
 
     @Builder.Default
-    private String sortDirection = "asc"; // asc, desc
+    @Pattern(regexp = "asc|desc", message = "sortDirection inválido. Use: asc ou desc")
+    private String sortDirection = "asc";
 
     @Builder.Default
     private int page = 0;
 
     @Builder.Default
+    @Max(value = 100, message = "Tamanho máximo de página é 100")
     private int size = 20;
 
 }

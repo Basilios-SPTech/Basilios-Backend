@@ -52,5 +52,26 @@ public class OrderRequestDTO {
 
         @Size(max = 500, message = "Observações do item devem ter no máximo 500 caracteres")
         private String observations;
+
+        @Valid
+        @Builder.Default
+        private List<AdicionalItemRequest> adicionais = new ArrayList<>();
+    }
+
+    /**
+     * DTO para representar um adicional no item do pedido
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AdicionalItemRequest {
+
+        @NotNull(message = "ID do adicional é obrigatório")
+        private Long adicionalId;
+
+        @NotNull(message = "Quantidade do adicional é obrigatória")
+        @Min(value = 1, message = "Quantidade deve ser maior que zero")
+        private Integer quantity;
     }
 }
