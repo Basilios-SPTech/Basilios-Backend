@@ -7,6 +7,7 @@ import com.basilios.basilios.app.mapper.AdicionalMapper;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.Adicional;
+import com.basilios.basilios.core.enums.AdicionalSubcategory;
 import com.basilios.basilios.infra.repository.AdicionalRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +32,14 @@ public class AdicionalService {
             throw new BusinessException("Já existe um adicional com o nome '" + dto.getName() + "'");
         }
 
+        AdicionalSubcategory safeSubcategory = dto.getSubcategory() != null
+                ? dto.getSubcategory()
+                : AdicionalSubcategory.OUTRO;
+
         Adicional adicional = Adicional.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
-                .subcategory(dto.getSubcategory())
+                .subcategory(safeSubcategory)
                 .price(dto.getPrice())
                 .available(true)
                 .build();
@@ -74,6 +79,9 @@ public class AdicionalService {
 
         if (dto.getSubcategory() != null) {
             adicional.setSubcategory(dto.getSubcategory());
+        } else if (adicional.getSubcategory() == null) {
+            // Default to a valid value if legacy data is missing
+            adicional.setSubcategory(AdicionalSubcategory.OUTRO);
         }
 
         if (dto.getPrice() != null) {

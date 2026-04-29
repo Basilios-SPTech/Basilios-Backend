@@ -6,6 +6,7 @@ import com.basilios.basilios.app.dto.product.ProductPriceUpdateDTO;
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
 import com.basilios.basilios.app.dto.product.ProductStatusDTO;
+import com.basilios.basilios.app.dto.product.ProductAdicionalResponseDTO;
 import com.basilios.basilios.core.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -65,6 +68,13 @@ public class ProductController {
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/adicionais")
+    @Operation(summary = "Listar adicionais do produto", description = "Lista adicionais permitidos para um produto")
+    public ResponseEntity<List<ProductAdicionalResponseDTO>> getProductAdicionais(@PathVariable Long id) {
+        List<ProductAdicionalResponseDTO> adicionais = productService.getProductAdicionais(id);
+        return ResponseEntity.ok(adicionais);
     }
 
     // ========== Status e Preço ===========

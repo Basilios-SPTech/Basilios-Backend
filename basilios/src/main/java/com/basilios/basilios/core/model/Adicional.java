@@ -1,6 +1,7 @@
 package com.basilios.basilios.core.model;
 
 import com.basilios.basilios.core.enums.AdicionalSubcategory;
+import com.basilios.basilios.core.enums.AdicionalSubcategoryConverter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -36,7 +37,7 @@ public class Adicional {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = AdicionalSubcategoryConverter.class)
     @Column(length = 50)
     private AdicionalSubcategory subcategory;
 
