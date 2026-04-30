@@ -59,6 +59,9 @@ class OrderControllerTest {
 
         orderResponse = new OrderResponseDTO();
         orderResponse.setId(1L);
+        orderResponse.setUserId(10L);
+        orderResponse.setUserName("Joao Silva");
+        orderResponse.setUserPhone("11999998888");
         orderResponse.setStatus(StatusPedidoEnum.PENDENTE);
         orderResponse.setItems(new java.util.ArrayList<>());
     }
@@ -82,7 +85,10 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", is(1)));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.userId", is(10)))
+                .andExpect(jsonPath("$.userName", is("Joao Silva")))
+                .andExpect(jsonPath("$.userPhone", is("11999998888")));
 
         verify(orderService).createOrder(any(OrderRequestDTO.class));
     }

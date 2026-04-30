@@ -19,6 +19,9 @@ import java.util.Map;
 public class OrderResponseDTO {
 
     private Long id;
+    private Long userId;
+    private String userName;
+    private String userPhone;
 
     @Builder.Default
     private List<OrderItemResponse> items = new ArrayList<>();

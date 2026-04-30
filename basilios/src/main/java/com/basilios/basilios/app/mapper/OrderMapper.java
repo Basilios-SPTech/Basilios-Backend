@@ -22,6 +22,9 @@ public class OrderMapper {
 
         return OrderResponseDTO.builder()
                 .id(order.getId())
+                .userId(order.getUsuario() != null ? order.getUsuario().getId() : null)
+                .userName(order.getUsuario() != null ? order.getUsuario().getNomeUsuario() : null)
+                .userPhone(order.getUsuario() != null ? order.getUsuario().getTelefone() : null)
                 .items(toItemResponseList(order.getProductOrders()))
                 .subtotal(order.getSubtotal())
                 .deliveryFee(order.getDeliveryFee())
@@ -65,6 +68,9 @@ public class OrderMapper {
 
         return OrderResponseDTO.builder()
                 .id(order.getId())
+                .userId(order.getUsuario() != null ? order.getUsuario().getId() : null)
+                .userName(order.getUsuario() != null ? order.getUsuario().getNomeUsuario() : null)
+                .userPhone(order.getUsuario() != null ? order.getUsuario().getTelefone() : null)
                 .subtotal(order.getSubtotal())
                 .deliveryFee(order.getDeliveryFee())
                 .discount(order.getDiscount())
