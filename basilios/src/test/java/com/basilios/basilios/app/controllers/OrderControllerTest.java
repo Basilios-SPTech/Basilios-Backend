@@ -5,16 +5,21 @@ import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.dto.order.UpdateOrderStatusDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
-import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.data.web.config.SpringDataJacksonConfiguration;
+import org.springframework.data.web.config.SpringDataWebSettings;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -38,14 +43,27 @@ class OrderControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
+        objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectMapper.registerModule(new SpringDataJacksonConfiguration.PageModule(
+                new SpringDataWebSettings(EnableSpringDataWebSupport.PageSerializationMode.DIRECT)));
         orderService = mock(OrderService.class);
 
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
+
         OrderController controller = new OrderController(orderService);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+                .setMessageConverters(converter)
+                .build();
 
         orderResponse = new OrderResponseDTO();
         orderResponse.setId(1L);
+        orderResponse.setUserId(10L);
+        orderResponse.setUserName("Joao Silva");
+        orderResponse.setUserPhone("11999998888");
         orderResponse.setStatus(StatusPedidoEnum.PENDENTE);
+        orderResponse.setItems(new java.util.ArrayList<>());
     }
 
     // ========== ENDPOINTS DE CLIENTE ==========
@@ -67,7 +85,10 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", is(1)));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.userId", is(10)))
+                .andExpect(jsonPath("$.userName", is("Joao Silva")))
+                .andExpect(jsonPath("$.userPhone", is("11999998888")));
 
         verify(orderService).createOrder(any(OrderRequestDTO.class));
     }
@@ -75,14 +96,15 @@ class OrderControllerTest {
     @Test
     @DisplayName("GET /orders/me - Deve listar pedidos do cliente")
     void getMyOrders_DeveListarPedidosDoCliente() throws Exception {
-        when(orderService.getUserOrders()).thenReturn(List.of(orderResponse));
+        Page<OrderResponseDTO> page = new PageImpl<>(new java.util.ArrayList<>(List.of(orderResponse)));
+        when(orderService.getUserOrders(any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/orders/me"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(1)));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id", is(1)));
 
-        verify(orderService).getUserOrders();
+        verify(orderService).getUserOrders(any(Pageable.class));
     }
 
     @Test
@@ -131,15 +153,16 @@ class OrderControllerTest {
     @Test
     @DisplayName("GET /orders/by-status - Deve retornar pedidos por status")
     void getOrdersByStatus_DeveRetornarPedidosPorStatus() throws Exception {
-        when(orderService.getOrdersByStatus(StatusPedidoEnum.PENDENTE))
-                .thenReturn(List.of(orderResponse));
+        Page<OrderResponseDTO> page = new PageImpl<>(new java.util.ArrayList<>(List.of(orderResponse)));
+        when(orderService.getOrdersByStatus(eq(StatusPedidoEnum.PENDENTE), any(Pageable.class)))
+                .thenReturn(page);
 
         mockMvc.perform(get("/orders/by-status")
                         .param("status", "PENDENTE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)));
+                .andExpect(jsonPath("$.content", hasSize(1)));
 
-        verify(orderService).getOrdersByStatus(StatusPedidoEnum.PENDENTE);
+        verify(orderService).getOrdersByStatus(eq(StatusPedidoEnum.PENDENTE), any(Pageable.class));
     }
 
     @Test

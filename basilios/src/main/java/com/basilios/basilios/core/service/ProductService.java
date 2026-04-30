@@ -3,6 +3,7 @@ package com.basilios.basilios.core.service;
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
 import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
+import com.basilios.basilios.app.dto.product.ProductAdicionalResponseDTO;
 import com.basilios.basilios.core.exception.*;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.*;
@@ -28,6 +29,7 @@ public class ProductService {
     private final ProductOrderRepository productOrderRepository;
     private final ProductComboRepository productComboRepository;
     private final PromotionRepository promotionRepository;
+    private final AdicionalProductRepository adicionalProductRepository;
 
     // ========== CRUD BÁSICO ==========
 
@@ -309,6 +311,29 @@ public class ProductService {
                         .quantity(ip.getQuantity())
                         .unit(ip.getMeasurementUnit())
                         .build());
+    }
+
+    /**
+     * Lista adicionais permitidos para o produto
+     */
+    @Transactional(readOnly = true)
+    public List<ProductAdicionalResponseDTO> getProductAdicionais(Long productId) {
+        Product product = findProductOrThrow(productId);
+
+        return adicionalProductRepository.findByProductId(product.getId()).stream()
+                .map(AdicionalProduct::getAdicional)
+                .filter(adicional -> adicional != null
+                        && adicional.getDeletedAt() == null
+                        && Boolean.TRUE.equals(adicional.getAvailable()))
+                .map(adicional -> ProductAdicionalResponseDTO.builder()
+                        .id(adicional.getId())
+                        .name(adicional.getName())
+                        .price(adicional.getPrice())
+                        .subcategory(adicional.getSubcategory() != null
+                                ? adicional.getSubcategory().getDisplayName()
+                                : null)
+                        .build())
+                .collect(Collectors.toList());
     }
 
     // ========== ESTATÍSTICAS GERAIS ==========
@@ -684,9 +709,6 @@ public class ProductService {
                         : null)
                 .subcategory(product.getSubcategory() != null
                         ? product.getSubcategory().getDisplayName()
-                        : null)
-                .subcategoryCode(product.getSubcategory() != null
-                        ? product.getSubcategory().name()
                         : null)
                 .ingredients(ingredients)
                 .price(product.getPrice())

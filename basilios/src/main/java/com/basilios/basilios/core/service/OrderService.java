@@ -11,6 +11,8 @@ import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.core.model.events.OrderStatusChangedEvent;
 import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
 import com.basilios.basilios.infra.repository.AddressRepository;
+import com.basilios.basilios.infra.repository.AdicionalProductRepository;
+import com.basilios.basilios.infra.repository.AdicionalRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.util.DistanceCalculator;
@@ -42,6 +44,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final AddressRepository addressRepository;
     private final ProductRepository productRepository;
+    private final AdicionalRepository adicionalRepository;
+    private final AdicionalProductRepository adicionalProductRepository;
     private final UsuarioService usuarioService;
     private final OrderMapper orderMapper;
     private final ApplicationEventPublisher eventPublisher;
@@ -153,7 +157,33 @@ public class OrderService {
                     .originalPrice(hadPromotion ? originalPrice : null)
                     .build();
 
-            // Calcula o subtotal do item
+            // Processar adicionais do item
+            if (itemRequest.getAdicionais() != null) {
+                for (OrderRequestDTO.AdicionalItemRequest adicionalRequest : itemRequest.getAdicionais()) {
+                    Adicional adicional = adicionalRepository.findById(adicionalRequest.getAdicionalId())
+                            .orElseThrow(() -> new NotFoundException("Adicional não encontrado: " + adicionalRequest.getAdicionalId()));
+
+                    if (!adicional.getAvailable()) {
+                        throw new BusinessException("Adicional '" + adicional.getName() + "' não está disponível");
+                    }
+
+                    if (!adicionalProductRepository.existsByProductIdAndAdicionalId(product.getId(), adicional.getId())) {
+                        throw new BusinessException("Adicional '" + adicional.getName() + "' não pertence ao produto '" + product.getName() + "'");
+                    }
+
+                    ProductOrderAdicional poa = ProductOrderAdicional.builder()
+                            .productOrder(productOrder)
+                            .adicionalId(adicional.getId())
+                            .adicionalName(adicional.getName())
+                            .unitPrice(adicional.getPrice())
+                            .quantity(adicionalRequest.getQuantity())
+                            .build();
+                    poa.calculateSubtotal();
+                    productOrder.getAdicionais().add(poa);
+                }
+            }
+
+            // Calcula o subtotal do item (produto + adicionais)
             productOrder.calculateSubtotal();
             order.getProductOrders().add(productOrder);
         }

@@ -12,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -63,9 +65,6 @@ class AddressControllerTest {
                 .bairro("Bela Vista")
                 .cidade("São Paulo")
                 .estado("SP")
-                .latitude(-23.561414)
-                .longitude(-46.656170)
-                .isPrincipal(false)
                 .build();
     }
 
@@ -134,5 +133,41 @@ class AddressControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(addressService, times(1)).findById(999L);
+    }
+
+    // ========== TESTE POSITIVO: listAuthenticatedUserAddresses() ==========
+    @Test
+    @DisplayName("GET /address - Deve retornar lista (array) com endereços do usuário autenticado")
+    void listAuthenticatedUserAddresses_DeveRetornarArray() throws Exception {
+        AddressResponseDTO segundo = AddressResponseDTO.builder()
+                .id(2L)
+                .cep("04113-001")
+                .rua("Rua B")
+                .numero("200")
+                .bairro("Vila Mariana")
+                .cidade("São Paulo")
+                .estado("SP")
+                .build();
+
+        when(addressService.getUserAddresses()).thenReturn(List.of(addressResponse, segundo));
+
+        mockMvc.perform(get("/address"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[1].id", is(2)));
+
+        verify(addressService, times(1)).getUserAddresses();
+    }
+
+    @Test
+    @DisplayName("GET /address - Deve retornar array vazio quando não houver endereços")
+    void listAuthenticatedUserAddresses_DeveRetornarArrayVazio() throws Exception {
+        when(addressService.getUserAddresses()).thenReturn(List.of());
+
+        mockMvc.perform(get("/address"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+
+        verify(addressService, times(1)).getUserAddresses();
     }
 }

@@ -8,6 +8,8 @@ import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.AddressRepository;
+import com.basilios.basilios.infra.repository.AdicionalProductRepository;
+import com.basilios.basilios.infra.repository.AdicionalRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
@@ -45,6 +47,12 @@ class OrderServiceTest {
     private ProductRepository productRepository;
 
     @Mock
+    private AdicionalRepository adicionalRepository;
+
+    @Mock
+    private AdicionalProductRepository adicionalProductRepository;
+
+    @Mock
     private UsuarioService usuarioService;
 
     @Mock
@@ -62,6 +70,7 @@ class OrderServiceTest {
     private Usuario usuario;
     private Address address;
     private Product product;
+    private Adicional adicional;
     private Order order;
     private OrderRequestDTO orderRequestDTO;
     private OrderResponseDTO orderResponseDTO;
@@ -97,6 +106,13 @@ class OrderServiceTest {
         product.setName("Pizza Margherita");
         product.setPrice(new BigDecimal("45.00"));
         product.setIsPaused(false);
+
+        // Criar adicional mock
+        adicional = new Adicional();
+        adicional.setId(1L);
+        adicional.setName("Extra Bacon");
+        adicional.setPrice(new BigDecimal("3.00"));
+        adicional.setAvailable(true);
 
         // Criar pedido mock
         order = new Order();
@@ -648,4 +664,153 @@ class OrderServiceTest {
 
         assertFalse(orderService.canUserCancelOrder(1L));
     }
+
+    // ========== TESTES DE ADICIONAIS ==========
+
+    @Test
+    @DisplayName("Deve criar pedido com adicional válido e calcular preço corretamente")
+    void createOrder_DeveCriarPedidoComAdicionalValido() {
+        // Arrange
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(1L);
+        adicionalRequest.setQuantity(2);
+
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
+        when(adicionalProductRepository.existsByProductIdAndAdicionalId(1L, 1L)).thenReturn(true);
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        // Act
+        OrderResponseDTO result = orderService.createOrder(orderRequestDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(adicionalRepository, times(1)).findById(1L);
+        verify(adicionalProductRepository, times(1)).existsByProductIdAndAdicionalId(1L, 1L);
+        verify(orderRepository, times(1)).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar NotFoundException quando adicional não existe")
+    void createOrder_DeveLancarExcecaoQuandoAdicionalNaoExiste() {
+        // Arrange
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(99L);
+        adicionalRequest.setQuantity(1);
+
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> orderService.createOrder(orderRequestDTO));
+
+        assertEquals("Adicional não encontrado: 99", exception.getMessage());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException quando adicional não está disponível")
+    void createOrder_DeveLancarExcecaoQuandoAdicionalIndisponivel() {
+        // Arrange
+        adicional.setAvailable(false);
+
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(1L);
+        adicionalRequest.setQuantity(1);
+
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
+
+        // Act & Assert
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> orderService.createOrder(orderRequestDTO));
+
+        assertEquals("Adicional 'Extra Bacon' não está disponível", exception.getMessage());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException quando adicional não pertence ao produto")
+    void createOrder_DeveLancarExcecaoQuandoAdicionalNaoPertenceAoProduto() {
+        // Arrange
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(1L);
+        adicionalRequest.setQuantity(1);
+
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
+        when(adicionalProductRepository.existsByProductIdAndAdicionalId(1L, 1L)).thenReturn(false);
+
+        // Act & Assert
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> orderService.createOrder(orderRequestDTO));
+
+        assertEquals("Adicional 'Extra Bacon' não pertence ao produto 'Pizza Margherita'", exception.getMessage());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Deve criar pedido sem adicionais normalmente")
+    void createOrder_DeveCriarPedidoSemAdicionais() {
+        // Arrange — item sem adicionais (lista nula ou vazia)
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(new ArrayList<>());
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        // Act
+        OrderResponseDTO result = orderService.createOrder(orderRequestDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(adicionalRepository, never()).findById(anyLong());
+        verify(orderRepository, times(1)).save(any(Order.class));
+    }
 }
+

@@ -31,6 +31,7 @@ public class ProductRequestDTO {
     private String description;
 
     // URL da imagem do produto (opcional no back, mas o front vai preencher)
+    @org.hibernate.validator.constraints.URL(message = "URL da imagem inválida")
     private String imageUrl;
 
     @NotNull(message = "Categoria é obrigatória")

@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,13 +27,5 @@ public class AddressResponseDTO {
 
     private String complemento;
 
-    private Double latitude;
-
-    private Double longitude;
-
     private String enderecoCompleto; // Gerado automaticamente
-
-    private Boolean isPrincipal; // Se é o endereço principal do usuário
-
-    private LocalDateTime createdAt;
 }

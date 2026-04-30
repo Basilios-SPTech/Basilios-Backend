@@ -26,7 +26,6 @@ public class ProductMapper {
                 .name(product.getName())
                 .description(product.getDescription())
                 .subcategory(product.getSubcategory() != null ? product.getSubcategory().getDisplayName() : null)
-                .subcategoryCode(product.getSubcategory() != null ? product.getSubcategory().name() : null)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
                 .isOnPromotion(product.isOnPromotion())

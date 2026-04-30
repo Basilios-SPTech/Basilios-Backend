@@ -69,6 +69,12 @@ public class Product {
     @ToString.Exclude
     private List<IngredientProduct> productIngredients = new ArrayList<>();
 
+    // Adicionais disponíveis para este produto
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<AdicionalProduct> adicionalProducts = new ArrayList<>();
+
     // Relacionamento Many-to-Many com Order (através de ProductOrder)
     // Removido cascade/orphanRemoval: Order é o aggregate root dos itens de pedido
     @OneToMany(mappedBy = "product")

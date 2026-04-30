@@ -1,0 +1,111 @@
+name: SAST Security Scan (Snyk + Semgrep)
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main # escaneia PRs DESTINADOS à main
+  workflow_dispatch: # trigger manual
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1 – Semgrep SARIF (sempre sucede)
+  # ──────────────────────────────────────────────
+  semgrep-sarif:
+    name: SAST - Semgrep SARIF
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep (SARIF output)
+        run: semgrep scan --sarif --output=semgrep.sarif
+        env:
+          SEMGREP_RULES: "p/security-audit p/owasp-top-ten p/secrets"
+
+      - name: Upload Semgrep SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  # ──────────────────────────────────────────────
+  # Job 2 – Semgrep CI gate + semgrep.dev push
+  # ──────────────────────────────────────────────
+  semgrep-ci:
+    name: SAST - Semgrep CI Gate
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep CI
+        run: semgrep ci
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  # ──────────────────────────────────────────────
+  # Job 3 – Snyk Code (SAST) + Snyk Test (SCA)
+  # ──────────────────────────────────────────────
+  snyk:
+    name: SAST + SCA - Snyk
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: basilios
+        run: mvn -B package -DskipTests
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      # ── SAST: análise de código-fonte ──
+      # Rodamos dentro de basilios/ e salvamos o SARIF na raiz do runner
+      - name: Snyk Code (SAST)
+        working-directory: basilios
+        run: snyk code test --severity-threshold=low --sarif-file-output=${{ github.workspace }}/snyk-sast.sarif
+        continue-on-error: true
+
+      - name: Upload Snyk SAST SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: snyk-sast.sarif
+          category: snyk-sast
+
+      # ── SCA: análise de dependências (pom.xml) ──
+      - name: Snyk Test (SCA)
+        working-directory: basilios
+        run: snyk test --severity-threshold=low --sarif-file-output=${{ github.workspace }}/snyk-sca.sarif
+        continue-on-error: true
+
+      - name: Upload Snyk SCA SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: snyk-sca.sarif
+          category: snyk-sca
