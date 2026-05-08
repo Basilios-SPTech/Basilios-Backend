@@ -15,10 +15,8 @@ import com.basilios.basilios.infra.repository.AdicionalProductRepository;
 import com.basilios.basilios.infra.repository.AdicionalRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
-import com.basilios.basilios.util.DistanceCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,20 +24,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderService {
-
-    private static final double MAX_DELIVERY_DISTANCE_KM = 7.0;
-    private static final BigDecimal BASE_DELIVERY_FEE = new BigDecimal("5.00");
-    private static final BigDecimal DELIVERY_FEE_PER_KM = new BigDecimal("2.00");
 
     private final OrderRepository orderRepository;
     private final AddressRepository addressRepository;
@@ -47,15 +38,10 @@ public class OrderService {
     private final AdicionalRepository adicionalRepository;
     private final AdicionalProductRepository adicionalProductRepository;
     private final UsuarioService usuarioService;
+    private final StoreService storeService;
     private final OrderMapper orderMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationEventPublisher notificationEventPublisher;
-
-    @Value("${store.latitude:#{-23.550520}}")
-    private Double storeLatitude;
-
-    @Value("${store.longitude:#{-46.633308}}")
-    private Double storeLongitude;
 
     /**
      * Cria novo pedido com relacionamento puro (ProductOrder)
@@ -91,26 +77,6 @@ public class OrderService {
         // Verificar se endereço está ativo
         if (!addressEntrega.isAtivo()) {
             throw new BusinessException("Endereço não está ativo");
-        }
-
-        // Verificar distância
-        double distance = DistanceCalculator.calculateDistance(
-                storeLatitude, storeLongitude,
-                addressEntrega.getLatitude(), addressEntrega.getLongitude()
-        );
-        log.debug("Distância calculada: {} - Endereço: {}", distance, addressEntrega);
-
-        // Se fora da área de entrega, retornar redirecionamento
-        if (distance > MAX_DELIVERY_DISTANCE_KM) {
-            Map<String, String> partnerLinks = new HashMap<>();
-            partnerLinks.put("ifood", "https://www.ifood.com.br");
-            partnerLinks.put("99food", "https://www.99food.com.br");
-            partnerLinks.put("rappi", "https://www.rappi.com.br");
-
-            return OrderResponseDTO.builder()
-                    .redirectToPartners(true)
-                    .partnerLinks(partnerLinks)
-                    .build();
         }
 
         // Criar pedido
@@ -188,8 +154,8 @@ public class OrderService {
             order.getProductOrders().add(productOrder);
         }
 
-        // Calcular taxa de entrega baseada na distância
-        BigDecimal deliveryFee = calculateDeliveryFee(distance);
+        // Taxa de entrega configurada na loja
+        BigDecimal deliveryFee = storeService.getMainStore().getDeliveryFee();
         order.setDeliveryFee(deliveryFee);
 
         // Aplicar desconto se fornecido
@@ -202,22 +168,6 @@ public class OrderService {
 
         // Retornar resposta
         return orderMapper.toResponse(order);
-    }
-
-    /**
-     * Calcula taxa de entrega baseada na distância
-     * Fórmula: BASE_FEE + (distância * FEE_PER_KM)
-     */
-    private BigDecimal calculateDeliveryFee(double distanceKm) {
-        if (distanceKm <= 0) {
-            return BASE_DELIVERY_FEE;
-        }
-
-        BigDecimal distanceFee = DELIVERY_FEE_PER_KM.multiply(BigDecimal.valueOf(distanceKm));
-        BigDecimal totalFee = BASE_DELIVERY_FEE.add(distanceFee);
-
-        // Arredondar para 2 casas decimais
-        return totalFee.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -21,11 +22,33 @@ public class StoreService {
         if (stores.isEmpty()) {
             throw new NotFoundException("Nenhuma loja cadastrada");
         }
-        return stores.get(0); // Retorna a primeira loja (loja principal)
+        return stores.get(0);
+    }
+
+    public List<Store> findAll() {
+        return storeRepository.findAll();
     }
 
     public Store findById(Long id) {
         return storeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Loja não encontrada"));
+    }
+
+    @Transactional
+    public Store create(Store store) {
+        return storeRepository.save(store);
+    }
+
+    @Transactional
+    public Store updateDeliveryFee(BigDecimal deliveryFee) {
+        Store store = getMainStore();
+        store.setDeliveryFee(deliveryFee);
+        return storeRepository.save(store);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        Store store = findById(id);
+        storeRepository.delete(store);
     }
 }

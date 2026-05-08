@@ -21,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -56,6 +55,9 @@ class OrderServiceTest {
     private UsuarioService usuarioService;
 
     @Mock
+    private StoreService storeService;
+
+    @Mock
     private OrderMapper orderMapper;
 
     @Mock
@@ -77,10 +79,6 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Configurar coordenadas da loja usando ReflectionTestUtils
-        ReflectionTestUtils.setField(orderService, "storeLatitude", -23.550520);
-        ReflectionTestUtils.setField(orderService, "storeLongitude", -46.633308);
-
         // Criar usuário mock
         usuario = new Usuario();
         usuario.setId(1L);
@@ -91,8 +89,6 @@ class OrderServiceTest {
         address = new Address();
         address.setIdAddress(1L);
         address.setUsuario(usuario);
-        address.setLatitude(-23.555520); // ~0.5km da loja
-        address.setLongitude(-46.638308);
         address.setCep("01234-567");
         address.setRua("Rua Teste");
         address.setNumero("123");
@@ -149,9 +145,13 @@ class OrderServiceTest {
     @DisplayName("Deve criar pedido com sucesso quando todos os dados são válidos")
     void createOrder_DeveRetornarPedidoCriadoComSucesso() {
         // Arrange
+        Store store = new Store();
+        store.setDeliveryFee(new BigDecimal("5.00"));
+
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(storeService.getMainStore()).thenReturn(store);
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
@@ -196,29 +196,6 @@ class OrderServiceTest {
                 () -> orderService.createOrder(orderRequestDTO));
 
         assertEquals("Endereço não pertence ao usuário", exception.getMessage());
-        verify(orderRepository, never()).save(any(Order.class));
-    }
-
-    @Test
-    @DisplayName("Deve redirecionar para parceiros quando endereço está fora da área de entrega")
-    void createOrder_DeveRedirecionarParaParceirosQuandoForaDaAreaDeEntrega() {
-        // Arrange
-        address.setLatitude(-23.650520); // ~11km da loja (fora da área de 7km)
-        address.setLongitude(-46.733308);
-
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
-
-        // Act
-        OrderResponseDTO result = orderService.createOrder(orderRequestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.getRedirectToPartners());
-        assertNotNull(result.getPartnerLinks());
-        assertTrue(result.getPartnerLinks().containsKey("ifood"));
-        assertTrue(result.getPartnerLinks().containsKey("99food"));
-        assertTrue(result.getPartnerLinks().containsKey("rappi"));
         verify(orderRepository, never()).save(any(Order.class));
     }
 
@@ -687,6 +664,7 @@ class OrderServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
         when(adicionalProductRepository.existsByProductIdAndAdicionalId(1L, 1L)).thenReturn(true);
+        when(storeService.getMainStore()).thenReturn(Store.builder().deliveryFee(new BigDecimal("5.00")).build());
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
@@ -801,6 +779,7 @@ class OrderServiceTest {
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(storeService.getMainStore()).thenReturn(Store.builder().deliveryFee(new BigDecimal("5.00")).build());
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 

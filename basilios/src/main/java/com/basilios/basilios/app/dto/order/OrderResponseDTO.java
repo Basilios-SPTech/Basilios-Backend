@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
@@ -47,10 +46,6 @@ public class OrderResponseDTO {
 
     private Integer totalItems;
     private BigDecimal totalPromotionDiscount;
-
-    // Para redirecionamento quando fora da área de entrega
-    private Boolean redirectToPartners;
-    private Map<String, String> partnerLinks;
 
     /**
      * DTO para representar um item do pedido

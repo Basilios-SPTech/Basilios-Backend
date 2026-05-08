@@ -29,22 +29,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(InvalidDistanceException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidDistance(InvalidDistanceException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Invalid Distance");
-        body.put("message", ex.getMessage());
-        body.put("distance", ex.getDistance());
-        body.put("redirectToPartners", true);
-        body.put("partnerLinks", Map.of(
-                "ifood", "https://www.ifood.com.br",
-                "99food", "https://www.99food.com.br"
-        ));
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
         Map<String, Object> body = new HashMap<>();
