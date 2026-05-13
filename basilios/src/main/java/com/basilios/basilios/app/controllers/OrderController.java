@@ -1,10 +1,12 @@
 package com.basilios.basilios.app.controllers;
 
+import com.basilios.basilios.app.dto.order.BusinessHoursResponseDTO;
 import com.basilios.basilios.app.dto.order.CancelOrderDTO;
 import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.dto.order.UpdateOrderStatusDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
+import com.basilios.basilios.core.service.BusinessHoursService;
 import com.basilios.basilios.core.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
+    private final BusinessHoursService businessHoursService;
 
     // ========== ENDPOINTS DE CLIENTE ==========
 
@@ -61,6 +64,46 @@ public class OrderController {
         String motivo = cancelDTO != null ? cancelDTO.getMotivo() : "Cancelado pelo cliente";
         OrderResponseDTO order = orderService.cancelarPedidoUsuario(id, motivo);
         return ResponseEntity.ok(order);
+    }
+
+    // ========== ENDPOINTS DE INFORMAÇÃO SOBRE HORÁRIOS ==========
+
+    @GetMapping("/business-hours/status")
+    @Operation(summary = "Verificar status de funcionamento", description = "Verifica se a loja está aberta no momento")
+    public ResponseEntity<BusinessHoursResponseDTO> checkBusinessStatus() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.DayOfWeek dayOfWeek = now.getDayOfWeek();
+        
+        if (businessHoursService.isOpen()) {
+            return ResponseEntity.ok(BusinessHoursResponseDTO.open(
+                    businessHoursService.getOpeningTime(),
+                    businessHoursService.getClosingTime(dayOfWeek)
+            ));
+        } else {
+            return ResponseEntity.ok(BusinessHoursResponseDTO.closed(
+                    businessHoursService.getOpeningTime(),
+                    businessHoursService.getClosingTime(dayOfWeek)
+            ));
+        }
+    }
+
+    @GetMapping("/business-hours/info")
+    @Operation(summary = "Obter horários de funcionamento", description = "Retorna os horários de funcionamento da loja")
+    public ResponseEntity<BusinessHoursResponseDTO> getBusinessHoursInfo() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.DayOfWeek dayOfWeek = now.getDayOfWeek();
+        
+        if (businessHoursService.isOpen()) {
+            return ResponseEntity.ok(BusinessHoursResponseDTO.open(
+                    businessHoursService.getOpeningTime(),
+                    businessHoursService.getClosingTime(dayOfWeek)
+            ));
+        } else {
+            return ResponseEntity.ok(BusinessHoursResponseDTO.closed(
+                    businessHoursService.getOpeningTime(),
+                    businessHoursService.getClosingTime(dayOfWeek)
+            ));
+        }
     }
 
     // ========== ENDPOINTS DE STAFF/ADMIN ==========

@@ -5,6 +5,7 @@ import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.dto.order.UpdateOrderStatusDTO;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
+import com.basilios.basilios.core.service.BusinessHoursService;
 import com.basilios.basilios.core.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -37,6 +38,7 @@ class OrderControllerTest {
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
     private OrderService orderService;
+    private BusinessHoursService businessHoursService;
 
     private OrderResponseDTO orderResponse;
 
@@ -48,10 +50,11 @@ class OrderControllerTest {
         objectMapper.registerModule(new SpringDataJacksonConfiguration.PageModule(
                 new SpringDataWebSettings(EnableSpringDataWebSupport.PageSerializationMode.DIRECT)));
         orderService = mock(OrderService.class);
+        businessHoursService = mock(BusinessHoursService.class);
 
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        OrderController controller = new OrderController(orderService);
+        OrderController controller = new OrderController(orderService, businessHoursService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setMessageConverters(converter)
