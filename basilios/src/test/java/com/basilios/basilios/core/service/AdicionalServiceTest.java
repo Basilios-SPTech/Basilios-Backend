@@ -52,7 +52,7 @@ class AdicionalServiceTest {
                 .id(1L)
                 .name("Extra Bacon")
                 .description("Fatias extras de bacon")
-                .subcategory(AdicionalSubcategory.BACON)
+                .subcategory(AdicionalSubcategory.PROTEINA)
                 .price(new BigDecimal("3.00"))
                 .available(true)
                 .build();
@@ -60,7 +60,7 @@ class AdicionalServiceTest {
         requestDTO = AdicionalRequestDTO.builder()
                 .name("Extra Bacon")
                 .description("Fatias extras de bacon")
-                .subcategory(AdicionalSubcategory.BACON)
+                .subcategory(AdicionalSubcategory.PROTEINA)
                 .price(new BigDecimal("3.00"))
                 .build();
 
@@ -68,7 +68,7 @@ class AdicionalServiceTest {
                 .id(1L)
                 .name("Extra Bacon")
                 .description("Fatias extras de bacon")
-                .subcategory("Bacon")
+                .subcategory("Proteína")
                 .price(new BigDecimal("3.00"))
                 .available(true)
                 .build();

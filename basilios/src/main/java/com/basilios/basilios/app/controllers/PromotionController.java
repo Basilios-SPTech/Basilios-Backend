@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +21,7 @@ public class PromotionController {
 
     private final PromotionService promotionService;
 
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PostMapping
     public ResponseEntity<PromotionResponseDTO> createPromotion(
             @RequestBody CreatePromotionDTO dto) {
@@ -45,6 +47,7 @@ public class PromotionController {
         return ResponseEntity.ok(promotion);
     }
 
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @PutMapping("/{id}")
     public ResponseEntity<PromotionResponseDTO> updatePromotion(
             @PathVariable Long id,
@@ -55,6 +58,7 @@ public class PromotionController {
         return ResponseEntity.ok(promotion);
     }
 
+    @PreAuthorize("hasRole('FUNCIONARIO')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePromotion(@PathVariable Long id) {
         promotionService.deletePromotion(id);

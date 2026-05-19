@@ -46,30 +46,4 @@ public class ProductRequestDTO {
     @DecimalMin(value = "0.01", message = "Preço deve ser maior que zero")
     @Digits(integer = 8, fraction = 2, message = "Preço inválido")
     private BigDecimal price;
-
-    @Builder.Default
-    private List<String> ingredientes = new ArrayList<>(); // Lista simples de ingredientes
-
-    @Builder.Default
-    private List<IngredientDetail> ingredientsDetailed = new ArrayList<>(); // Ingredientes com detalhes
-
-    /**
-     * Inner class para ingredientes detalhados
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class IngredientDetail {
-
-        @NotBlank(message = "Nome do ingrediente é obrigatório")
-        private String name;
-
-        @NotNull(message = "Quantidade é obrigatória")
-        @DecimalMin(value = "0.01", message = "Quantidade deve ser maior que zero")
-        private Double quantity;
-
-        @NotBlank(message = "Unidade de medida é obrigatória")
-        private String measurementUnit; // "g", "ml", "unidade", "fatias"
-    }
 }

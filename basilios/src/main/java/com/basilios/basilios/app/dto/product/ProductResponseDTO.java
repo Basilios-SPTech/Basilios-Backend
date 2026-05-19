@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Builder
@@ -28,9 +26,6 @@ public class ProductResponseDTO {
 
     private String subcategory; // display name (por ex.: "Carne Bovina")
 
-    @Builder.Default
-    private List<IngredientResponse> ingredients = new ArrayList<>();
-
     private BigDecimal price;
 
     private BigDecimal finalPrice; // Com promoções aplicadas
@@ -44,20 +39,6 @@ public class ProductResponseDTO {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
-
-    /**
-     * DTO para ingrediente na resposta
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class IngredientResponse {
-        private Long id;
-        private String name;
-        private Integer quantity;
-        private String measurementUnit;
-    }
 
     /**
      * DTO para resumo de promoção

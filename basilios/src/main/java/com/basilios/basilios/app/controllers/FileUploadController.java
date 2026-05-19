@@ -23,8 +23,7 @@ public class FileUploadController {
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @Operation(summary = "Upload de imagem de produto")
     public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String fileName = fileStorageService.storeFile(file);
-        String fileUrl = "http://localhost:8080/uploads/" + fileName;
+        String fileUrl = fileStorageService.storeFile(file);
         return ResponseEntity.ok(fileUrl);
     }
 }

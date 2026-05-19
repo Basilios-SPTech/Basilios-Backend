@@ -1,7 +1,6 @@
 package com.basilios.basilios.app.controllers;
 
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
-import com.basilios.basilios.app.dto.product.ProductResponseDTO.IngredientResponse;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO.PromotionSummary;
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,23 +113,6 @@ public class ProductControllerTest {
         assertEquals(new BigDecimal("50.0"), resp.getBody().getPrice());
     }
 
-    // ==================== INGREDIENTS ====================
-    @Test
-    void testAddAndRemoveIngredient() {
-        fakeController.createSampleProduct(1L, "Produto Ingrediente", false);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("name", "Tomate");
-        body.put("qty", 2);
-        body.put("unit", "UN");
-
-        ResponseEntity<ProductResponseDTO> addResp = fakeController.addIngredient(1L, body);
-        assertEquals(1, addResp.getBody().getIngredients().size());
-
-        ResponseEntity<ProductResponseDTO> removeResp = fakeController.removeIngredient(1L, 1L);
-        assertEquals(0, removeResp.getBody().getIngredients().size());
-    }
-
     // ==================== FAKE CONTROLLER ====================
     static class FakeProductController {
 
@@ -144,7 +126,6 @@ public class ProductControllerTest {
                     .price(new BigDecimal("10.0"))
                     .finalPrice(new BigDecimal("10.0"))
                     .isPaused(paused)
-                    .ingredients(new ArrayList<>())
                     .build();
             fakeDb.put(id, p);
             return p;
@@ -158,7 +139,6 @@ public class ProductControllerTest {
                     .price(dto.getPrice())
                     .finalPrice(dto.getPrice())
                     .isPaused(false)
-                    .ingredients(new ArrayList<>())
                     .build();
             fakeDb.put(id, p);
             return ResponseEntity.status(201).body(p);
@@ -218,25 +198,6 @@ public class ProductControllerTest {
             }
             p.setPrice(newPrice);
             p.setFinalPrice(newPrice);
-            return ResponseEntity.ok(p);
-        }
-
-        public ResponseEntity<ProductResponseDTO> addIngredient(Long id, Map<String, Object> body) {
-            ProductResponseDTO p = fakeDb.get(id);
-            if (p == null) return ResponseEntity.notFound().build();
-            IngredientResponse ingredient = new IngredientResponse();
-            ingredient.setId(1L);
-            ingredient.setName((String) body.get("name"));
-            ingredient.setQuantity(body.get("qty") instanceof Number ? ((Number) body.get("qty")).intValue() : null);
-            ingredient.setMeasurementUnit((String) body.get("unit"));
-            p.getIngredients().add(ingredient);
-            return ResponseEntity.ok(p);
-        }
-
-        public ResponseEntity<ProductResponseDTO> removeIngredient(Long id, Long ingredientId) {
-            ProductResponseDTO p = fakeDb.get(id);
-            if (p == null) return ResponseEntity.notFound().build();
-            p.getIngredients().removeIf(i -> i.getId().equals(ingredientId));
             return ResponseEntity.ok(p);
         }
     }

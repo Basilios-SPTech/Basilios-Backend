@@ -2,7 +2,6 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
-import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
 import com.basilios.basilios.app.dto.product.ProductAdicionalResponseDTO;
 import com.basilios.basilios.core.exception.*;
 import com.basilios.basilios.core.model.*;
@@ -24,8 +23,6 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final IngredientRepository ingredientRepository;
-    private final IngredientProductRepository ingredientProductRepository;
     private final ProductOrderRepository productOrderRepository;
     private final ProductComboRepository productComboRepository;
     private final PromotionRepository promotionRepository;
@@ -34,7 +31,7 @@ public class ProductService {
     // ========== CRUD BÁSICO ==========
 
     /**
-     * Cria novo produto com ingredientes
+     * Cria novo produtos
      */
     public ProductResponseDTO createProduct(ProductRequestDTO dto) {
         // Validar duplicação
@@ -66,11 +63,6 @@ public class ProductService {
                 .build();
 
         product = productRepository.save(product);
-
-        // Adicionar ingredientes se fornecidos
-        if (dto.getIngredientes() != null && !dto.getIngredientes().isEmpty()) {
-            addIngredientsToProduct(product, dto.getIngredientes());
-        }
 
         return convertToResponseDTO(product);
     }
@@ -137,14 +129,6 @@ public class ProductService {
         product.setSubcategory(dto.getSubcategory());
         product.setTags(dto.getTags() != null ? dto.getTags() : new ArrayList<>());
         product.setPrice(dto.getPrice());
-
-        // Atualizar ingredientes
-        if (dto.getIngredientes() != null) {
-            removeAllIngredientsFromProduct(product);
-            if (!dto.getIngredientes().isEmpty()) {
-                addIngredientsToProduct(product, dto.getIngredientes());
-            }
-        }
 
         product = productRepository.save(product);
         return convertToResponseDTO(product);
@@ -230,88 +214,7 @@ public class ProductService {
         return convertToResponseDTO(product);
     }
 
-    // ========== GERENCIAMENTO DE INGREDIENTES ==========
-
-    /**
-     * Adiciona ingrediente ao produto
-     */
-    public ProductResponseDTO addIngredient(Long productId, String name, Integer qty, String unit) {
-        Product product = findProductOrThrow(productId);
-
-        if (name == null || name.trim().isEmpty()) {
-            throw new BusinessException("Nome do ingrediente é obrigatório");
-        }
-
-        // Buscar ou criar ingrediente
-        Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(name.trim())
-                .orElseGet(() -> {
-                    Ingredient newIng = new Ingredient();
-                    newIng.setName(name.trim());
-                    return ingredientRepository.save(newIng);
-                });
-
-        // Verificar se já existe
-        if (ingredientProductRepository.existsByProductAndIngredient(product, ingredient)) {
-            throw new BusinessException("Ingrediente já adicionado ao produto");
-        }
-
-        // Criar relacionamento
-        IngredientProduct ip = new IngredientProduct();
-        ip.setProduct(product);
-        ip.setIngredient(ingredient);
-        ip.setQuantity(qty != null ? qty : 1);
-        ip.setMeasurementUnit(unit != null ? unit : "unidade");
-        ingredientProductRepository.save(ip);
-
-        return convertToResponseDTO(productRepository.findById(productId).get());
-    }
-
-    /**
-     * Remove ingrediente do produto
-     */
-    public ProductResponseDTO removeIngredient(Long productId, Long ingredientId) {
-        Product product = findProductOrThrow(productId);
-
-        Ingredient ingredient = ingredientRepository.findById(ingredientId)
-                .orElseThrow(() -> new NotFoundException("Ingrediente não encontrado: " + ingredientId));
-
-        IngredientProduct ip = ingredientProductRepository
-                .findByProductAndIngredient(product, ingredient)
-                .orElseThrow(() -> new BusinessException("Ingrediente não está associado ao produto"));
-
-        ingredientProductRepository.delete(ip);
-        return convertToResponseDTO(productRepository.findById(productId).get());
-    }
-
-    /**
-     * Lista ingredientes do produto
-     */
-    @Transactional(readOnly = true)
-    public List<IngredientResponseDTO> getProductIngredients(Long productId) {
-        Product product = findProductOrThrow(productId);
-
-        return ingredientProductRepository.findByProduct(product).stream()
-                .map(ip -> IngredientResponseDTO.builder()
-                        .id(ip.getIngredient().getId())
-                        .name(ip.getIngredient().getName())
-                        .quantity(ip.getQuantity())
-                        .unit(ip.getMeasurementUnit())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public Page<IngredientResponseDTO> getProductIngredients(Long productId, Pageable pageable) {
-        Product product = findProductOrThrow(productId);
-
-        return ingredientProductRepository.findByProduct(product, pageable)
-                .map(ip -> IngredientResponseDTO.builder()
-                        .id(ip.getIngredient().getId())
-                        .name(ip.getIngredient().getName())
-                        .quantity(ip.getQuantity())
-                        .unit(ip.getMeasurementUnit())
-                        .build());
-    }
+    // ========== HELPERS PRIVADOS ==========
 
     /**
      * Lista adicionais permitidos para o produto
@@ -546,19 +449,6 @@ public class ProductService {
         );
     }
 
-    // ========== ANÁLISES DE INGREDIENTES ==========
-
-    /**
-     * Produtos sem ingredientes cadastrados
-     */
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getProductsWithoutIngredients() {
-        return productRepository.findAll().stream()
-                .filter(p -> ingredientProductRepository.findByProduct(p).isEmpty())
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
-    }
-
     // ========== VALIDAÇÕES ==========
 
     /**
@@ -636,53 +526,9 @@ public class ProductService {
     }
 
     /**
-     * Adiciona ingredientes à lista de um produto
-     */
-    private void addIngredientsToProduct(Product product, List<String> names) {
-        for (String name : names) {
-            if (name == null || name.trim().isEmpty()) continue;
-
-            Ingredient ing = ingredientRepository.findByNameIgnoreCase(name.trim())
-                    .orElseGet(() -> {
-                        Ingredient newIng = new Ingredient();
-                        newIng.setName(name.trim());
-                        return ingredientRepository.save(newIng);
-                    });
-
-            if (!ingredientProductRepository.existsByProductAndIngredient(product, ing)) {
-                IngredientProduct ip = new IngredientProduct();
-                ip.setProduct(product);
-                ip.setIngredient(ing);
-                ip.setQuantity(1);
-                ip.setMeasurementUnit("unidade");
-                ingredientProductRepository.save(ip);
-            }
-        }
-    }
-
-    /**
-     * Remove todos os ingredientes de um produto
-     */
-    private void removeAllIngredientsFromProduct(Product product) {
-        List<IngredientProduct> ips = ingredientProductRepository.findByProduct(product);
-        ingredientProductRepository.deleteAll(ips);
-    }
-
-    /**
      * Converte Product para ProductResponseDTO
      */
     private ProductResponseDTO convertToResponseDTO(Product product) {
-        // Buscar ingredientes
-        List<ProductResponseDTO.IngredientResponse> ingredients =
-                ingredientProductRepository.findByProduct(product).stream()
-                        .map(ip -> ProductResponseDTO.IngredientResponse.builder()
-                                .id(ip.getIngredient().getId())
-                                .name(ip.getIngredient().getName())
-                                .quantity(ip.getQuantity())
-                                .measurementUnit(ip.getMeasurementUnit())
-                                .build())
-                        .collect(Collectors.toList());
-
         // Buscar melhor promoção vigente
         Promotion promo = product.getBestCurrentPromotion();
         ProductResponseDTO.PromotionSummary promoSummary = null;
@@ -710,7 +556,6 @@ public class ProductService {
                 .subcategory(product.getSubcategory() != null
                         ? product.getSubcategory().getDisplayName()
                         : null)
-                .ingredients(ingredients)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
                 .isOnPromotion(product.isOnPromotion())

@@ -4,12 +4,12 @@ import com.basilios.basilios.core.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,29 +24,35 @@ public class FileStorageService {
     );
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-    private final Path uploadDir;
+    private final S3Client s3Client;
+    private final String bucket;
+    private final String region;
 
-    public FileStorageService(@Value("${file.upload-dir}") String uploadDir) throws IOException {
-        this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
-        Files.createDirectories(this.uploadDir);
+    public FileStorageService(
+            @Value("${aws.s3.bucket}") String bucket,
+            @Value("${aws.s3.region}") String region) {
+        this.bucket = bucket;
+        this.region = region;
+        this.s3Client = S3Client.builder()
+                .region(Region.of(region))
+                .build();
     }
 
+    /**
+     * Faz upload do arquivo para o S3 e retorna a URL pública.
+     */
     public String storeFile(MultipartFile file) throws IOException {
-        // Validar tamanho
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new BusinessException("Arquivo muito grande. Tamanho máximo: 5MB");
         }
 
-        // Validar tipo MIME
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
             throw new BusinessException("Tipo de arquivo não permitido. Tipos aceitos: JPEG, PNG, WebP, GIF");
         }
 
-        // Validar extensão
         String originalName = file.getOriginalFilename();
         String extension = "";
-
         if (originalName != null && originalName.contains(".")) {
             extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
         }
@@ -55,17 +61,16 @@ public class FileStorageService {
             throw new BusinessException("Extensão de arquivo não permitida. Extensões aceitas: .jpg, .jpeg, .png, .webp, .gif");
         }
 
-        String fileName = UUID.randomUUID() + extension;
-        Path targetLocation = this.uploadDir.resolve(fileName).normalize();
+        String key = "produtos/" + UUID.randomUUID() + extension;
 
-        // Prevenir path traversal
-        if (!targetLocation.startsWith(this.uploadDir)) {
-            throw new BusinessException("Caminho de arquivo inválido");
-        }
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .build();
 
-        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-        // devolve só o nome; quem monta a URL é o controller
-        return fileName;
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
     }
 }

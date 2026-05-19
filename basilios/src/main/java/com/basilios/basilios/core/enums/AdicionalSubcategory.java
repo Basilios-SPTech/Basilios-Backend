@@ -9,15 +9,11 @@ import lombok.Getter;
 @Getter
 public enum AdicionalSubcategory {
 
-    QUEIJO("Queijo"),
     PROTEINA("Proteína"),
-    BACON("Bacon"),
-    OVO("Ovo"),
+    QUEIJO("Queijo"),
     MOLHO("Molho"),
     VEGETAL("Vegetal"),
-    ACOMPANHAMENTO("Acompanhamento"),
     BEBIDA("Bebida"),
-    PAO("Pao"),
     OUTRO("Outro");
 
     private final String displayName;

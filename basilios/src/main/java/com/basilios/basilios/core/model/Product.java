@@ -15,7 +15,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 @Entity
@@ -62,12 +61,6 @@ public class Product {
     @Builder.Default
     @ToString.Exclude
     private List<Promotion> promotions = new ArrayList<>();
-
-    // Relacionamento Many-to-Many com Ingredient (através de IngredientProduct)
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @ToString.Exclude
-    private List<IngredientProduct> productIngredients = new ArrayList<>();
 
     // Adicionais disponíveis para este produto
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -179,53 +172,6 @@ public class Product {
                 .orElse(null);
     }
 
-    /**
-     * Adiciona um ingrediente ao produto
-     */
-    public void addIngredient(Ingredient ingredient, Integer quantity, String measurementUnit) {
-        IngredientProduct ip = new IngredientProduct();
-        ip.setProduct(this);
-        ip.setIngredient(ingredient);
-        ip.setQuantity(quantity);
-        ip.setMeasurementUnit(measurementUnit);
-        productIngredients.add(ip);
-        ingredient.getProductIngredients().add(ip);
-    }
-
-    /**
-     * Remove um ingrediente do produto
-     */
-    public void removeIngredient(Ingredient ingredient) {
-        if (ingredient == null) return;
-
-        Iterator<IngredientProduct> it = productIngredients.iterator();
-        while (it.hasNext()) {
-            IngredientProduct ip = it.next();
-            if (ip.getIngredient() != null && ip.getIngredient().equals(ingredient)) {
-                // remove dos dois lados e zera referências da entidade de junção
-                it.remove();
-                ingredient.getProductIngredients().remove(ip);
-                ip.setProduct(null);
-                ip.setIngredient(null);
-            }
-        }
-    }
-
-    /**
-     * Remove todos os ingredientes
-     */
-    public void clearIngredients() {
-        for (IngredientProduct ip : new ArrayList<>(productIngredients)) {
-            Ingredient ingredient = ip.getIngredient();
-            if (ingredient != null) {
-                ingredient.getProductIngredients().remove(ip);
-            }
-            ip.setProduct(null);
-            ip.setIngredient(null);
-        }
-        productIngredients.clear();
-    }
-
     public void setIsPaused(Boolean isPaused) {
         this.isPaused = isPaused;
     }
@@ -238,7 +184,6 @@ public class Product {
                 ", description='" + description + '\'' +
                 ", price=" + price +
                 ", isPaused=" + isPaused +
-                ", ingredientsCount=" + (productIngredients != null ? productIngredients.size() : 0) +
                 ", promotionsCount=" + (promotions != null ? promotions.size() : 0) +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +

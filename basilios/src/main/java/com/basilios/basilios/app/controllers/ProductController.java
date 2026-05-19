@@ -1,7 +1,5 @@
 package com.basilios.basilios.app.controllers;
 
-import com.basilios.basilios.app.dto.product.IngredientRequestDTO;
-import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
 import com.basilios.basilios.app.dto.product.ProductPriceUpdateDTO;
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
@@ -94,35 +92,6 @@ public class ProductController {
             @PathVariable Long id,
             @Valid @RequestBody ProductPriceUpdateDTO priceDTO) {
         ProductResponseDTO dto = productService.updatePrice(id, priceDTO.getNewPrice());
-        return ResponseEntity.ok(dto);
-    }
-
-    // ========== Ingredientes ==========
-    @PreAuthorize("hasRole('FUNCIONARIO')")
-    @GetMapping("/{id}/ingredients")
-    @Operation(summary = "Listar ingredientes", description = "Lista ingredientes de um produto")
-    public ResponseEntity<Page<IngredientResponseDTO>> getIngredients(
-            @PathVariable Long id,
-            @PageableDefault(size = 10) Pageable pageable) {
-        Page<IngredientResponseDTO> list = productService.getProductIngredients(id, pageable);
-        return ResponseEntity.ok(list);
-    }
-    @PreAuthorize("hasRole('FUNCIONARIO')")
-    @PostMapping("/{id}/ingredients")
-    @Operation(summary = "Adicionar ingrediente", description = "Adiciona ingrediente ao produto")
-    public ResponseEntity<ProductResponseDTO> addIngredient(
-            @PathVariable Long id,
-            @Valid @RequestBody IngredientRequestDTO ingredientDTO) {
-        ProductResponseDTO dto = productService.addIngredient(id, ingredientDTO.getName(), ingredientDTO.getQty(), ingredientDTO.getUnit());
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-    }
-    @PreAuthorize("hasRole('FUNCIONARIO')")
-    @DeleteMapping("/{id}/ingredients/{ingredientId}")
-    @Operation(summary = "Remover ingrediente", description = "Remove ingrediente do produto")
-    public ResponseEntity<ProductResponseDTO> removeIngredient(
-            @PathVariable Long id,
-            @PathVariable Long ingredientId) {
-        ProductResponseDTO dto = productService.removeIngredient(id, ingredientId);
         return ResponseEntity.ok(dto);
     }
 }

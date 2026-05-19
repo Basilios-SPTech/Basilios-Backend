@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ProductSearchDTO {
     private String query;
-    private List<String> searchFields; // nome, descricao, ingredientes
+    private List<String> searchFields; // nome, descricao
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private List<String> categories;

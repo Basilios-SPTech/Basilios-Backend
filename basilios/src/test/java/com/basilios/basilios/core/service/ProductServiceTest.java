@@ -34,12 +34,6 @@ class ProductServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private IngredientRepository ingredientRepository;
-
-    @Mock
-    private IngredientProductRepository ingredientProductRepository;
-
-    @Mock
     private ProductOrderRepository productOrderRepository;
 
     @Mock
@@ -74,7 +68,6 @@ class ProductServiceTest {
     void pauseProduct_DevePausarProdutoComSucesso() {
         // Arrange
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         // Simular que o produto foi pausado
         Product produtoPausado = Product.builder()
@@ -137,7 +130,6 @@ class ProductServiceTest {
         // Arrange
         Product produtoSpy = spy(product);
         when(productRepository.findById(1L)).thenReturn(Optional.of(produtoSpy));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
         when(productRepository.save(any(Product.class))).thenReturn(produtoSpy);
 
         // Act
@@ -153,7 +145,6 @@ class ProductServiceTest {
     void pauseProduct_DevePersistirProdutoPausado() {
         // Arrange
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         Product produtoPausado = Product.builder()
                 .id(1L)
@@ -180,7 +171,6 @@ class ProductServiceTest {
     void pauseProduct_DeveRetornarDTOComInformacoesCorretas() {
         // Arrange
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         Product produtoPausado = Product.builder()
                 .id(1L)
@@ -226,7 +216,6 @@ class ProductServiceTest {
     @DisplayName("Deve retornar produto quando ID existe")
     void getProductById_DeveRetornarProdutoQuandoIdExiste() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         ProductResponseDTO result = productService.getProductById(1L);
 
@@ -276,7 +265,6 @@ class ProductServiceTest {
     void activateProduct_DeveAtivarProdutoPausadoComSucesso() {
         product.pause();
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         Product produtoAtivo = Product.builder()
                 .id(1L).name("Pizza Margherita").isPaused(false)
@@ -304,7 +292,6 @@ class ProductServiceTest {
     @DisplayName("Deve atualizar preço com sucesso")
     void updatePrice_DeveAtualizarPrecoComSucesso() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         Product produtoAtualizado = Product.builder()
                 .id(1L).name("Pizza Margherita").isPaused(false)
@@ -382,7 +369,6 @@ class ProductServiceTest {
 
         when(productRepository.existsByNameIgnoreCase("Novo Burger")).thenReturn(false);
         when(productRepository.save(any(Product.class))).thenReturn(product);
-        when(ingredientProductRepository.findByProduct(any(Product.class))).thenReturn(new ArrayList<>());
 
         ProductResponseDTO result = productService.createProduct(dto);
 
