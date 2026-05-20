@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.controllers;
 
+import com.basilios.basilios.app.dto.upload.FileUploadResponseDTO;
 import com.basilios.basilios.infra.storage.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,8 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/upload")
@@ -22,8 +21,8 @@ public class FileUploadController {
     @PostMapping("/image")
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @Operation(summary = "Upload de imagem de produto")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String fileUrl = fileStorageService.storeFile(file);
-        return ResponseEntity.ok(fileUrl);
+    public ResponseEntity<FileUploadResponseDTO> uploadImage(@RequestParam("file") MultipartFile file) {
+        FileUploadResponseDTO uploadedFile = fileStorageService.storeFile(file);
+        return ResponseEntity.ok(uploadedFile);
     }
 }
