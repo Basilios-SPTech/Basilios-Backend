@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.dto.product;
 
+import com.basilios.basilios.core.enums.AdicionalSubcategory;
 import com.basilios.basilios.core.enums.ProductCategory;
 import com.basilios.basilios.core.enums.ProductSubcategory;
 import jakarta.validation.constraints.*;
@@ -9,12 +10,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * DTO unificado para criação e atualização de produtos
- * Usado em POST /products e PUT /products/{id}
+ * Usado em POST /products e PATCH /products/{id}
  */
 @Data
 @Builder
@@ -39,11 +39,11 @@ public class ProductRequestDTO {
 
     private ProductSubcategory subcategory; // Opcional
 
-    @Builder.Default
-    private List<String> tags = new ArrayList<>(); // ["ARTESANAL", "PICANTE", "VEGANO"]
-
     @NotNull(message = "Preço é obrigatório")
     @DecimalMin(value = "0.01", message = "Preço deve ser maior que zero")
     @Digits(integer = 8, fraction = 2, message = "Preço inválido")
     private BigDecimal price;
+
+    // Se informado, sincroniza os vínculos da tabela adicional_product por subcategoria.
+    private List<AdicionalSubcategory> adicionalSubcategories;
 }

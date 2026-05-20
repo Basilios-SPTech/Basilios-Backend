@@ -14,23 +14,22 @@ public class AdicionalSubcategoryConverter implements AttributeConverter<Adicion
     @Override
     public AdicionalSubcategory convertToEntityAttribute(String dbData) {
         if (dbData == null || dbData.trim().isEmpty()) {
-            return AdicionalSubcategory.OUTRO;
+            return AdicionalSubcategory.ACOMPANHAMENTO;
         }
 
-        String value = dbData.trim();
+        String value = dbData.trim().toUpperCase();
 
-        // Mapear valores legados removidos do enum
+        // Mapeia valores legados para manter compatibilidade com dados antigos.
         return switch (value) {
             case "BACON", "OVO" -> AdicionalSubcategory.PROTEINA;
-            case "ACOMPANHAMENTO", "PAO" -> AdicionalSubcategory.OUTRO;
+            case "OUTRO" -> AdicionalSubcategory.ACOMPANHAMENTO;
             default -> {
                 try {
                     yield AdicionalSubcategory.valueOf(value);
                 } catch (IllegalArgumentException ex) {
-                    yield AdicionalSubcategory.OUTRO;
+                    yield AdicionalSubcategory.ACOMPANHAMENTO;
                 }
             }
         };
     }
 }
-

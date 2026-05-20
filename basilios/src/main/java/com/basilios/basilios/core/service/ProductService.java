@@ -26,6 +26,7 @@ public class ProductService {
     private final ProductOrderRepository productOrderRepository;
     private final ProductComboRepository productComboRepository;
     private final PromotionRepository promotionRepository;
+    private final AdicionalRepository adicionalRepository;
     private final AdicionalProductRepository adicionalProductRepository;
 
     // ========== CRUD BÁSICO ==========
@@ -57,12 +58,12 @@ public class ProductService {
                 .imageUrl(dto.getImageUrl())
                 .category(dto.getCategory())
                 .subcategory(dto.getSubcategory())
-                .tags(dto.getTags() != null ? dto.getTags() : new ArrayList<>())
                 .price(dto.getPrice())
                 .isPaused(false)
                 .build();
 
         product = productRepository.save(product);
+        syncAdicionaisBySubcategories(product, dto.getAdicionalSubcategories());
 
         return convertToResponseDTO(product);
     }
@@ -127,10 +128,10 @@ public class ProductService {
         product.setImageUrl(dto.getImageUrl());
         product.setCategory(dto.getCategory());
         product.setSubcategory(dto.getSubcategory());
-        product.setTags(dto.getTags() != null ? dto.getTags() : new ArrayList<>());
         product.setPrice(dto.getPrice());
 
         product = productRepository.save(product);
+        syncAdicionaisBySubcategories(product, dto.getAdicionalSubcategories());
         return convertToResponseDTO(product);
     }
 
@@ -576,5 +577,67 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductResponseDTO convertEntityToDTO(Product product) {
         return convertToResponseDTO(product);
+    }
+
+    /**
+     * Sincroniza os vinculos de adicionais para o produto com base nas subcategorias enviadas.
+     *
+     * Regra:
+     * - null: nao altera vinculos atuais (compatibilidade com clientes antigos)
+     * - lista vazia: remove todos os vinculos do produto
+     * - lista com valores: vincula todos os adicionais ativos dessas subcategorias
+     */
+    private void syncAdicionaisBySubcategories(Product product, List<com.basilios.basilios.core.enums.AdicionalSubcategory> subcategories) {
+        if (subcategories == null) {
+            return;
+        }
+
+        if (subcategories.isEmpty()) {
+            adicionalProductRepository.deleteByProductId(product.getId());
+            return;
+        }
+
+        List<com.basilios.basilios.core.enums.AdicionalSubcategory> uniqueSubcategories = subcategories.stream()
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (uniqueSubcategories.isEmpty()) {
+            adicionalProductRepository.deleteByProductId(product.getId());
+            return;
+        }
+
+        List<Adicional> adicionaisPermitidos = adicionalRepository
+                .findByDeletedAtIsNullAndAvailableTrueAndSubcategoryIn(uniqueSubcategories);
+
+        Set<Long> targetAdicionalIds = adicionaisPermitidos.stream()
+                .map(Adicional::getId)
+                .collect(Collectors.toSet());
+
+        List<AdicionalProduct> atuais = adicionalProductRepository.findByProductId(product.getId());
+
+        List<AdicionalProduct> paraRemover = atuais.stream()
+                .filter(link -> !targetAdicionalIds.contains(link.getAdicional().getId()))
+                .toList();
+
+        if (!paraRemover.isEmpty()) {
+            adicionalProductRepository.deleteAll(paraRemover);
+        }
+
+        Set<Long> idsAtuais = atuais.stream()
+                .map(link -> link.getAdicional().getId())
+                .collect(Collectors.toSet());
+
+        List<AdicionalProduct> paraAdicionar = adicionaisPermitidos.stream()
+                .filter(adicional -> !idsAtuais.contains(adicional.getId()))
+                .map(adicional -> AdicionalProduct.builder()
+                        .product(product)
+                        .adicional(adicional)
+                        .build())
+                .toList();
+
+        if (!paraAdicionar.isEmpty()) {
+            adicionalProductRepository.saveAll(paraAdicionar);
+        }
     }
 }

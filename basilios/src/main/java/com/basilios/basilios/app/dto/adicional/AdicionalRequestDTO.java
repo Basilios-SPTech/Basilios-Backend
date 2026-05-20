@@ -22,6 +22,7 @@ public class AdicionalRequestDTO {
     @Size(max = 500, message = "Descrição deve ter no máximo 500 caracteres")
     private String description;
 
+    @NotNull(message = "Subcategoria do adicional é obrigatória")
     private AdicionalSubcategory subcategory;
 
     @NotNull(message = "Preço é obrigatório")

@@ -7,7 +7,10 @@ import com.basilios.basilios.core.exception.DuplicateProductException;
 import com.basilios.basilios.core.exception.InvalidPriceException;
 import com.basilios.basilios.core.exception.ProductNotFoundException;
 import com.basilios.basilios.core.model.Product;
+import com.basilios.basilios.core.enums.AdicionalSubcategory;
 import com.basilios.basilios.core.enums.ProductCategory;
+import com.basilios.basilios.core.model.Adicional;
+import com.basilios.basilios.core.model.AdicionalProduct;
 import com.basilios.basilios.infra.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +44,12 @@ class ProductServiceTest {
 
     @Mock
     private PromotionRepository promotionRepository;
+
+    @Mock
+    private AdicionalRepository adicionalRepository;
+
+    @Mock
+    private AdicionalProductRepository adicionalProductRepository;
 
     @InjectMocks
     private ProductService productService;
@@ -392,5 +401,37 @@ class ProductServiceTest {
                 () -> productService.createProduct(dto));
 
         verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve vincular adicionais de subcategorias selecionadas ao criar produto")
+    void createProduct_DeveVincularAdicionaisPorSubcategoria() {
+        ProductRequestDTO dto = ProductRequestDTO.builder()
+                .name("Novo Burger")
+                .description("Descricao do burger muito boa aqui")
+                .price(new BigDecimal("35.00"))
+                .category(ProductCategory.BURGER)
+                .adicionalSubcategories(List.of(AdicionalSubcategory.QUEIJO, AdicionalSubcategory.MOLHO))
+                .build();
+
+        Adicional queijo = Adicional.builder().id(10L).name("Cheddar").subcategory(AdicionalSubcategory.QUEIJO).build();
+        Adicional molho = Adicional.builder().id(11L).name("Maionese").subcategory(AdicionalSubcategory.MOLHO).build();
+
+        when(productRepository.existsByNameIgnoreCase("Novo Burger")).thenReturn(false);
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(adicionalRepository.findByDeletedAtIsNullAndAvailableTrueAndSubcategoryIn(anyList()))
+                .thenReturn(List.of(queijo, molho));
+        when(adicionalProductRepository.findByProductId(1L)).thenReturn(List.of());
+
+        ProductResponseDTO result = productService.createProduct(dto);
+
+        assertNotNull(result);
+        verify(adicionalProductRepository).saveAll(argThat((List<AdicionalProduct> list) -> {
+            if (list.size() != 2) {
+                return false;
+            }
+            return list.stream().map(AdicionalProduct::getAdicional).map(Adicional::getId).toList()
+                    .containsAll(List.of(10L, 11L));
+        }));
     }
 }

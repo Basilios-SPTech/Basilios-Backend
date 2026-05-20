@@ -365,15 +365,15 @@ INSERT IGNORE INTO adicionais (id, name, description, price, available, subcateg
 (6, 'Extra Tomate',       'Rodelas de tomate extra',                  1.00, true, 'VEGETAL',        NOW(), NOW()),
 (7, 'Extra Maionese',     'Maior quantidade de maionese da casa',     1.00, true, 'MOLHO',          NOW(), NOW()),
 (8, 'Hamburguer Extra',   'Disco de hamburguer picanha adicional',    8.00, true, 'PROTEINA',       NOW(), NOW()),
-(9, 'Extra Batata Frita', 'Porcao pequena de batata frita adicional', 6.00, true, 'OUTRO',          NOW(), NOW()),
+(9, 'Extra Batata Frita', 'Porcao pequena de batata frita adicional', 6.00, true, 'ACOMPANHAMENTO', NOW(), NOW()),
 (10, 'Refri Lata Classic', 'Bebida gaseificada 350ml',                6.00, true, 'BEBIDA',         NOW(), NOW()),
 (11, 'Refri Lata Zero',    'Bebida sem acucar 350ml',                 6.00, true, 'BEBIDA',         NOW(), NOW()),
 (12, 'Suco Tropical',      'Suco natural 300ml',                      7.00, true, 'BEBIDA',         NOW(), NOW()),
 (13, 'Cha Gelado',         'Cha gelado 300ml',                        5.00, true, 'BEBIDA',         NOW(), NOW()),
-(14, 'Pao Brioche',        'Tipo de pao brioche',                     0.00, true, 'OUTRO',          NOW(), NOW()),
-(15, 'Pao Australiano',    'Tipo de pao australiano',                 0.00, true, 'OUTRO',          NOW(), NOW()),
-(16, 'Pao Integral',       'Tipo de pao integral',                    0.00, true, 'OUTRO',          NOW(), NOW()),
-(17, 'Pao Tradicional',    'Tipo de pao tradicional',                 0.00, true, 'OUTRO',          NOW(), NOW());
+(14, 'Pao Brioche',        'Tipo de pao brioche',                     0.00, true, 'PAO',            NOW(), NOW()),
+(15, 'Pao Australiano',    'Tipo de pao australiano',                 0.00, true, 'PAO',            NOW(), NOW()),
+(16, 'Pao Integral',       'Tipo de pao integral',                    0.00, true, 'PAO',            NOW(), NOW()),
+(17, 'Pao Tradicional',    'Tipo de pao tradicional',                 0.00, true, 'PAO',            NOW(), NOW());
 -- ===========================================
 -- ADICIONAIS POR PRODUTO (adicionais disponíveis para hamburguer - Glicério, id=1)
 -- ===========================================

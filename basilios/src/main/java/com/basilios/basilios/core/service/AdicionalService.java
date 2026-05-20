@@ -32,14 +32,14 @@ public class AdicionalService {
             throw new BusinessException("Já existe um adicional com o nome '" + dto.getName() + "'");
         }
 
-        AdicionalSubcategory safeSubcategory = dto.getSubcategory() != null
-                ? dto.getSubcategory()
-                : AdicionalSubcategory.OUTRO;
+        if (dto.getSubcategory() == null) {
+            throw new BusinessException("Subcategoria do adicional e obrigatoria");
+        }
 
         Adicional adicional = Adicional.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
-                .subcategory(safeSubcategory)
+                .subcategory(dto.getSubcategory())
                 .price(dto.getPrice())
                 .available(true)
                 .build();
@@ -80,8 +80,8 @@ public class AdicionalService {
         if (dto.getSubcategory() != null) {
             adicional.setSubcategory(dto.getSubcategory());
         } else if (adicional.getSubcategory() == null) {
-            // Default to a valid value if legacy data is missing
-            adicional.setSubcategory(AdicionalSubcategory.OUTRO);
+            // Corrige dados legados sem subcategoria para uma categoria valida.
+            adicional.setSubcategory(AdicionalSubcategory.ACOMPANHAMENTO);
         }
 
         if (dto.getPrice() != null) {

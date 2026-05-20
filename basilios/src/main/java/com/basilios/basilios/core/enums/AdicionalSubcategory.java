@@ -3,18 +3,18 @@ package com.basilios.basilios.core.enums;
 import lombok.Getter;
 
 /**
- * Classifica o que o adicional É, independentemente de qual produto pertence.
- * A associação adicional ↔ produto é controlada pela tabela adicional_product.
+ * Classifica o que o adicional e, independentemente de qual produto pertence.
+ * A associacao adicional <-> produto e controlada pela tabela adicional_product.
  */
 @Getter
 public enum AdicionalSubcategory {
 
     PROTEINA("Proteína"),
-    QUEIJO("Queijo"),
     MOLHO("Molho"),
     VEGETAL("Vegetal"),
     BEBIDA("Bebida"),
-    OUTRO("Outro");
+    ACOMPANHAMENTO("Acompanhamento"),
+    PAO("Pão");
 
     private final String displayName;
 

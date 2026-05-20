@@ -12,4 +12,6 @@ public interface AdicionalProductRepository extends JpaRepository<AdicionalProdu
     List<AdicionalProduct> findByProductId(Long productId);
 
     boolean existsByProductIdAndAdicionalId(Long productId, Long adicionalId);
+
+    void deleteByProductId(Long productId);
 }
