@@ -2,6 +2,7 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
 import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
+import com.basilios.basilios.app.dto.user.UsuarioRequestPatch;
 import com.basilios.basilios.app.mapper.UsuarioMapper;
 import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.exception.BusinessException;
@@ -16,8 +17,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -174,21 +178,29 @@ public class UsuarioService {
      * Não permite alterar CPF e data de nascimento
      */
     @Transactional
-    public UsuarioProfileResponse updateUsuarioPatch(Long id, UsuarioProfileResponse dto) {
+    public UsuarioProfileResponse updateUsuarioPatch(Long id, UsuarioRequestPatch dto) {
         Usuario usuario = findById(id);
 
-        // Validar email único (se mudou)
-        if (!usuario.getEmail().equals(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new BusinessException("Email já cadastrado");
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            String novoEmail = dto.getEmail().trim();
+            if (!usuario.getEmail().equalsIgnoreCase(novoEmail) && usuarioRepository.existsByEmail(novoEmail)) {
+                throw new BusinessException("Email já cadastrado");
+            }
+            usuario.setEmail(novoEmail);
         }
-        // Validar nomeUsuario único (se mudou)
-        if (!usuario.getNomeUsuario().equals(dto.getNomeUsuario()) && usuarioRepository.existsByNomeUsuario(dto.getNomeUsuario())) {
-            throw new BusinessException("Nome de usuário já existe");
+
+        if (dto.getNomeUsuario() != null && !dto.getNomeUsuario().isBlank()) {
+            String novoNome = dto.getNomeUsuario().trim();
+            if (!usuario.getNomeUsuario().equalsIgnoreCase(novoNome) && usuarioRepository.existsByNomeUsuario(novoNome)) {
+                throw new BusinessException("Nome de usuário já existe");
+            }
+            usuario.setNomeUsuario(novoNome);
         }
-        // Atualizar apenas campos permitidos
-        usuario.setNomeUsuario(dto.getNomeUsuario());
-        usuario.setEmail(dto.getEmail());
-        usuario.setTelefone(dto.getTelefone());
+
+        if (dto.getTelefone() != null && !dto.getTelefone().isBlank()) {
+            usuario.setTelefone(dto.getTelefone().trim());
+        }
+
         usuarioRepository.save(usuario);
         return UsuarioMapper.toProfileResponse(usuario);
     }
@@ -228,5 +240,37 @@ public class UsuarioService {
     public boolean isFuncionario(Long usuarioId) {
         Usuario usuario = findById(usuarioId);
         return usuario.hasRole(RoleEnum.ROLE_FUNCIONARIO);
+    }
+
+
+    @Transactional
+    public UsuarioProfileResponse updateRole(Long id, Set<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            throw new IllegalArgumentException("Informe ao menos uma role");
+        }
+
+        Usuario usuario = findById(id);
+
+        List<RoleEnum> novasRoles = roles.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .map(String::toUpperCase)
+            .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                .map(RoleEnum::valueOf)
+            .distinct()
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        usuario.setRoles(novasRoles);
+
+        Usuario salvo = usuarioRepository.save(usuario);
+        return UsuarioMapper.toProfileResponse(salvo);
+    }
+
+    @Transactional
+    public UsuarioProfileResponse updateRole(Long id, String role) {
+        if (role == null || role.isBlank()) {
+            throw new IllegalArgumentException("Role inválida");
+        }
+        return updateRole(id, Set.of(role));
     }
 }

@@ -56,4 +56,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Busca usuários por role
      */
     List<Usuario> findByRolesContaining(RoleEnum role);
+
+    Optional<Object> findByIdAndDeletedAtIsNull(Long id);
 }

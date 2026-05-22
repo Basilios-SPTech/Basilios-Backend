@@ -4,6 +4,8 @@ import com.basilios.basilios.app.dto.user.UsuarioListarDTO;
 import com.basilios.basilios.app.dto.user.UsuarioProfileResponse;
 import com.basilios.basilios.core.model.Usuario;
 
+import java.util.stream.Collectors;
+
 public class UsuarioMapper {
 
     public static UsuarioProfileResponse toProfileResponse(Usuario usuario) {
@@ -15,6 +17,7 @@ public class UsuarioMapper {
                 .telefone(usuario.getTelefone())
                 .dataNascimento(usuario.getDataNascimento())
                 .createdAt(usuario.getCreatedAt())
+                .roles(usuario.getRoles().stream().map(Enum::name).collect(Collectors.toList()))
                 .build();
     }
 
@@ -26,6 +29,7 @@ public class UsuarioMapper {
         dto.setCpf(mascaraCpf(usuario.getCpf()));
         dto.setTelefone(usuario.getTelefone());
         dto.setDataNascimento(usuario.getDataNascimento());
+        dto.setRoles(usuario.getRoles().stream().map(Enum::name).collect(Collectors.toList()));
         return dto;
     }
 
