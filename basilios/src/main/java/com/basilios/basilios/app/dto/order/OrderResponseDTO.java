@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.dto.order;
 
+import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +32,7 @@ public class OrderResponseDTO {
     private BigDecimal total;
 
     private StatusPedidoEnum status;
+    private StatusPagamentoEnum statusPagamento;
 
     private AddressResponse address;
 
@@ -43,6 +45,7 @@ public class OrderResponseDTO {
 
     private String cancellationReason;
     private String observations;
+    private LocalDateTime paidAt;
 
     private Integer totalItems;
     private BigDecimal totalPromotionDiscount;

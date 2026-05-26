@@ -2,8 +2,8 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
-import com.basilios.basilios.app.dto.order.OrderUpdateDTO;
 import com.basilios.basilios.app.mapper.OrderMapper;
+import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
@@ -24,8 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -173,30 +171,12 @@ public class OrderService {
     /**
      * Lista pedidos do usuário autenticado (ordenados por data decrescente)
      */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getUserOrders() {
-        Usuario usuario = usuarioService.getCurrentUsuario();
-        List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
-        return orderMapper.toResponseList(orders);
-    }
 
     @Transactional(readOnly = true)
     public Page<OrderResponseDTO> getUserOrders(Pageable pageable) {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Page<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario, pageable);
         return orders.map(orderMapper::toResponse);
-    }
-
-    /**
-     * Lista pedidos do usuário autenticado de forma simplificada (sem items)
-     */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getUserOrdersSimple() {
-        Usuario usuario = usuarioService.getCurrentUsuario();
-        List<Order> orders = orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario);
-        return orders.stream()
-                .map(orderMapper::toSimpleResponse)
-                .toList();
     }
 
     /**
@@ -234,21 +214,8 @@ public class OrderService {
     }
 
     /**
-     * Busca pedidos de um usuário específico (admin)
-     */
-    @Transactional(readOnly = true)
-    public List<Order> findByUsuario(Usuario usuario) {
-        return orderRepository.findByUsuario(usuario);
-    }
-
-    /**
      * Busca pedidos por status
      */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status) {
-        List<Order> orders = orderRepository.findByStatus(status);
-        return orderMapper.toResponseList(orders);
-    }
 
     @Transactional(readOnly = true)
     public Page<OrderResponseDTO> getOrdersByStatus(StatusPedidoEnum status, Pageable pageable) {
@@ -266,184 +233,15 @@ public class OrderService {
     }
 
     /**
-     * Compatibilidade: retorna todos (sem paginação)
-     */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getAllOrders() {
-        List<Order> orders = orderRepository.findAll();
-        return orderMapper.toResponseList(orders);
-    }
-
-    /**
-     * Atualiza parcialmente um pedido com as regras básicas (status e alguns campos)
-     */
-    @Transactional
-    public OrderResponseDTO updateOrder(Long id, OrderUpdateDTO dto) {
-        Order order = findById(id);
-
-        // Atualizar status se informado
-        if (dto.getStatus() != null) {
-            validateStatusTransition(order, dto.getStatus());
-            switch (dto.getStatus()) {
-                case CONFIRMADO -> order.confirmar();
-                case PREPARANDO -> order.iniciarPreparo();
-                case DESPACHADO -> order.despachar();
-                case ENTREGUE -> order.entregar();
-                case CANCELADO -> order.cancelar(dto.getMotivo() != null ? dto.getMotivo() : "Cancelado via API");
-                default -> throw new BusinessException("Transição de status não suportada via endpoint genérico");
-            }
-        }
-
-        // Atualizar campos simples
-        if (dto.getDeliveryFee() != null) {
-            order.setDeliveryFee(dto.getDeliveryFee());
-        }
-        if (dto.getDiscount() != null) {
-            order.setDiscount(dto.getDiscount());
-        }
-        if (dto.getObservations() != null) {
-            order.setObservations(dto.getObservations());
-        }
-        if (dto.getAddressId() != null) {
-            Address address = addressRepository.findById(dto.getAddressId())
-                    .orElseThrow(() -> new NotFoundException("Endereço não encontrado: " + dto.getAddressId()));
-            order.setAddressEntrega(address);
-        }
-
-        order = orderRepository.save(order);
-        return orderMapper.toResponse(order);
-    }
-
-    /**
      * Soft delete (marca deletedAt via JPA @SQLDelete ou via serviço se for necessário)
      */
     @Transactional
     public void softDelete(Long id) {
         Order order = findById(id);
-        // usar repository.delete para acionar @SQLDelete
         orderRepository.delete(order);
     }
 
-    /**
-     * Busca pedidos pendentes (para cozinha)
-     */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getPendingOrders() {
-        List<Order> orders = orderRepository.findPendingOrders();
-        return orderMapper.toResponseList(orders);
-    }
-
-    /**
-     * Busca pedidos em andamento (confirmado, preparando, despachado)
-     */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getActiveOrders() {
-        List<Order> orders = orderRepository.findActiveOrders();
-        return orderMapper.toResponseList(orders);
-    }
-
-    /**
-     * Busca pedidos recentes de um usuário (últimos 30 dias)
-     */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDTO> getUserRecentOrders() {
-        Usuario usuario = usuarioService.getCurrentUsuario();
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        List<Order> orders = orderRepository.findByUsuarioAndCreatedAtAfter(usuario, thirtyDaysAgo);
-        return orderMapper.toResponseList(orders);
-    }
-
     // ========== MUDANÇA DE STATUS ==========
-
-    /**
-     * Confirma pedido (PENDENTE → CONFIRMADO)
-     */
-    @Transactional
-    public OrderResponseDTO confirmarPedido(Long id) {
-        Order order = findById(id);
-        StatusPedidoEnum oldStatus = order.getStatus();
-        validateStatusTransition(order, StatusPedidoEnum.CONFIRMADO);
-        order.confirmar();
-        order = orderRepository.save(order);
-        
-        // Publica evento após commit
-        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CONFIRMADO);
-        log.info("Pedido {} confirmado", order.getCodigoPedido());
-        
-        return orderMapper.toResponse(order);
-    }
-
-    /**
-     * Inicia preparo do pedido (CONFIRMADO → PREPARANDO)
-     */
-    @Transactional
-    public OrderResponseDTO iniciarPreparo(Long id) {
-        Order order = findById(id);
-        StatusPedidoEnum oldStatus = order.getStatus();
-        validateStatusTransition(order, StatusPedidoEnum.PREPARANDO);
-        order.iniciarPreparo();
-        order = orderRepository.save(order);
-        
-        // Publica evento após commit
-        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.PREPARANDO);
-        log.info("Pedido {} em preparo", order.getCodigoPedido());
-        
-        return orderMapper.toResponse(order);
-    }
-
-    /**
-     * Despacha pedido para entrega (PREPARANDO → DESPACHADO)
-     */
-    @Transactional
-    public OrderResponseDTO despacharPedido(Long id) {
-        Order order = findById(id);
-        StatusPedidoEnum oldStatus = order.getStatus();
-        validateStatusTransition(order, StatusPedidoEnum.DESPACHADO);
-        order.despachar();
-        order = orderRepository.save(order);
-        
-        // Publica evento após commit
-        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.DESPACHADO);
-        log.info("Pedido {} despachado para entrega", order.getCodigoPedido());
-        
-        return orderMapper.toResponse(order);
-    }
-
-    /**
-     * Marca pedido como entregue (DESPACHADO → ENTREGUE)
-     */
-    @Transactional
-    public OrderResponseDTO entregarPedido(Long id) {
-        Order order = findById(id);
-        StatusPedidoEnum oldStatus = order.getStatus();
-        validateStatusTransition(order, StatusPedidoEnum.ENTREGUE);
-        order.entregar();
-        order = orderRepository.save(order);
-        
-        // Publica evento após commit
-        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.ENTREGUE);
-        log.info("Pedido {} entregue com sucesso", order.getCodigoPedido());
-        
-        return orderMapper.toResponse(order);
-    }
-
-    /**
-     * Cancela pedido (qualquer status → CANCELADO, exceto ENTREGUE)
-     */
-    @Transactional
-    public OrderResponseDTO cancelarPedido(Long id, String motivo) {
-        Order order = findById(id);
-        StatusPedidoEnum oldStatus = order.getStatus();
-        validateStatusTransition(order, StatusPedidoEnum.CANCELADO);
-        order.cancelar(motivo);
-        order = orderRepository.save(order);
-        
-        // Publica evento após commit (com motivo do cancelamento)
-        publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CANCELADO, motivo);
-        log.info("Pedido {} cancelado. Motivo: {}", order.getCodigoPedido(), motivo);
-        
-        return orderMapper.toResponse(order);
-    }
 
     /**
      * Cancela pedido do usuário autenticado
@@ -454,12 +252,10 @@ public class OrderService {
         Usuario usuario = usuarioService.getCurrentUsuario();
         Order order = findById(id);
 
-        // Verificar se pedido pertence ao usuário
         if (!order.getUsuario().getId().equals(usuario.getId())) {
             throw new BusinessException("Pedido não pertence ao usuário");
         }
 
-        // Cliente só pode cancelar pedidos PENDENTE ou CONFIRMADO
         if (!order.isPendente() && !order.isConfirmado()) {
             throw new BusinessException("Não é possível cancelar pedido neste status: " + order.getStatus());
         }
@@ -467,82 +263,18 @@ public class OrderService {
         StatusPedidoEnum oldStatus = order.getStatus();
         order.cancelar(motivo);
         order = orderRepository.save(order);
-        
-        // Publica evento após commit (com motivo do cancelamento)
+
         publishStatusChangedEvent(order, oldStatus, StatusPedidoEnum.CANCELADO, motivo);
         log.info("Pedido {} cancelado pelo usuário. Motivo: {}", order.getCodigoPedido(), motivo);
-        
+
         return orderMapper.toResponse(order);
     }
 
-    /**
-     * Valida se é possível transicionar para o novo status
-     */
-    private void validateStatusTransition(Order order, StatusPedidoEnum newStatus) {
-        if (!order.getStatus().podeTransicionarPara(newStatus)) {
-            throw new BusinessException(
-                    String.format("Não é possível mudar status de %s para %s",
-                            order.getStatus(), newStatus)
-            );
-        }
-    }
-
-    // ========== ESTATÍSTICAS ==========
+    // ========== MUDANÇA DE STATUS ==========
 
     /**
-     * Conta total de pedidos do usuário
-     */
-    @Transactional(readOnly = true)
-    public long countUserOrders() {
-        Usuario usuario = usuarioService.getCurrentUsuario();
-        return orderRepository.countByUsuario(usuario);
-    }
-
-    /**
-     * Conta pedidos do usuário por status
-     */
-    @Transactional(readOnly = true)
-    public long countUserOrdersByStatus(StatusPedidoEnum status) {
-        Usuario usuario = usuarioService.getCurrentUsuario();
-        return orderRepository.countByUsuarioAndStatus(usuario, status);
-    }
-
-    /**
-     * Calcula valor total gasto pelo usuário
-     */
-    @Transactional(readOnly = true)
-    public BigDecimal calculateUserTotalSpent() {
-        Usuario usuario = usuarioService.getCurrentUsuario();
-        List<Order> orders = orderRepository.findByUsuarioAndStatus(usuario, StatusPedidoEnum.ENTREGUE);
-
-        return orders.stream()
-                .map(Order::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    /**
-     * Verifica se pedido pode ser cancelado pelo usuário
-     */
-    @Transactional(readOnly = true)
-    public boolean canUserCancelOrder(Long orderId) {
-        try {
-            Usuario usuario = usuarioService.getCurrentUsuario();
-            Order order = findById(orderId);
-
-            if (!order.getUsuario().getId().equals(usuario.getId())) {
-                return false;
-            }
-
-            return order.isPendente() || order.isConfirmado();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    // ========== EVENTOS ==========
-
-    /**
-     * Atualiza o status de um pedido de forma genérica, validando a transição
+     * Atualiza o status de um pedido de forma genérica, validando a transição.
+     * Toda lógica de transição é delegada ao enum (validação) e à entity (execução).
      */
     @Transactional
     public OrderResponseDTO updateOrderStatus(Long id, String statusStr) {
@@ -553,14 +285,51 @@ public class OrderService {
             throw new BusinessException("Status inválido: " + statusStr);
         }
 
-        return switch (novoStatus) {
-            case CONFIRMADO -> confirmarPedido(id);
-            case PREPARANDO -> iniciarPreparo(id);
-            case DESPACHADO -> despacharPedido(id);
-            case ENTREGUE -> entregarPedido(id);
-            case CANCELADO -> cancelarPedido(id, "Cancelado via API");
+        Order order = findById(id);
+        StatusPedidoEnum oldStatus = order.getStatus();
+
+        if (!oldStatus.podeTransicionarPara(novoStatus)) {
+            throw new BusinessException(
+                    String.format("Não é possível mudar status de %s para %s", oldStatus, novoStatus));
+        }
+
+        switch (novoStatus) {
+            case CONFIRMADO -> order.confirmar();
+            case PREPARANDO -> order.iniciarPreparo();
+            case DESPACHADO -> order.despachar();
+            case ENTREGUE -> order.entregar();
+            case CANCELADO -> order.cancelar("Cancelado via API");
             default -> throw new BusinessException("Transição de status não suportada: " + novoStatus);
-        };
+        }
+
+        order = orderRepository.save(order);
+        publishStatusChangedEvent(order, oldStatus, novoStatus);
+        log.info("Pedido {} atualizado: {} → {}", order.getCodigoPedido(), oldStatus, novoStatus);
+
+        return orderMapper.toResponse(order);
+    }
+
+    // ========== PAGAMENTO ==========
+
+    /**
+     * Atualiza o status de pagamento de um pedido.
+     * Toda lógica de transição está no enum + entity.
+     */
+    @Transactional
+    public OrderResponseDTO updatePaymentStatus(Long id, String statusStr) {
+        StatusPagamentoEnum novoStatus;
+        try {
+            novoStatus = StatusPagamentoEnum.fromValor(statusStr);
+        } catch (Exception e) {
+            throw new BusinessException("Status de pagamento inválido: " + statusStr);
+        }
+
+        Order order = findById(id);
+        order.atualizarPagamento(novoStatus);
+        order = orderRepository.save(order);
+
+        log.info("Pagamento do pedido {} atualizado para: {}", order.getCodigoPedido(), novoStatus);
+        return orderMapper.toResponse(order);
     }
 
     // ========== EVENTOS ==========

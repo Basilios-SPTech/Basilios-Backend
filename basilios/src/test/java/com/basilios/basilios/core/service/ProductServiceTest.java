@@ -411,10 +411,10 @@ class ProductServiceTest {
                 .description("Descricao do burger muito boa aqui")
                 .price(new BigDecimal("35.00"))
                 .category(ProductCategory.BURGER)
-                .adicionalSubcategories(List.of(AdicionalSubcategory.QUEIJO, AdicionalSubcategory.MOLHO))
+                .adicionalSubcategories(List.of(AdicionalSubcategory.PROTEINA, AdicionalSubcategory.MOLHO))
                 .build();
 
-        Adicional queijo = Adicional.builder().id(10L).name("Cheddar").subcategory(AdicionalSubcategory.QUEIJO).build();
+        Adicional queijo = Adicional.builder().id(10L).name("Cheddar").subcategory(AdicionalSubcategory.PROTEINA).build();
         Adicional molho = Adicional.builder().id(11L).name("Maionese").subcategory(AdicionalSubcategory.MOLHO).build();
 
         when(productRepository.existsByNameIgnoreCase("Novo Burger")).thenReturn(false);

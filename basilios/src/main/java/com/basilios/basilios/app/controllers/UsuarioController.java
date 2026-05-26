@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -34,7 +35,7 @@ public class UsuarioController {
     @GetMapping
     @PreAuthorize("hasRole('FUNCIONARIO')")
     public ResponseEntity<Page<UsuarioListarDTO>> getAllUsers(
-            @PageableDefault(size = 10) Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10) Pageable pageable) {
         Page<UsuarioListarDTO> usuarios = usuarioService.findAll(pageable)
             .map(UsuarioMapper::toListarDTO);
         return ResponseEntity.ok(usuarios);

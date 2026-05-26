@@ -1,5 +1,6 @@
 package com.basilios.basilios.core.model;
 
+import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -60,6 +61,14 @@ public class Order {
     @Builder.Default
     @Column(nullable = false)
     private StatusPedidoEnum status = StatusPedidoEnum.PENDENTE;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "status_pagamento", nullable = false)
+    private StatusPagamentoEnum statusPagamento = StatusPagamentoEnum.PENDENTE;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -190,6 +199,25 @@ public class Order {
     public boolean isPendente() {
         return status == StatusPedidoEnum.PENDENTE;
     }
+
+    // Métodos de pagamento
+
+    /**
+     * Atualiza status de pagamento validando a transição permitida
+     */
+    public void atualizarPagamento(StatusPagamentoEnum novoStatus) {
+        if (!this.statusPagamento.podeTransicionarPara(novoStatus)) {
+            throw new IllegalStateException(
+                    String.format("Não é possível mudar pagamento de %s para %s",
+                            this.statusPagamento, novoStatus));
+        }
+        this.statusPagamento = novoStatus;
+        if (novoStatus == StatusPagamentoEnum.PAGO) {
+            this.paidAt = LocalDateTime.now();
+        }
+    }
+
+    // Métodos de status do pedido
 
     public boolean isConfirmado() {
         return status == StatusPedidoEnum.CONFIRMADO;

@@ -40,6 +40,7 @@ public class OrderMapper {
                 .cancelledAt(order.getCancelledAt())
                 .cancellationReason(order.getCancellationReason())
                 .observations(order.getObservations())
+                .paidAt(order.getPaidAt())
                 .totalItems(order.getTotalItems())
                 .totalPromotionDiscount(order.getTotalPromotionDiscount())
                 .build();
@@ -76,6 +77,7 @@ public class OrderMapper {
                 .discount(order.getDiscount())
                 .total(order.getTotal())
                 .status(order.getStatus())
+                .statusPagamento(order.getStatusPagamento())
                 .address(toAddressResponse(order.getAddressEntrega()))
                 .createdAt(order.getCreatedAt())
                 .totalItems(order.getTotalItems())
