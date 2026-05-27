@@ -6,15 +6,43 @@
 -- ===========================================
 -- LOJA
 -- -- ===========================================
-INSERT IGNORE INTO stores (name, address, latitude, longitude, phone, opening_hours)
+INSERT IGNORE INTO stores (name, address, latitude, longitude, phone, delivery_fee)
 VALUES (
-  'Basilios Burger & Açaí',
-  'R. Basílio da Cunha, 454 — Vila Deodoro, São Paulo, SP, 01544-001',
+  'Basilios Burger & Acaí',
+  'R. Basilio da Cunha, 454 - Vila Deodoro, Sao Paulo, SP, 01544-001',
   -23.57694,
   -46.62444,
   '(11) 4801-4864',
-  '12:00–00:00 (Seg–Sáb); 18:00–00:00 (Dom)'
+  5.00
 );
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'MONDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'TUESDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'WEDNESDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'THURSDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'FRIDAY', false, '09:00:00', '22:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'SATURDAY', false, '10:00:00', '22:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'SUNDAY', true, NULL, NULL FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
 
 
 -- -- ===========================================
@@ -270,48 +298,48 @@ VALUES (
 
 -- ORDERS DE 11 A 30 DE NOVEMBRO DE 2025 (IDs fixos iniciando em 1)
 INSERT IGNORE INTO orders (
-    id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id
+    id, cancellation_reason, cancelled_at, codigo_pedido, confirmed_at, created_at, delivered_at, delivery_fee, discount, dispatched_at, observations, preparing_at, status, subtotal, total, endereco_entrega_id, usuario_id, status_pagamento, paid_at
 ) VALUES
 -- 1) 2025-11-11 ENTREGUE - total 59.80
-(1, NULL, NULL, 'PED-0001', '2025-12-01 19:31:00', '2025-12-01 19:30:00', '2025-12-01 20:30:00', 7.00, 0.00, '2025-12-11 20:00:00', 'Pedido automático dia 11/11', '2025-11-11 19:32:00', 'ENTREGUE', 52.80, 59.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(1, NULL, NULL, 'PED-0001', '2025-12-01 19:31:00', '2025-12-01 19:30:00', '2025-12-01 20:30:00', 7.00, 0.00, '2025-12-11 20:00:00', 'Pedido automático dia 11/11', '2025-11-11 19:32:00', 'ENTREGUE', 52.80, 59.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-01 19:30:00'),
 -- 2) 2025-11-12 ENTREGUE - total 89.70
-(2, NULL, NULL, 'PED-0002', '2025-12-02 20:10:00', '2025-12-02 20:09:00', '2025-12-02 20:50:00', 7.00, 0.00, '2025-12-02 20:10:00', 'Pedido automático dia 12/11', '2025-12-02 20:10:00', 'ENTREGUE', 82.70, 89.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(2, NULL, NULL, 'PED-0002', '2025-12-02 20:10:00', '2025-12-02 20:09:00', '2025-12-02 20:50:00', 7.00, 0.00, '2025-12-02 20:10:00', 'Pedido automático dia 12/11', '2025-12-02 20:10:00', 'ENTREGUE', 82.70, 89.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-02 20:09:00'),
 -- 3) 2025-11-13 CANCELADO - total 0.00
-(3, 'Pedido cancelado', '2025-12-03 18:05:00', 'PED-0003', NULL, '2025-12-03 18:03:00', NULL, 0.00, 0.00, NULL, 'Pedido cancelado dia 03/12', NULL, 'CANCELADO', 0.00, 0.00, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(3, 'Pedido cancelado', '2025-12-03 18:05:00', 'PED-0003', NULL, '2025-12-03 18:03:00', NULL, 0.00, 0.00, NULL, 'Pedido cancelado dia 03/12', NULL, 'CANCELADO', 0.00, 0.00, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'FALHOU', NULL),
 -- 4) 2025-11-14 ENTREGUE - total 45.80
-(4, NULL, NULL, 'PED-0004', '2025-12-04 21:15:00', '2025-12-04 21:13:00', '2025-12-04 21:50:00', 7.00, 0.00, '2025-12-04 21:30:00', 'Pedido automático dia 14/11', '2025-12-04 21:16:00', 'ENTREGUE', 38.80, 45.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(4, NULL, NULL, 'PED-0004', '2025-12-04 21:15:00', '2025-12-04 21:13:00', '2025-12-04 21:50:00', 7.00, 0.00, '2025-12-04 21:30:00', 'Pedido automático dia 14/11', '2025-12-04 21:16:00', 'ENTREGUE', 38.80, 45.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-04 21:13:00'),
 -- 5) 2025-11-15 ENTREGUE - total 120.60
-(5, NULL, NULL, 'PED-0005', '2025-12-05 19:45:00', '2025-12-05 19:43:00', '2025-12-05 20:45:00', 7.00, 0.00, '2025-12-05 20:05:00', 'Pedido automático dia 15/11', '2025-11-15 19:46:00', 'ENTREGUE', 113.60, 120.60, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(5, NULL, NULL, 'PED-0005', '2025-12-05 19:45:00', '2025-12-05 19:43:00', '2025-12-05 20:45:00', 7.00, 0.00, '2025-12-05 20:05:00', 'Pedido automático dia 15/11', '2025-11-15 19:46:00', 'ENTREGUE', 113.60, 120.60, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-05 19:43:00'),
 -- 6) 2025-11-16 ENTREGUE - total 32.90
-(6, NULL, NULL, 'PED-0006', '2025-12-06 18:30:50', '2025-12-06 18:30:00', '2025-12-06 20:30:00', 7.00, 0.00, '2025-12-06 20:31:00', 'Pedido automático dia 16/11', '2025-12-06 18:34:00', 'ENTREGUE', 25.90, 32.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(6, NULL, NULL, 'PED-0006', '2025-12-06 18:30:50', '2025-12-06 18:30:00', '2025-12-06 20:30:00', 7.00, 0.00, '2025-12-06 20:31:00', 'Pedido automático dia 16/11', '2025-12-06 18:34:00', 'ENTREGUE', 25.90, 32.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-06 18:30:00'),
 -- 7) 2025-11-17 ENTREGUE - total 65.80
-(7, NULL, NULL, 'PED-0007', '2025-12-07 20:30:00', '2025-12-07 20:00:00', '2025-12-07 21:00:00', 7.00, 0.00, '2025-12-07 20:50:00', 'Pedido automático dia 17/11', '2025-12-07 20:32:00', 'ENTREGUE', 58.80, 65.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(7, NULL, NULL, 'PED-0007', '2025-12-07 20:30:00', '2025-12-07 20:00:00', '2025-12-07 21:00:00', 7.00, 0.00, '2025-12-07 20:50:00', 'Pedido automático dia 17/11', '2025-12-07 20:32:00', 'ENTREGUE', 58.80, 65.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-07 20:00:00'),
 -- 8) 2025-11-18 ENTREGUE - total 25.90
-(8, NULL, NULL, 'PED-0008', '2025-12-08 19:00:00', '2025-12-08 18:50:00', '2025-12-08 20:00:00', 7.00, 0.00, '2025-12-08 19:30:00', 'Pedido automático dia 18/11', '2025-12-08 19:01:00', 'ENTREGUE', 18.90, 25.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(8, NULL, NULL, 'PED-0008', '2025-12-08 19:00:00', '2025-12-08 18:50:00', '2025-12-08 20:00:00', 7.00, 0.00, '2025-12-08 19:30:00', 'Pedido automático dia 18/11', '2025-12-08 19:01:00', 'ENTREGUE', 18.90, 25.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-08 18:50:00'),
 -- 9) 2025-11-19 ENTREGUE - total 78.70
-(9, NULL, NULL, 'PED-0009', '2025-12-09 20:45:00', '2025-12-09 20:35:00', '2025-12-09 22:45:00', 7.00, 0.00, '2025-12-09 21:45:00', 'Pedido automático dia 19/11', '2025-12-09 20:46:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(9, NULL, NULL, 'PED-0009', '2025-12-09 20:45:00', '2025-12-09 20:35:00', '2025-12-09 22:45:00', 7.00, 0.00, '2025-12-09 21:45:00', 'Pedido automático dia 19/11', '2025-12-09 20:46:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-09 20:35:00'),
 -- 10) 2025-11-20 ENTREGUE - total 42.80
-(10, NULL, NULL, 'PED-0010', '2025-12-10 18:51:00', '2025-12-10 18:50:00', '2025-12-10 19:50:00', 7.00, 0.00, '2025-12-10 19:30:00', 'Pedido automático dia 20/11', '2025-12-10 18:52:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(10, NULL, NULL, 'PED-0010', '2025-12-10 18:51:00', '2025-12-10 18:50:00', '2025-12-10 19:50:00', 7.00, 0.00, '2025-12-10 19:30:00', 'Pedido automático dia 20/11', '2025-12-10 18:52:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-10 18:50:00'),
 -- 11) 2025-11-21 ENTREGUE - total 59.80
-(11, NULL, NULL, 'PED-0011', '2025-12-11 19:30:20', '2025-12-11 19:30:00', '2025-12-11 20:30:00', 7.00, 0.00, '2025-12-11 19:32:00', 'Pedido automático dia 21/11', '2025-12-11 20:10:00', 'ENTREGUE', 52.80, 59.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(11, NULL, NULL, 'PED-0011', '2025-12-11 19:30:20', '2025-12-11 19:30:00', '2025-12-11 20:30:00', 7.00, 0.00, '2025-12-11 19:32:00', 'Pedido automático dia 21/11', '2025-12-11 20:10:00', 'ENTREGUE', 52.80, 59.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-11 19:30:00'),
 -- 12) 2025-11-22 ENTREGUE - total 89.70
-(12, NULL, NULL, 'PED-0012', '2025-12-12 20:11:00', '2025-12-12 20:10:00', '2025-12-12 20:40:00', 7.00, 0.00, '2025-12-12 20:30:00', 'Pedido automático dia 22/11', '2025-12-12 20:12:00', 'ENTREGUE', 82.70, 89.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(12, NULL, NULL, 'PED-0012', '2025-12-12 20:11:00', '2025-12-12 20:10:00', '2025-12-12 20:40:00', 7.00, 0.00, '2025-12-12 20:30:00', 'Pedido automático dia 22/11', '2025-12-12 20:12:00', 'ENTREGUE', 82.70, 89.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-12 20:10:00'),
 -- 13) 2025-11-23 ENTREGUE - total 45.80
-(13, NULL, NULL, 'PED-0013', '2025-12-13 21:16:00', '2025-12-13 21:15:00', '2025-12-13 22:15:00', 7.00, 0.00, '2025-12-13 22:00:00', 'Pedido automático dia 23/11', '2025-11-23 21:17:00', 'ENTREGUE', 38.80, 45.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(13, NULL, NULL, 'PED-0013', '2025-12-13 21:16:00', '2025-12-13 21:15:00', '2025-12-13 22:15:00', 7.00, 0.00, '2025-12-13 22:00:00', 'Pedido automático dia 23/11', '2025-11-23 21:17:00', 'ENTREGUE', 38.80, 45.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-13 21:15:00'),
 -- 14) 2025-11-24 CANCELADO - total 0.00
-(14, 'Pedido cancelado', '2025-12-14 18:05:00', 'PED-0014', NULL, '2025-12-24 18:02:00', NULL, 0.00, 0.00, NULL, 'Pedido cancelado dia 24/11', NULL, 'CANCELADO', 0.00, 0.00, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(14, 'Pedido cancelado', '2025-12-14 18:05:00', 'PED-0014', NULL, '2025-12-24 18:02:00', NULL, 0.00, 0.00, NULL, 'Pedido cancelado dia 24/11', NULL, 'CANCELADO', 0.00, 0.00, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'FALHOU', NULL),
 -- 15) 2025-11-25 ENTREGUE - total 120.60
-(15, NULL, NULL, 'PED-0015', '2025-12-15 19:46:00', '2025-12-15 19:45:00', '2025-12-15 20:45:00', 7.00, 0.00, '2025-12-15 20:15:00', 'Pedido automático dia 25/11', '2025-12-15 19:49:00', 'ENTREGUE', 113.60, 120.60, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(15, NULL, NULL, 'PED-0015', '2025-12-15 19:46:00', '2025-12-15 19:45:00', '2025-12-15 20:45:00', 7.00, 0.00, '2025-12-15 20:15:00', 'Pedido automático dia 25/11', '2025-12-15 19:49:00', 'ENTREGUE', 113.60, 120.60, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-15 19:45:00'),
 -- 16) 2025-11-26 ENTREGUE - total 32.90
-(16, NULL, NULL, 'PED-0016', '2025-12-16 18:32:00', '2025-12-16 18:30:00', '2025-12-16 19:30:00', 7.00, 0.00, '2025-12-16 19:00:00', 'Pedido automático dia 26/11', '2025-12-16 18:33:00', 'ENTREGUE', 25.90, 32.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(16, NULL, NULL, 'PED-0016', '2025-12-16 18:32:00', '2025-12-16 18:30:00', '2025-12-16 19:30:00', 7.00, 0.00, '2025-12-16 19:00:00', 'Pedido automático dia 26/11', '2025-12-16 18:33:00', 'ENTREGUE', 25.90, 32.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-16 18:30:00'),
 -- 17) 2025-11-27 ENTREGUE - total 65.80
-(17, NULL, NULL, 'PED-0017', '2025-12-17 20:01:00', '2025-12-17 20:00:00', '2025-12-17 20:59:00', 7.00, 0.00, '2025-12-17 20:30:00', 'Pedido automático dia 27/11', '2025-12-17 20:04:00', 'ENTREGUE', 58.80, 65.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(17, NULL, NULL, 'PED-0017', '2025-12-17 20:01:00', '2025-12-17 20:00:00', '2025-12-17 20:59:00', 7.00, 0.00, '2025-12-17 20:30:00', 'Pedido automático dia 27/11', '2025-12-17 20:04:00', 'ENTREGUE', 58.80, 65.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-17 20:00:00'),
 -- 18) 2025-11-28 ENTREGUE - total 25.90
-(18, NULL, NULL, 'PED-0018', '2025-12-18 19:01:00', '2025-12-18 19:00:00', '2025-12-18 20:00:00', 7.00, 0.00, '2025-12-18 19:50:00', 'Pedido automático dia 28/11', '2025-12-18 19:05:00', 'ENTREGUE', 18.90, 25.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(18, NULL, NULL, 'PED-0018', '2025-12-18 19:01:00', '2025-12-18 19:00:00', '2025-12-18 20:00:00', 7.00, 0.00, '2025-12-18 19:50:00', 'Pedido automático dia 28/11', '2025-12-18 19:05:00', 'ENTREGUE', 18.90, 25.90, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-18 19:00:00'),
 -- 19) 2025-11-29 ENTREGUE - total 78.70
-(19, NULL, NULL, 'PED-0019', '2025-12-19 20:46:00', '2025-12-19 20:45:00', '2025-12-19 22:45:00', 7.00, 0.00, '2025-12-19 21:45:00', 'Pedido automático dia 29/11', '2025-12-19 20:47:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1)),
+(19, NULL, NULL, 'PED-0019', '2025-12-19 20:46:00', '2025-12-19 20:45:00', '2025-12-19 22:45:00', 7.00, 0.00, '2025-12-19 21:45:00', 'Pedido automático dia 29/11', '2025-12-19 20:47:00', 'ENTREGUE', 71.70, 78.70, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-19 20:45:00'),
 -- 20) 2025-11-30 ENTREGUE - total 42.80
-(20, NULL, NULL, 'PED-0020', '2025-12-20 18:51:00', '2025-12-20 18:50:00', '2025-12-20 19:50:00', 7.00, 0.00, '2025-12-20 19:30:00', 'Pedido automático dia 30/11', '2025-12-20 18:54:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1));
+(20, NULL, NULL, 'PED-0020', '2025-12-20 18:51:00', '2025-12-20 18:50:00', '2025-12-20 19:50:00', 7.00, 0.00, '2025-12-20 19:30:00', 'Pedido automático dia 30/11', '2025-12-20 18:54:00', 'ENTREGUE', 35.80, 42.80, (SELECT id_endereco FROM endereco WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1) LIMIT 1), (SELECT id FROM usuario WHERE email = 'admin@basilios.com' LIMIT 1), 'PAGO', '2025-12-20 18:50:00');
 
 -- ===========================================
 -- PROMOTION_PRODUCT ASSOCIATIONS
@@ -352,3 +380,31 @@ INSERT INTO product_order (created_at, had_promotion, observations, original_pri
 -- ORDER 12 - 2025-12-12
 INSERT INTO product_order (created_at, had_promotion, observations, original_price, product_name, promotion_name,  quantity, subtotal, unit_price, order_id, product_id) VALUES
 ('2025-12-12 20:11:00', 0, 'Item gerado via seed', 42.00, 'Combo X-Salada', NULL,   2, 84.00, 42.00, 12, 31);
+
+-- ===========================================
+-- ADICIONAIS
+-- ===========================================
+INSERT IGNORE INTO adicionais (id, name, description, price, available, subcategory, created_at, updated_at) VALUES
+(1, 'Extra Bacon',        'Fatias extras de bacon crocante',          3.00, true, 'PROTEINA',       NOW(), NOW()),
+(2, 'Extra Queijo Cheddar', 'Cheddar fatiado adicional',              3.00, true, 'QUEIJO',         NOW(), NOW()),
+(3, 'Extra Catupiry',     'Porcao extra de Catupiry cremoso',         3.00, true, 'QUEIJO',         NOW(), NOW()),
+(4, 'Extra Ovo',          'Ovo estrelado adicional',                  2.00, true, 'PROTEINA',       NOW(), NOW()),
+(5, 'Extra Alface',       'Folhas frescas de alface extra',           1.00, true, 'VEGETAL',        NOW(), NOW()),
+(6, 'Extra Tomate',       'Rodelas de tomate extra',                  1.00, true, 'VEGETAL',        NOW(), NOW()),
+(7, 'Extra Maionese',     'Maior quantidade de maionese da casa',     1.00, true, 'MOLHO',          NOW(), NOW()),
+(8, 'Hamburguer Extra',   'Disco de hamburguer picanha adicional',    8.00, true, 'PROTEINA',       NOW(), NOW()),
+(9, 'Extra Batata Frita', 'Porcao pequena de batata frita adicional', 6.00, true, 'ACOMPANHAMENTO', NOW(), NOW()),
+(10, 'Refri Lata Classic', 'Bebida gaseificada 350ml',                6.00, true, 'BEBIDA',         NOW(), NOW()),
+(11, 'Refri Lata Zero',    'Bebida sem acucar 350ml',                 6.00, true, 'BEBIDA',         NOW(), NOW()),
+(12, 'Suco Tropical',      'Suco natural 300ml',                      7.00, true, 'BEBIDA',         NOW(), NOW()),
+(13, 'Cha Gelado',         'Cha gelado 300ml',                        5.00, true, 'BEBIDA',         NOW(), NOW()),
+(14, 'Pao Brioche',        'Tipo de pao brioche',                     0.00, true, 'PAO',            NOW(), NOW()),
+(15, 'Pao Australiano',    'Tipo de pao australiano',                 0.00, true, 'PAO',            NOW(), NOW()),
+(16, 'Pao Integral',       'Tipo de pao integral',                    0.00, true, 'PAO',            NOW(), NOW()),
+(17, 'Pao Tradicional',    'Tipo de pao tradicional',                 0.00, true, 'PAO',            NOW(), NOW());
+-- ===========================================
+-- ADICIONAIS POR PRODUTO (adicionais disponíveis para hamburguer - Glicério, id=1)
+-- ===========================================
+INSERT IGNORE INTO adicional_product (product_id, adicional_id) VALUES
+(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8),
+(1, 9), (1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 17);

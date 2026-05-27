@@ -1,11 +1,10 @@
 package com.basilios.basilios.app.controllers;
 
-import com.basilios.basilios.app.dto.product.IngredientRequestDTO;
-import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
 import com.basilios.basilios.app.dto.product.ProductPriceUpdateDTO;
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
 import com.basilios.basilios.app.dto.product.ProductStatusDTO;
+import com.basilios.basilios.app.dto.product.ProductAdicionalResponseDTO;
 import com.basilios.basilios.core.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -67,6 +68,13 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/adicionais")
+    @Operation(summary = "Listar adicionais do produto", description = "Lista adicionais permitidos para um produto")
+    public ResponseEntity<List<ProductAdicionalResponseDTO>> getProductAdicionais(@PathVariable Long id) {
+        List<ProductAdicionalResponseDTO> adicionais = productService.getProductAdicionais(id);
+        return ResponseEntity.ok(adicionais);
+    }
+
     // ========== Status e Preço ===========
     @PreAuthorize("hasRole('FUNCIONARIO')")
     @PatchMapping("/{id}/status")
@@ -84,35 +92,6 @@ public class ProductController {
             @PathVariable Long id,
             @Valid @RequestBody ProductPriceUpdateDTO priceDTO) {
         ProductResponseDTO dto = productService.updatePrice(id, priceDTO.getNewPrice());
-        return ResponseEntity.ok(dto);
-    }
-
-    // ========== Ingredientes ==========
-    @PreAuthorize("hasRole('FUNCIONARIO')")
-    @GetMapping("/{id}/ingredients")
-    @Operation(summary = "Listar ingredientes", description = "Lista ingredientes de um produto")
-    public ResponseEntity<Page<IngredientResponseDTO>> getIngredients(
-            @PathVariable Long id,
-            @PageableDefault(size = 10) Pageable pageable) {
-        Page<IngredientResponseDTO> list = productService.getProductIngredients(id, pageable);
-        return ResponseEntity.ok(list);
-    }
-    @PreAuthorize("hasRole('FUNCIONARIO')")
-    @PostMapping("/{id}/ingredients")
-    @Operation(summary = "Adicionar ingrediente", description = "Adiciona ingrediente ao produto")
-    public ResponseEntity<ProductResponseDTO> addIngredient(
-            @PathVariable Long id,
-            @Valid @RequestBody IngredientRequestDTO ingredientDTO) {
-        ProductResponseDTO dto = productService.addIngredient(id, ingredientDTO.getName(), ingredientDTO.getQty(), ingredientDTO.getUnit());
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-    }
-    @PreAuthorize("hasRole('FUNCIONARIO')")
-    @DeleteMapping("/{id}/ingredients/{ingredientId}")
-    @Operation(summary = "Remover ingrediente", description = "Remove ingrediente do produto")
-    public ResponseEntity<ProductResponseDTO> removeIngredient(
-            @PathVariable Long id,
-            @PathVariable Long ingredientId) {
-        ProductResponseDTO dto = productService.removeIngredient(id, ingredientId);
         return ResponseEntity.ok(dto);
     }
 }

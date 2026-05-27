@@ -2,7 +2,7 @@ package com.basilios.basilios.core.service;
 
 import com.basilios.basilios.app.dto.product.ProductRequestDTO;
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
-import com.basilios.basilios.app.dto.product.IngredientResponseDTO;
+import com.basilios.basilios.app.dto.product.ProductAdicionalResponseDTO;
 import com.basilios.basilios.core.exception.*;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.*;
@@ -23,16 +23,16 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final IngredientRepository ingredientRepository;
-    private final IngredientProductRepository ingredientProductRepository;
     private final ProductOrderRepository productOrderRepository;
     private final ProductComboRepository productComboRepository;
     private final PromotionRepository promotionRepository;
+    private final AdicionalRepository adicionalRepository;
+    private final AdicionalProductRepository adicionalProductRepository;
 
     // ========== CRUD BÁSICO ==========
 
     /**
-     * Cria novo produto com ingredientes
+     * Cria novo produtos
      */
     public ProductResponseDTO createProduct(ProductRequestDTO dto) {
         // Validar duplicação
@@ -58,17 +58,12 @@ public class ProductService {
                 .imageUrl(dto.getImageUrl())
                 .category(dto.getCategory())
                 .subcategory(dto.getSubcategory())
-                .tags(dto.getTags() != null ? dto.getTags() : new ArrayList<>())
                 .price(dto.getPrice())
                 .isPaused(false)
                 .build();
 
         product = productRepository.save(product);
-
-        // Adicionar ingredientes se fornecidos
-        if (dto.getIngredientes() != null && !dto.getIngredientes().isEmpty()) {
-            addIngredientsToProduct(product, dto.getIngredientes());
-        }
+        syncAdicionaisBySubcategories(product, dto.getAdicionalSubcategories());
 
         return convertToResponseDTO(product);
     }
@@ -133,18 +128,10 @@ public class ProductService {
         product.setImageUrl(dto.getImageUrl());
         product.setCategory(dto.getCategory());
         product.setSubcategory(dto.getSubcategory());
-        product.setTags(dto.getTags() != null ? dto.getTags() : new ArrayList<>());
         product.setPrice(dto.getPrice());
 
-        // Atualizar ingredientes
-        if (dto.getIngredientes() != null) {
-            removeAllIngredientsFromProduct(product);
-            if (!dto.getIngredientes().isEmpty()) {
-                addIngredientsToProduct(product, dto.getIngredientes());
-            }
-        }
-
         product = productRepository.save(product);
+        syncAdicionaisBySubcategories(product, dto.getAdicionalSubcategories());
         return convertToResponseDTO(product);
     }
 
@@ -228,87 +215,29 @@ public class ProductService {
         return convertToResponseDTO(product);
     }
 
-    // ========== GERENCIAMENTO DE INGREDIENTES ==========
+    // ========== HELPERS PRIVADOS ==========
 
     /**
-     * Adiciona ingrediente ao produto
-     */
-    public ProductResponseDTO addIngredient(Long productId, String name, Integer qty, String unit) {
-        Product product = findProductOrThrow(productId);
-
-        if (name == null || name.trim().isEmpty()) {
-            throw new BusinessException("Nome do ingrediente é obrigatório");
-        }
-
-        // Buscar ou criar ingrediente
-        Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(name.trim())
-                .orElseGet(() -> {
-                    Ingredient newIng = new Ingredient();
-                    newIng.setName(name.trim());
-                    return ingredientRepository.save(newIng);
-                });
-
-        // Verificar se já existe
-        if (ingredientProductRepository.existsByProductAndIngredient(product, ingredient)) {
-            throw new BusinessException("Ingrediente já adicionado ao produto");
-        }
-
-        // Criar relacionamento
-        IngredientProduct ip = new IngredientProduct();
-        ip.setProduct(product);
-        ip.setIngredient(ingredient);
-        ip.setQuantity(qty != null ? qty : 1);
-        ip.setMeasurementUnit(unit != null ? unit : "unidade");
-        ingredientProductRepository.save(ip);
-
-        return convertToResponseDTO(productRepository.findById(productId).get());
-    }
-
-    /**
-     * Remove ingrediente do produto
-     */
-    public ProductResponseDTO removeIngredient(Long productId, Long ingredientId) {
-        Product product = findProductOrThrow(productId);
-
-        Ingredient ingredient = ingredientRepository.findById(ingredientId)
-                .orElseThrow(() -> new NotFoundException("Ingrediente não encontrado: " + ingredientId));
-
-        IngredientProduct ip = ingredientProductRepository
-                .findByProductAndIngredient(product, ingredient)
-                .orElseThrow(() -> new BusinessException("Ingrediente não está associado ao produto"));
-
-        ingredientProductRepository.delete(ip);
-        return convertToResponseDTO(productRepository.findById(productId).get());
-    }
-
-    /**
-     * Lista ingredientes do produto
+     * Lista adicionais permitidos para o produto
      */
     @Transactional(readOnly = true)
-    public List<IngredientResponseDTO> getProductIngredients(Long productId) {
+    public List<ProductAdicionalResponseDTO> getProductAdicionais(Long productId) {
         Product product = findProductOrThrow(productId);
 
-        return ingredientProductRepository.findByProduct(product).stream()
-                .map(ip -> IngredientResponseDTO.builder()
-                        .id(ip.getIngredient().getId())
-                        .name(ip.getIngredient().getName())
-                        .quantity(ip.getQuantity())
-                        .unit(ip.getMeasurementUnit())
+        return adicionalProductRepository.findByProductId(product.getId()).stream()
+                .map(AdicionalProduct::getAdicional)
+                .filter(adicional -> adicional != null
+                        && adicional.getDeletedAt() == null
+                        && Boolean.TRUE.equals(adicional.getAvailable()))
+                .map(adicional -> ProductAdicionalResponseDTO.builder()
+                        .id(adicional.getId())
+                        .name(adicional.getName())
+                        .price(adicional.getPrice())
+                        .subcategory(adicional.getSubcategory() != null
+                                ? adicional.getSubcategory().getDisplayName()
+                                : null)
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public Page<IngredientResponseDTO> getProductIngredients(Long productId, Pageable pageable) {
-        Product product = findProductOrThrow(productId);
-
-        return ingredientProductRepository.findByProduct(product, pageable)
-                .map(ip -> IngredientResponseDTO.builder()
-                        .id(ip.getIngredient().getId())
-                        .name(ip.getIngredient().getName())
-                        .quantity(ip.getQuantity())
-                        .unit(ip.getMeasurementUnit())
-                        .build());
     }
 
     // ========== ESTATÍSTICAS GERAIS ==========
@@ -521,19 +450,6 @@ public class ProductService {
         );
     }
 
-    // ========== ANÁLISES DE INGREDIENTES ==========
-
-    /**
-     * Produtos sem ingredientes cadastrados
-     */
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getProductsWithoutIngredients() {
-        return productRepository.findAll().stream()
-                .filter(p -> ingredientProductRepository.findByProduct(p).isEmpty())
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
-    }
-
     // ========== VALIDAÇÕES ==========
 
     /**
@@ -611,53 +527,9 @@ public class ProductService {
     }
 
     /**
-     * Adiciona ingredientes à lista de um produto
-     */
-    private void addIngredientsToProduct(Product product, List<String> names) {
-        for (String name : names) {
-            if (name == null || name.trim().isEmpty()) continue;
-
-            Ingredient ing = ingredientRepository.findByNameIgnoreCase(name.trim())
-                    .orElseGet(() -> {
-                        Ingredient newIng = new Ingredient();
-                        newIng.setName(name.trim());
-                        return ingredientRepository.save(newIng);
-                    });
-
-            if (!ingredientProductRepository.existsByProductAndIngredient(product, ing)) {
-                IngredientProduct ip = new IngredientProduct();
-                ip.setProduct(product);
-                ip.setIngredient(ing);
-                ip.setQuantity(1);
-                ip.setMeasurementUnit("unidade");
-                ingredientProductRepository.save(ip);
-            }
-        }
-    }
-
-    /**
-     * Remove todos os ingredientes de um produto
-     */
-    private void removeAllIngredientsFromProduct(Product product) {
-        List<IngredientProduct> ips = ingredientProductRepository.findByProduct(product);
-        ingredientProductRepository.deleteAll(ips);
-    }
-
-    /**
      * Converte Product para ProductResponseDTO
      */
     private ProductResponseDTO convertToResponseDTO(Product product) {
-        // Buscar ingredientes
-        List<ProductResponseDTO.IngredientResponse> ingredients =
-                ingredientProductRepository.findByProduct(product).stream()
-                        .map(ip -> ProductResponseDTO.IngredientResponse.builder()
-                                .id(ip.getIngredient().getId())
-                                .name(ip.getIngredient().getName())
-                                .quantity(ip.getQuantity())
-                                .measurementUnit(ip.getMeasurementUnit())
-                                .build())
-                        .collect(Collectors.toList());
-
         // Buscar melhor promoção vigente
         Promotion promo = product.getBestCurrentPromotion();
         ProductResponseDTO.PromotionSummary promoSummary = null;
@@ -685,10 +557,6 @@ public class ProductService {
                 .subcategory(product.getSubcategory() != null
                         ? product.getSubcategory().getDisplayName()
                         : null)
-                .subcategoryCode(product.getSubcategory() != null
-                        ? product.getSubcategory().name()
-                        : null)
-                .ingredients(ingredients)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
                 .isOnPromotion(product.isOnPromotion())
@@ -709,5 +577,67 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductResponseDTO convertEntityToDTO(Product product) {
         return convertToResponseDTO(product);
+    }
+
+    /**
+     * Sincroniza os vinculos de adicionais para o produto com base nas subcategorias enviadas.
+     *
+     * Regra:
+     * - null: nao altera vinculos atuais (compatibilidade com clientes antigos)
+     * - lista vazia: remove todos os vinculos do produto
+     * - lista com valores: vincula todos os adicionais ativos dessas subcategorias
+     */
+    private void syncAdicionaisBySubcategories(Product product, List<com.basilios.basilios.core.enums.AdicionalSubcategory> subcategories) {
+        if (subcategories == null) {
+            return;
+        }
+
+        if (subcategories.isEmpty()) {
+            adicionalProductRepository.deleteByProductId(product.getId());
+            return;
+        }
+
+        List<com.basilios.basilios.core.enums.AdicionalSubcategory> uniqueSubcategories = subcategories.stream()
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (uniqueSubcategories.isEmpty()) {
+            adicionalProductRepository.deleteByProductId(product.getId());
+            return;
+        }
+
+        List<Adicional> adicionaisPermitidos = adicionalRepository
+                .findByDeletedAtIsNullAndAvailableTrueAndSubcategoryIn(uniqueSubcategories);
+
+        Set<Long> targetAdicionalIds = adicionaisPermitidos.stream()
+                .map(Adicional::getId)
+                .collect(Collectors.toSet());
+
+        List<AdicionalProduct> atuais = adicionalProductRepository.findByProductId(product.getId());
+
+        List<AdicionalProduct> paraRemover = atuais.stream()
+                .filter(link -> !targetAdicionalIds.contains(link.getAdicional().getId()))
+                .toList();
+
+        if (!paraRemover.isEmpty()) {
+            adicionalProductRepository.deleteAll(paraRemover);
+        }
+
+        Set<Long> idsAtuais = atuais.stream()
+                .map(link -> link.getAdicional().getId())
+                .collect(Collectors.toSet());
+
+        List<AdicionalProduct> paraAdicionar = adicionaisPermitidos.stream()
+                .filter(adicional -> !idsAtuais.contains(adicional.getId()))
+                .map(adicional -> AdicionalProduct.builder()
+                        .product(product)
+                        .adicional(adicional)
+                        .build())
+                .toList();
+
+        if (!paraAdicionar.isEmpty()) {
+            adicionalProductRepository.saveAll(paraAdicionar);
+        }
     }
 }

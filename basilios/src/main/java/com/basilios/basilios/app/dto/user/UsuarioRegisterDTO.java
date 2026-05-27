@@ -27,6 +27,7 @@ public class UsuarioRegisterDTO {
     private String email;
 
     @NotBlank(message = "Senha é obrigatória")
+    @Size(max = 128, message = "Senha deve ter no máximo 128 caracteres")
     private String password;
 
 

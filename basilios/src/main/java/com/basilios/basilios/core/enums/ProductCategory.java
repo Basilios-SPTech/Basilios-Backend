@@ -12,7 +12,15 @@ public enum ProductCategory {
     SIDE("Acompanhamento", "Batatas, onion rings, saladas"),
     DRINK("Bebida", "Refrigerantes, sucos, milkshakes, cervejas"),
     DESSERT("Sobremesa", "Açai"),
-    COMBO("Combo", "Combinações especiais com desconto");
+    COMBO("Combo", "Combinações especiais com desconto"),
+    COMBOS_INDIVIDUAIS("Combos Individuais", "Combos individuais"),
+    LANCHES_PREMIUM("Lanches Premium", "Lanches premium"),
+    BEIRUTES("Beirutes", "Linha de beirutes"),
+    HOT_DOG("Hot-dog", "Linha de hot-dog"),
+    VEGANOS("Veganos", "Linha vegana"),
+    PORCOES("Porções", "Porções e acompanhamentos"),
+    SOBREMESAS("Sobremesas", "Sobremesas"),
+    BEBIDAS("Bebidas", "Bebidas");
 
     private final String displayName;
     private final String description;
@@ -40,9 +48,16 @@ public enum ProductCategory {
         switch (s) {
             case "LANCHESHAMBURGUER": return BURGER;           // "Lanches / Hambúrguer"
             case "ACOMPANHAMENTOSIDE": return SIDE;             // "Acompanhamento / Side"
-            case "BEBIDAS": return DRINK;                       // "Bebidas"
-            case "SOBREMESA": return DESSERT;                   // "Sobremesa"
+            case "BEBIDAS": return BEBIDAS;                     // plural novo
+            case "SOBREMESA": return DESSERT;                   // singular legado
+            case "SOBREMESAS": return SOBREMESAS;               // plural novo
             case "COMBOPROMOCAO": return COMBO;                 // "Combo / Promoção"
+            case "COMBOSINDIVIDUAIS": return COMBOS_INDIVIDUAIS;
+            case "LANCHESPREMIUM": return LANCHES_PREMIUM;
+            case "BEIRUTES": return BEIRUTES;
+            case "HOTDOG": return HOT_DOG;
+            case "VEGANOS": return VEGANOS;
+            case "PORCOES": return PORCOES;
         }
         throw new IllegalArgumentException("Categoria inválida: " + raw);
     }

@@ -1,27 +1,38 @@
 # Relatório Final de Conformidade OWASP Top 10
-## Basilios Backend — Spring Boot 3.5.4 / Java 21
+## Basilios — Avaliação Completa (Backend + Microservice + Frontend + Infra)
 
-**Data:** 13 de março de 2026  
-**Projeto:** Basilios Hamburgueria — API REST  
-**Stack:** Spring Boot 3.5.4, Java 21, Spring Security, JWT (jjwt 0.11.5), MySQL, Maven  
+**Data:** 30 de abril de 2026 (atualizado)  
+**Projeto:** Basilios Hamburgueria — Ecossistema Completo  
+**Stack:** Spring Boot 3.5.4, Java 21, Spring Security, JWT (jjwt 0.11.5), MySQL, RabbitMQ, React 18/Vite, Docker Compose  
 ---
 
 ## Resumo Executivo
 
-| Categoria OWASP | Status | Nível de Conformidade |
-|---|---|---|
-| A01 — Broken Access Control | ✅ Implementado | 🟢 Alto |
-| A02 — Cryptographic Failures | ✅ Implementado | 🟢 Alto |
-| A03 — Injection | ✅ Implementado | 🟢 Alto |
-| A04 — Insecure Design | ✅ Implementado | 🟢 Alto |
-| A05 — Security Misconfiguration | ✅ Implementado | 🟡 Médio-Alto |
-| A06 — Vulnerable Components | ✅ Implementado | 🟡 Médio |
-| A07 — Auth Failures | ✅ Implementado | 🟢 Alto |
-| A08 — Data Integrity Failures | ✅ Implementado | 🟢 Alto |
-| A09 — Security Logging | ✅ Implementado | 🟡 Médio |
-| A10 — SSRF | ✅ Implementado | 🟢 Alto |
+| Categoria OWASP | Backend | Email-API | Frontend | Infra | Geral |
+|---|---|---|---|---|---|
+| A01 — Broken Access Control | 🟢 Alto | 🔴 Crítico | 🟡 Médio | 🟢 OK | 🟡 Médio |
+| A02 — Cryptographic Failures | 🟢 Alto | 🟢 Alto | 🟡 Médio | 🟡 Médio | 🟡 Médio-Alto |
+| A03 — Injection (XSS incluso) | 🟢 Alto | 🟢 Alto | 🟡 Médio | 🟢 OK | 🟢 Alto |
+| A04 — Insecure Design | 🟢 Alto | 🟢 Alto | 🟢 Alto | 🟢 Alto | 🟢 Alto |
+| A05 — Security Misconfiguration | 🟡 Médio | 🟡 Médio | 🟡 Médio | 🔴 Crítico | 🟡 Médio |
+| A06 — Vulnerable Components | 🟡 Médio | 🟡 Médio | 🟡 Médio | 🟡 Médio | 🟡 Médio |
+| A07 — Auth Failures | 🟢 Alto | N/A | 🟢 Alto | 🟢 OK | 🟢 Alto |
+| A08 — Data Integrity Failures | 🟢 Alto | 🟢 Alto | 🟢 Alto | 🟢 OK | 🟢 Alto |
+| A09 — Security Logging | 🟡 Médio | 🟡 Médio | 🔴 Ausente | 🔴 Ausente | 🟡 Médio-Baixo |
+| A10 — SSRF | 🟢 Alto | 🟢 Alto | 🟢 Alto | 🟢 OK | 🟢 Alto |
 
-**Conformidade Geral: ~85%** — O backend atende de forma sólida os requisitos do OWASP Top 10, com controles implementados em todas as 10 categorias.
+**Conformidade Geral: ~75%** — O Backend mantém boa postura, mas a análise expandida revela gaps críticos no Microservice (acesso sem autenticação), Infra (segredos hardcoded) e Frontend (token em localStorage).
+
+---
+
+## Componentes Avaliados
+
+| Componente | Repositório | Stack |
+|---|---|---|
+| Backend API | `Basilios-Backend/basilios` | Spring Boot 3.5.4, Java 21, JWT, MySQL |
+| Email Microservice | `-Basilios-Microservice/email-api` | Spring Boot 3.5.4, Java 21, RabbitMQ |
+| Frontend SPA | `Basilios---Projeto-de-PI-/basilios-auth-ui` | React 18, Vite, Axios, Tailwind |
+| Infraestrutura | `Basilios-Containers` | Docker Compose, MySQL 8.0, RabbitMQ 3 |
 
 ---
 
@@ -303,6 +314,7 @@ if (!ALLOWED_EXTENSIONS.contains(extension)) { throw new BusinessException("..."
 
 ## Cobertura de Testes de Segurança
 
+### Backend (Basilios-Backend)
 | Área | Testes | Status |
 |---|---|---|
 | Autenticação (registro/login) | `AuthServiceTest` | ✅ 4 testes |
@@ -314,59 +326,206 @@ if (!ALLOWED_EXTENSIONS.contains(extension)) { throw new BusinessException("..."
 | Serviço de produtos | `ProductServiceTest` | ✅ 7 testes |
 | Dashboard | `DashboardServiceTest` | ✅ 14 testes |
 | Endereços | `AddressServicePartialTest` | ✅ 6 testes |
-| **Total** | **78 testes** | **77 passando (98.7%)** |
+| **Total Backend** | **78 testes** | **77 passando (98.7%)** |
 
-> A única falha (`EmailServiceTest.shouldSendPasswordResetEmailSuccessfully`) é por divergência no subject do email, não é falha de segurança.
+### Email Microservice (-Basilios-Microservice)
+| Área | Testes | Status |
+|---|---|---|
+| Idempotência | `IdempotencyServiceTest` | ✅ Passando |
+| Consumer de pedidos | `OrderStatusConsumerTest` | ✅ Passando |
+| Consumer de reset | `PasswordResetConsumerTest` | ✅ Passando |
+| Context load | `EmailApiApplicationTests` | ✅ Passando |
 
----
-
-## Matriz de Conformidade — Visão Geral
-
-```
-OWASP Top 10 2021          Conformidade    Controles Ativos
-────────────────────────────────────────────────────────────
-A01  Broken Access Control    ██████████  90%   RBAC, @PreAuthorize, ownership checks
-A02  Cryptographic Failures   ██████████  95%   BCrypt, HMAC-SHA256, SecureRandom, HSTS
-A03  Injection                ██████████  95%   JPA parameterized, Bean Validation, path traversal
-A04  Insecure Design          █████████░  85%   DTOs, anti-enum, token único, event-driven
-A05  Security Misconfig       ████████░░  80%   CORS restritivo, headers, perfil produção
-A06  Vulnerable Components    ███████░░░  70%   Versões atuais, sem scan automatizado
-A07  Auth Failures            ██████████  90%   BCrypt, JWT c/ expiração, reset seguro
-A08  Data Integrity           █████████░  85%   Upload validation, JWT signed, @Transactional
-A09  Security Logging         ███████░░░  65%   Audit events, SLF4J, sem centralização
-A10  SSRF                     ██████████  95%   Sem HTTP client externo, sem redirect dinâmico
-────────────────────────────────────────────────────────────
-                     MÉDIA GERAL:  ~85%
-```
+### Frontend (basilios-auth-ui)
+| Área | Testes | Status |
+|---|---|---|
+| E2E (Cypress) | `cypress/e2e/` | ⚠️ Estrutura presente, cobertura não verificada |
 
 ---
 
-## Plano de Melhoria Contínua (Recomendações Futuras)
+## NOVAS DESCOBERTAS — Avaliação Expandida (Abril 2026)
 
-### Prioridade Alta
-1. **Externalizar credenciais SMTP** — Mover email/senha do `application.properties` para variáveis de ambiente
-2. **Ativar Rate Limiting** — O `RateLimitFilter` está preparado mas desativado; ativar com Bucket4j para brute force protection
-3. **Restringir Swagger em produção** — Condicionar ao perfil `dev`
+### 🔴 VULNERABILIDADES CRÍTICAS ENCONTRADAS
 
-### Prioridade Média
-4. **OWASP Dependency Check** — Adicionar plugin Maven para scan de CVEs no CI/CD
-5. **Migrations com Flyway/Liquibase** — Substituir `ddl-auto=update` por migrations versionadas
-6. **Centralização de logs** — Integrar com ELK Stack ou serviço cloud
+#### 1. Email-API — Endpoint sem Autenticação
+**OWASP A01 — Broken Access Control**
+```
+GET /api/notifications/failed   → PÚBLICO, SEM AUTH
+```
+O `FailedNotificationController` expõe notificações com dados de clientes (emails, nomes) sem nenhuma camada de autenticação. O microservice não possui Spring Security configurado.
 
-### Prioridade Baixa
-7. **CSP Header** — Adicionar `Content-Security-Policy` se houver frontend servido pelo backend
-8. **Refresh Token** — Implementar rotação de tokens para sessões longas
-9. **2FA** — Autenticação de dois fatores para FUNCIONARIOS
+**Impacto:** Qualquer pessoa com acesso à rede pode listar emails de clientes e detalhes de pedidos.  
+**Correção:** Adicionar Spring Security ao email-api ou restringir o endpoint via rede (internal-only no Docker).
+
+#### 2. Credenciais SMTP Hardcoded em Produção
+**OWASP A05 — Security Misconfiguration**
+```properties
+# application-production.properties (Backend)
+spring.mail.username=resetpsswd-basilios@hotmail.com
+spring.mail.password=hqmdccgwxzxbdoqf
+```
+Senha de email em texto plano no repositório Git. Qualquer pessoa com acesso ao código tem as credenciais.
+
+**Impacto:** Comprometimento da conta de email, possível envio de phishing usando a identidade do projeto.  
+**Correção:** Remover credenciais do arquivo, usar `${MAIL_USERNAME}` e `${MAIL_PASSWORD}` (como já existe no `application.properties` base).
+
+#### 3. Docker Compose — Segredos em Texto Plano
+**OWASP A05 — Security Misconfiguration**
+```yaml
+# docker-compose.yml
+MYSQL_ROOT_PASSWORD: root
+MYSQL_PASSWORD: basilios123
+RABBITMQ_DEFAULT_PASS: basilios123
+JWT_SECRET: ${JWT_SECRET:-troque-este-segredo-em-producao}
+```
+Senhas previsíveis e default de JWT fraco commitados no repositório.
+
+**Impacto:** Em ambiente de produção, banco de dados e broker de mensagens ficam com credenciais conhecidas.  
+**Correção:** Usar Docker Secrets ou `.env` (no .gitignore) para valores sensíveis.
+
+#### 4. Frontend — JWT em localStorage
+**OWASP A02 — Cryptographic Failures / A07 — Auth Failures**
+```javascript
+// storageAuth.js
+const KEY = 'auth_token'
+localStorage.setItem(KEY, token)
+```
+Token JWT armazenado em `localStorage` é acessível via XSS. Se qualquer script malicioso executar no contexto da página, pode roubar o token.
+
+**Impacto:** Roubo de sessão via XSS.  
+**Correção ideal:** HttpOnly cookie com flag Secure + SameSite=Strict. Alternativa mínima: manter em memória e usar refresh token.
+
+---
+
+### 🟡 VULNERABILIDADES MÉDIAS
+
+#### 5. Email-API — `ddl-auto=update` sem perfil de produção
+**OWASP A05**
+```yaml
+# application.yml (email-api)
+jpa:
+  hibernate:
+    ddl-auto: update
+  show-sql: true
+```
+Não existe `application-production.yml` no microservice. Em produção, o Hibernate pode alterar o schema do banco automaticamente e SQL é logado.
+
+#### 6. Email-API — Actuator exposto sem restrição
+**OWASP A05**
+```yaml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+```
+Endpoints de métricas expostos sem autenticação. Embora `health` e `info` sejam de baixo risco, `metrics` pode revelar informações internas.
+
+#### 7. Frontend — Sem Content-Security-Policy (CSP)
+**OWASP A05**
+Nenhum header CSP configurado no Vite ou em meta tags. Isso permite que scripts inline e externos sejam executados sem restrição, facilitando ataques XSS.
+
+#### 8. Frontend — `innerHTML` em highContrast.js
+**OWASP A03 — Injection (XSS)**
+```javascript
+// utils/highContrast.js
+host.innerHTML = `<button class="hc-btn" ...>...</button>...`
+```
+Uso de `innerHTML` com template literal. Embora neste caso o conteúdo seja estático e não inclua input do usuário, é um padrão perigoso que pode se degradar em futuras modificações.
+
+#### 9. Backend — RateLimitFilter desativado
+**OWASP A07 — Auth Failures**
+```java
+// RateLimitFilter.java — apenas faz passthrough
+@Override
+protected void doFilterInternal(...) {
+    filterChain.doFilter(request, response); // sem limitação
+}
+```
+Nenhuma proteção contra brute force nos endpoints de login/reset.
+
+#### 10. Docker — Portas expostas desnecessariamente
+**OWASP A05**
+```yaml
+rabbitmq:
+  ports:
+    - "5672:5672"    # AMQP aberto no host
+    - "15672:15672"  # Management UI aberta
+```
+RabbitMQ Management UI e porta AMQP acessíveis externamente. Somente serviços internos precisam dessas portas.
+
+#### 11. Backend — Swagger público em todos os perfis
+**OWASP A05**
+O Swagger/OpenAPI está acessível sem restrição mesmo com `SPRING_PROFILES_ACTIVE=production`.
+
+---
+
+## Matriz de Conformidade — Visão Geral Atualizada
+
+```
+OWASP Top 10 2021          Backend   Email-API  Frontend  Infra    GERAL
+──────────────────────────────────────────────────────────────────────────
+A01  Broken Access Control    90%       30%        70%      80%      68%
+A02  Cryptographic Failures   95%       85%        60%      50%      73%
+A03  Injection/XSS            95%       90%        75%      N/A      87%
+A04  Insecure Design          85%       85%        80%      75%      81%
+A05  Security Misconfig       70%       50%        55%      40%      54%
+A06  Vulnerable Components    70%       70%        60%      65%      66%
+A07  Auth Failures            85%       N/A        80%      N/A      83%
+A08  Data Integrity           85%       90%        80%      75%      83%
+A09  Security Logging         65%       60%        20%      20%      41%
+A10  SSRF                     95%       95%        95%      N/A      95%
+──────────────────────────────────────────────────────────────────────────
+             MÉDIA POR COMPONENTE:  84%   73%      68%      58%
+                              MÉDIA GERAL PONDERADA:  ~75%
+```
+
+---
+
+## Plano de Correção Priorizado
+
+### 🔴 Prioridade Crítica (corrigir imediatamente)
+| # | Vulnerabilidade | Componente | Correção |
+|---|---|---|---|
+| 1 | Credenciais SMTP hardcoded | Backend | Remover de `application-production.properties`, usar `${MAIL_USERNAME}` |
+| 2 | Endpoint `/api/notifications/failed` público | Email-API | Adicionar Spring Security ou bloquear via network policy |
+| 3 | Segredos no docker-compose | Infra | Migrar para `.env` (gitignored) ou Docker Secrets |
+
+### 🟠 Prioridade Alta (corrigir em sprint)
+| # | Vulnerabilidade | Componente | Correção |
+|---|---|---|---|
+| 4 | JWT em localStorage | Frontend | Migrar para HttpOnly cookie ou memória + refresh token |
+| 5 | RateLimitFilter desativado | Backend | Implementar limitação real (Bucket4j ou similar) |
+| 6 | `ddl-auto=update` sem perfil prod | Email-API | Criar `application-production.yml` com `ddl-auto=validate` |
+| 7 | RabbitMQ/MySQL portas expostas | Infra | Remover `ports` ou bind em `127.0.0.1` |
+
+### 🟡 Prioridade Média (próximo ciclo)
+| # | Vulnerabilidade | Componente | Correção |
+|---|---|---|---|
+| 8 | Sem CSP header | Frontend | Adicionar meta tag ou configurar no proxy/nginx |
+| 9 | Swagger público em produção | Backend | Restringir ao perfil `dev` com `@Profile("dev")` |
+| 10 | Actuator metrics público | Email-API | Proteger com basic auth ou remover `metrics` do exposure |
+| 11 | Sem centralização de logs | Todos | Integrar ELK/Datadog/CloudWatch |
+| 12 | Sem scan de CVEs automatizado | Todos | OWASP Dependency-Check + `npm audit` no CI |
+
+### 🟢 Prioridade Baixa (melhorias futuras)
+| # | Melhoria | Componente |
+|---|---|---|
+| 13 | Refresh Token com rotação | Backend + Frontend |
+| 14 | 2FA para FUNCIONARIOS | Backend |
+| 15 | Migrations Flyway/Liquibase | Backend + Email-API |
+| 16 | Docker image scanning (Trivy) | Infra |
+| 17 | Dependabot/Renovate | Todos os repos |
 
 ---
 
 ## Conclusão
 
-O backend do Basilios Hamburgueria apresenta uma **conformidade sólida de ~85%** com o OWASP Top 10 2021. As 10 categorias possuem controles implementados, com destaque para:
+A avaliação expandida (abril/2026) revela que o **Backend mantém boa postura (~84%)**, porém a visão sistêmica do projeto apresenta **gaps significativos**:
 
-- **Autenticação robusta** (BCrypt + JWT + reset seguro com hash SHA-256)
-- **Controle de acesso granular** (RBAC + ownership checks a nível de método)
-- **Proteção contra injection** (JPA parametrizado + Bean Validation + path traversal prevention)
-- **Design seguro** (anti-enumeração, DTOs, error handling centralizado)
+- **Email-API** sem qualquer autenticação nos endpoints HTTP
+- **Credenciais de produção** commitadas em texto plano no repositório
+- **Frontend** vulnerável a roubo de sessão via XSS (token em localStorage)
+- **Infraestrutura** com senhas hardcoded e portas desnecessariamente expostas
 
-Os pontos de melhoria identificados são majoritariamente operacionais (externalização de credenciais, monitoramento centralizado, scan de dependências) e não representam vulnerabilidades exploráveis no código atual.
+A conformidade geral caiu de 85% (somente backend) para **~75%** quando consideramos todo o ecossistema. As 3 correções críticas devem ser priorizadas antes do próximo deploy em produção.

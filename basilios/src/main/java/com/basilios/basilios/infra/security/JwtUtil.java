@@ -72,11 +72,19 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
+    /**
+     * @deprecated Use {@link #generateToken(String, List, Long)} instead.
+     */
+    @Deprecated
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, username);
     }
 
+    /**
+     * @deprecated Use {@link #generateToken(String, List, Long)} instead.
+     */
+    @Deprecated
     public String generateToken(String username, List<String> roles) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles);

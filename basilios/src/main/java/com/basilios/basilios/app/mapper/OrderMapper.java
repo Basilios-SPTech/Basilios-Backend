@@ -4,6 +4,7 @@ import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.core.model.Address;
 import com.basilios.basilios.core.model.Order;
 import com.basilios.basilios.core.model.ProductOrder;
+import com.basilios.basilios.core.model.ProductOrderAdicional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class OrderMapper {
 
         return OrderResponseDTO.builder()
                 .id(order.getId())
+                .userId(order.getUsuario() != null ? order.getUsuario().getId() : null)
+                .userName(order.getUsuario() != null ? order.getUsuario().getNomeUsuario() : null)
+                .userPhone(order.getUsuario() != null ? order.getUsuario().getTelefone() : null)
                 .items(toItemResponseList(order.getProductOrders()))
                 .subtotal(order.getSubtotal())
                 .deliveryFee(order.getDeliveryFee())
@@ -36,6 +40,7 @@ public class OrderMapper {
                 .cancelledAt(order.getCancelledAt())
                 .cancellationReason(order.getCancellationReason())
                 .observations(order.getObservations())
+                .paidAt(order.getPaidAt())
                 .totalItems(order.getTotalItems())
                 .totalPromotionDiscount(order.getTotalPromotionDiscount())
                 .build();
@@ -64,11 +69,15 @@ public class OrderMapper {
 
         return OrderResponseDTO.builder()
                 .id(order.getId())
+                .userId(order.getUsuario() != null ? order.getUsuario().getId() : null)
+                .userName(order.getUsuario() != null ? order.getUsuario().getNomeUsuario() : null)
+                .userPhone(order.getUsuario() != null ? order.getUsuario().getTelefone() : null)
                 .subtotal(order.getSubtotal())
                 .deliveryFee(order.getDeliveryFee())
                 .discount(order.getDiscount())
                 .total(order.getTotal())
                 .status(order.getStatus())
+                .statusPagamento(order.getStatusPagamento())
                 .address(toAddressResponse(order.getAddressEntrega()))
                 .createdAt(order.getCreatedAt())
                 .totalItems(order.getTotalItems())
@@ -96,7 +105,30 @@ public class OrderMapper {
                 .originalPrice(productOrder.getOriginalPrice())
                 .discount(productOrder.getTotalDiscount())
                 .discountPercentage(productOrder.getDiscountPercentage())
+                .adicionais(toAdicionalResponseList(productOrder.getAdicionais()))
                 .build();
+    }
+
+    private OrderResponseDTO.AdicionalItemResponse toAdicionalResponse(ProductOrderAdicional poa) {
+        if (poa == null) {
+            return null;
+        }
+        return OrderResponseDTO.AdicionalItemResponse.builder()
+                .adicionalId(poa.getAdicionalId())
+                .adicionalName(poa.getAdicionalName())
+                .unitPrice(poa.getUnitPrice())
+                .quantity(poa.getQuantity())
+                .subtotal(poa.getSubtotal())
+                .build();
+    }
+
+    private List<OrderResponseDTO.AdicionalItemResponse> toAdicionalResponseList(List<ProductOrderAdicional> adicionais) {
+        if (adicionais == null) {
+            return List.of();
+        }
+        return adicionais.stream()
+                .map(this::toAdicionalResponse)
+                .toList();
     }
 
     /**

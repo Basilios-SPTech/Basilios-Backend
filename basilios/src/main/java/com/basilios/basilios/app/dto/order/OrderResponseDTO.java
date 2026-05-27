@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.dto.order;
 
+import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
@@ -19,6 +19,9 @@ import java.util.Map;
 public class OrderResponseDTO {
 
     private Long id;
+    private Long userId;
+    private String userName;
+    private String userPhone;
 
     @Builder.Default
     private List<OrderItemResponse> items = new ArrayList<>();
@@ -29,6 +32,7 @@ public class OrderResponseDTO {
     private BigDecimal total;
 
     private StatusPedidoEnum status;
+    private StatusPagamentoEnum statusPagamento;
 
     private AddressResponse address;
 
@@ -41,13 +45,10 @@ public class OrderResponseDTO {
 
     private String cancellationReason;
     private String observations;
+    private LocalDateTime paidAt;
 
     private Integer totalItems;
     private BigDecimal totalPromotionDiscount;
-
-    // Para redirecionamento quando fora da área de entrega
-    private Boolean redirectToPartners;
-    private Map<String, String> partnerLinks;
 
     /**
      * DTO para representar um item do pedido
@@ -69,6 +70,24 @@ public class OrderResponseDTO {
         private BigDecimal originalPrice;
         private BigDecimal discount;
         private BigDecimal discountPercentage;
+
+        @Builder.Default
+        private List<AdicionalItemResponse> adicionais = new ArrayList<>();
+    }
+
+    /**
+     * DTO para representar um adicional dentro do item do pedido
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AdicionalItemResponse {
+        private Long adicionalId;
+        private String adicionalName;
+        private BigDecimal unitPrice;
+        private Integer quantity;
+        private BigDecimal subtotal;
     }
 
     /**

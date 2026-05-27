@@ -65,8 +65,6 @@ class AddressControllerTest {
                 .bairro("Bela Vista")
                 .cidade("São Paulo")
                 .estado("SP")
-                .latitude(-23.561414)
-                .longitude(-46.656170)
                 .build();
     }
 
@@ -149,8 +147,6 @@ class AddressControllerTest {
                 .bairro("Vila Mariana")
                 .cidade("São Paulo")
                 .estado("SP")
-                .latitude(-23.57)
-                .longitude(-46.62)
                 .build();
 
         when(addressService.getUserAddresses()).thenReturn(List.of(addressResponse, segundo));

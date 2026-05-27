@@ -5,9 +5,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "stores")
+@SQLDelete(sql = "UPDATE stores SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Data
 @Builder
 @NoArgsConstructor
@@ -41,7 +48,10 @@ public class Store {
     @Column(length = 20)
     private String phone;
 
-    @Size(max = 255)
-    @Column(name = "opening_hours")
-    private String openingHours;
+    @NotNull
+    @Column(name = "delivery_fee", nullable = false)
+    private BigDecimal deliveryFee = new BigDecimal("5.00");
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

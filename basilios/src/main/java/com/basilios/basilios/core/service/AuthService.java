@@ -119,7 +119,6 @@ public class AuthService {
                 .id(usuario.getId())
                 .nomeUsuario(usuario.getNomeUsuario())
                 .email(usuario.getEmail())
-                .roles(roles)
                 .build();
     }
 

@@ -8,6 +8,8 @@ import com.basilios.basilios.core.exception.BusinessException;
 import com.basilios.basilios.core.exception.NotFoundException;
 import com.basilios.basilios.core.model.*;
 import com.basilios.basilios.infra.repository.AddressRepository;
+import com.basilios.basilios.infra.repository.AdicionalProductRepository;
+import com.basilios.basilios.infra.repository.AdicionalRepository;
 import com.basilios.basilios.infra.repository.OrderRepository;
 import com.basilios.basilios.infra.repository.ProductRepository;
 import com.basilios.basilios.infra.messaging.NotificationEventPublisher;
@@ -19,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -45,7 +46,16 @@ class OrderServiceTest {
     private ProductRepository productRepository;
 
     @Mock
+    private AdicionalRepository adicionalRepository;
+
+    @Mock
+    private AdicionalProductRepository adicionalProductRepository;
+
+    @Mock
     private UsuarioService usuarioService;
+
+    @Mock
+    private StoreService storeService;
 
     @Mock
     private OrderMapper orderMapper;
@@ -62,16 +72,13 @@ class OrderServiceTest {
     private Usuario usuario;
     private Address address;
     private Product product;
+    private Adicional adicional;
     private Order order;
     private OrderRequestDTO orderRequestDTO;
     private OrderResponseDTO orderResponseDTO;
 
     @BeforeEach
     void setUp() {
-        // Configurar coordenadas da loja usando ReflectionTestUtils
-        ReflectionTestUtils.setField(orderService, "storeLatitude", -23.550520);
-        ReflectionTestUtils.setField(orderService, "storeLongitude", -46.633308);
-
         // Criar usuário mock
         usuario = new Usuario();
         usuario.setId(1L);
@@ -82,8 +89,6 @@ class OrderServiceTest {
         address = new Address();
         address.setIdAddress(1L);
         address.setUsuario(usuario);
-        address.setLatitude(-23.555520); // ~0.5km da loja
-        address.setLongitude(-46.638308);
         address.setCep("01234-567");
         address.setRua("Rua Teste");
         address.setNumero("123");
@@ -97,6 +102,13 @@ class OrderServiceTest {
         product.setName("Pizza Margherita");
         product.setPrice(new BigDecimal("45.00"));
         product.setIsPaused(false);
+
+        // Criar adicional mock
+        adicional = new Adicional();
+        adicional.setId(1L);
+        adicional.setName("Extra Bacon");
+        adicional.setPrice(new BigDecimal("3.00"));
+        adicional.setAvailable(true);
 
         // Criar pedido mock
         order = new Order();
@@ -133,9 +145,13 @@ class OrderServiceTest {
     @DisplayName("Deve criar pedido com sucesso quando todos os dados são válidos")
     void createOrder_DeveRetornarPedidoCriadoComSucesso() {
         // Arrange
+        Store store = new Store();
+        store.setDeliveryFee(new BigDecimal("5.00"));
+
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
         when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(storeService.getMainStore()).thenReturn(store);
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
@@ -184,29 +200,6 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("Deve redirecionar para parceiros quando endereço está fora da área de entrega")
-    void createOrder_DeveRedirecionarParaParceirosQuandoForaDaAreaDeEntrega() {
-        // Arrange
-        address.setLatitude(-23.650520); // ~11km da loja (fora da área de 7km)
-        address.setLongitude(-46.733308);
-
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
-
-        // Act
-        OrderResponseDTO result = orderService.createOrder(orderRequestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.getRedirectToPartners());
-        assertNotNull(result.getPartnerLinks());
-        assertTrue(result.getPartnerLinks().containsKey("ifood"));
-        assertTrue(result.getPartnerLinks().containsKey("99food"));
-        assertTrue(result.getPartnerLinks().containsKey("rappi"));
-        verify(orderRepository, never()).save(any(Order.class));
-    }
-
-    @Test
     @DisplayName("Deve lançar NotFoundException quando produto não existe")
     void createOrder_DeveLancarExcecaoQuandoProdutoNaoExiste() {
         // Arrange
@@ -243,166 +236,22 @@ class OrderServiceTest {
     // ========== TESTES DO MÉTODO getUserOrders() ==========
 
     @Test
-    @DisplayName("Deve retornar lista de pedidos do usuário autenticado")
-    void getUserOrders_DeveRetornarListaDePedidosDoUsuario() {
+    @DisplayName("Deve retornar página de pedidos do usuário autenticado")
+    void getUserOrders_DeveRetornarPaginaDePedidosDoUsuario() {
         // Arrange
-        List<Order> orders = List.of(order);
-        List<OrderResponseDTO> responseDTOs = List.of(orderResponseDTO);
+        org.springframework.data.domain.Page<Order> page = new org.springframework.data.domain.PageImpl<>(List.of(order));
 
         when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario)).thenReturn(orders);
-        when(orderMapper.toResponseList(orders)).thenReturn(responseDTOs);
+        when(orderRepository.findByUsuarioOrderByCreatedAtDesc(eq(usuario), any(org.springframework.data.domain.Pageable.class))).thenReturn(page);
+        when(orderMapper.toResponse(order)).thenReturn(orderResponseDTO);
 
         // Act
-        List<OrderResponseDTO> result = orderService.getUserOrders();
+        org.springframework.data.domain.Page<OrderResponseDTO> result = orderService.getUserOrders(org.springframework.data.domain.Pageable.unpaged());
 
         // Assert
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(orderResponseDTO, result.get(0));
+        assertEquals(1, result.getTotalElements());
         verify(usuarioService, times(1)).getCurrentUsuario();
-        verify(orderRepository, times(1)).findByUsuarioOrderByCreatedAtDesc(usuario);
-        verify(orderMapper, times(1)).toResponseList(orders);
-    }
-
-    @Test
-    @DisplayName("Deve retornar lista vazia quando usuário não possui pedidos")
-    void getUserOrders_DeveRetornarListaVaziaQuandoUsuarioNaoPossuiPedidos() {
-        // Arrange
-        List<Order> orders = new ArrayList<>();
-        List<OrderResponseDTO> responseDTOs = new ArrayList<>();
-
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario)).thenReturn(orders);
-        when(orderMapper.toResponseList(orders)).thenReturn(responseDTOs);
-
-        // Act
-        List<OrderResponseDTO> result = orderService.getUserOrders();
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(usuarioService, times(1)).getCurrentUsuario();
-        verify(orderRepository, times(1)).findByUsuarioOrderByCreatedAtDesc(usuario);
-    }
-
-    @Test
-    @DisplayName("Deve retornar múltiplos pedidos ordenados por data")
-    void getUserOrders_DeveRetornarMultiplosPedidosOrdenadosPorData() {
-        // Arrange
-        Order order2 = new Order();
-        order2.setId(2L);
-        order2.setUsuario(usuario);
-        order2.setCodigoPedido("PED-123456790-5678");
-
-        OrderResponseDTO response2 = new OrderResponseDTO();
-        response2.setId(2L);
-
-        List<Order> orders = List.of(order, order2);
-        List<OrderResponseDTO> responseDTOs = List.of(orderResponseDTO, response2);
-
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(orderRepository.findByUsuarioOrderByCreatedAtDesc(usuario)).thenReturn(orders);
-        when(orderMapper.toResponseList(orders)).thenReturn(responseDTOs);
-
-        // Act
-        List<OrderResponseDTO> result = orderService.getUserOrders();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    // ========== TESTES DO MÉTODO findByUsuario() ==========
-
-    @Test
-    @DisplayName("Deve retornar lista de pedidos para usuário específico")
-    void findByUsuario_DeveRetornarListaDePedidosParaUsuarioEspecifico() {
-        // Arrange
-        List<Order> orders = List.of(order);
-        when(orderRepository.findByUsuario(usuario)).thenReturn(orders);
-
-        // Act
-        List<Order> result = orderService.findByUsuario(usuario);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(order, result.get(0));
-        verify(orderRepository, times(1)).findByUsuario(usuario);
-    }
-
-    @Test
-    @DisplayName("Deve retornar lista vazia quando usuário não possui pedidos")
-    void findByUsuario_DeveRetornarListaVaziaQuandoUsuarioNaoPossuiPedidos() {
-        // Arrange
-        List<Order> orders = new ArrayList<>();
-        when(orderRepository.findByUsuario(usuario)).thenReturn(orders);
-
-        // Act
-        List<Order> result = orderService.findByUsuario(usuario);
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(orderRepository, times(1)).findByUsuario(usuario);
-    }
-
-    @Test
-    @DisplayName("Deve retornar múltiplos pedidos para o mesmo usuário")
-    void findByUsuario_DeveRetornarMultiplosPedidosParaMesmoUsuario() {
-        // Arrange
-        Order order2 = new Order();
-        order2.setId(2L);
-        order2.setUsuario(usuario);
-        order2.setStatus(StatusPedidoEnum.CONFIRMADO);
-
-        Order order3 = new Order();
-        order3.setId(3L);
-        order3.setUsuario(usuario);
-        order3.setStatus(StatusPedidoEnum.ENTREGUE);
-
-        List<Order> orders = List.of(order, order2, order3);
-        when(orderRepository.findByUsuario(usuario)).thenReturn(orders);
-
-        // Act
-        List<Order> result = orderService.findByUsuario(usuario);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.size());
-        assertEquals(StatusPedidoEnum.PENDENTE, result.get(0).getStatus());
-        assertEquals(StatusPedidoEnum.CONFIRMADO, result.get(1).getStatus());
-        assertEquals(StatusPedidoEnum.ENTREGUE, result.get(2).getStatus());
-        verify(orderRepository, times(1)).findByUsuario(usuario);
-    }
-
-    @Test
-    @DisplayName("Deve buscar pedidos apenas do usuário informado")
-    void findByUsuario_DeveBuscarPedidosApenasDoUsuarioInformado() {
-        // Arrange
-        Usuario outroUsuario = new Usuario();
-        outroUsuario.setId(2L);
-        outroUsuario.setNomeUsuario("Maria Santos");
-
-        List<Order> ordersUsuario1 = List.of(order);
-        when(orderRepository.findByUsuario(usuario)).thenReturn(ordersUsuario1);
-        when(orderRepository.findByUsuario(outroUsuario)).thenReturn(new ArrayList<>());
-
-        // Act
-        List<Order> resultUsuario1 = orderService.findByUsuario(usuario);
-        List<Order> resultUsuario2 = orderService.findByUsuario(outroUsuario);
-
-        // Assert
-        assertNotNull(resultUsuario1);
-        assertEquals(1, resultUsuario1.size());
-        assertEquals(usuario.getId(), resultUsuario1.get(0).getUsuario().getId());
-
-        assertNotNull(resultUsuario2);
-        assertTrue(resultUsuario2.isEmpty());
-
-        verify(orderRepository, times(1)).findByUsuario(usuario);
-        verify(orderRepository, times(1)).findByUsuario(outroUsuario);
     }
 
     // ========== TESTES DO MÉTODO getOrderById() ==========
@@ -461,29 +310,29 @@ class OrderServiceTest {
     @Test
     @DisplayName("Deve retornar pedidos filtrados por status")
     void getOrdersByStatus_DeveRetornarPedidosPorStatus() {
-        List<Order> orders = List.of(order);
-        List<OrderResponseDTO> responses = List.of(orderResponseDTO);
+        org.springframework.data.domain.Page<Order> page = new org.springframework.data.domain.PageImpl<>(List.of(order));
 
-        when(orderRepository.findByStatus(StatusPedidoEnum.PENDENTE)).thenReturn(orders);
-        when(orderMapper.toResponseList(orders)).thenReturn(responses);
+        when(orderRepository.findByStatus(eq(StatusPedidoEnum.PENDENTE), any(org.springframework.data.domain.Pageable.class))).thenReturn(page);
+        when(orderMapper.toResponse(order)).thenReturn(orderResponseDTO);
 
-        List<OrderResponseDTO> result = orderService.getOrdersByStatus(StatusPedidoEnum.PENDENTE);
+        org.springframework.data.domain.Page<OrderResponseDTO> result = orderService.getOrdersByStatus(
+                StatusPedidoEnum.PENDENTE, org.springframework.data.domain.Pageable.unpaged());
 
-        assertEquals(1, result.size());
-        verify(orderRepository).findByStatus(StatusPedidoEnum.PENDENTE);
+        assertEquals(1, result.getTotalElements());
+        verify(orderRepository).findByStatus(eq(StatusPedidoEnum.PENDENTE), any(org.springframework.data.domain.Pageable.class));
     }
 
     // ========== TESTES DOS MÉTODOS DE MUDANÇA DE STATUS ==========
 
     @Test
-    @DisplayName("confirmarPedido() — Deve confirmar pedido pendente")
-    void confirmarPedido_DeveConfirmarPedidoPendente() {
+    @DisplayName("updateOrderStatus() — Deve confirmar pedido pendente")
+    void updateOrderStatus_DeveConfirmarPedidoPendente() {
         order.setStatus(StatusPedidoEnum.PENDENTE);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
-        OrderResponseDTO result = orderService.confirmarPedido(1L);
+        OrderResponseDTO result = orderService.updateOrderStatus(1L, "CONFIRMADO");
 
         assertNotNull(result);
         assertEquals(StatusPedidoEnum.CONFIRMADO, order.getStatus());
@@ -491,69 +340,68 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("iniciarPreparo() — Deve iniciar preparo de pedido confirmado")
-    void iniciarPreparo_DeveIniciarPreparoPedidoConfirmado() {
+    @DisplayName("updateOrderStatus() — Deve iniciar preparo de pedido confirmado")
+    void updateOrderStatus_DeveIniciarPreparoPedidoConfirmado() {
         order.setStatus(StatusPedidoEnum.CONFIRMADO);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
-        OrderResponseDTO result = orderService.iniciarPreparo(1L);
+        OrderResponseDTO result = orderService.updateOrderStatus(1L, "PREPARANDO");
 
         assertNotNull(result);
         assertEquals(StatusPedidoEnum.PREPARANDO, order.getStatus());
     }
 
     @Test
-    @DisplayName("despacharPedido() — Deve despachar pedido em preparo")
-    void despacharPedido_DeveDespacharPedidoEmPreparo() {
+    @DisplayName("updateOrderStatus() — Deve despachar pedido em preparo")
+    void updateOrderStatus_DeveDespacharPedidoEmPreparo() {
         order.setStatus(StatusPedidoEnum.PREPARANDO);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
-        OrderResponseDTO result = orderService.despacharPedido(1L);
+        OrderResponseDTO result = orderService.updateOrderStatus(1L, "DESPACHADO");
 
         assertNotNull(result);
         assertEquals(StatusPedidoEnum.DESPACHADO, order.getStatus());
     }
 
     @Test
-    @DisplayName("entregarPedido() — Deve entregar pedido despachado")
-    void entregarPedido_DeveEntregarPedidoDespachado() {
+    @DisplayName("updateOrderStatus() — Deve entregar pedido despachado")
+    void updateOrderStatus_DeveEntregarPedidoDespachado() {
         order.setStatus(StatusPedidoEnum.DESPACHADO);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
-        OrderResponseDTO result = orderService.entregarPedido(1L);
+        OrderResponseDTO result = orderService.updateOrderStatus(1L, "ENTREGUE");
 
         assertNotNull(result);
         assertEquals(StatusPedidoEnum.ENTREGUE, order.getStatus());
     }
 
     @Test
-    @DisplayName("cancelarPedido() — Deve cancelar pedido pendente com motivo")
-    void cancelarPedido_DeveCancelarPedidoPendente() {
+    @DisplayName("updateOrderStatus() — Deve cancelar pedido pendente")
+    void updateOrderStatus_DeveCancelarPedidoPendente() {
         order.setStatus(StatusPedidoEnum.PENDENTE);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
 
-        OrderResponseDTO result = orderService.cancelarPedido(1L, "Cliente desistiu");
+        OrderResponseDTO result = orderService.updateOrderStatus(1L, "CANCELADO");
 
         assertNotNull(result);
         assertEquals(StatusPedidoEnum.CANCELADO, order.getStatus());
-        assertEquals("Cliente desistiu", order.getCancellationReason());
     }
 
     @Test
-    @DisplayName("confirmarPedido() — Deve lançar BusinessException quando transição inválida")
-    void confirmarPedido_DeveLancarException_QuandoTransicaoInvalida() {
+    @DisplayName("updateOrderStatus() — Deve lançar BusinessException quando transição inválida")
+    void updateOrderStatus_DeveLancarException_QuandoTransicaoInvalida() {
         order.setStatus(StatusPedidoEnum.ENTREGUE);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        assertThrows(BusinessException.class, () -> orderService.confirmarPedido(1L));
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(1L, "CONFIRMADO"));
         verify(orderRepository, never()).save(any());
     }
 
@@ -618,34 +466,154 @@ class OrderServiceTest {
         assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(1L, "INVALIDO"));
     }
 
-    // ========== TESTES DE ESTATÍSTICAS ==========
+    // ========== TESTES DE ADICIONAIS ==========
 
     @Test
-    @DisplayName("countUserOrders() — Deve retornar contagem de pedidos do usuário")
-    void countUserOrders_DeveRetornarContagem() {
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(orderRepository.countByUsuario(usuario)).thenReturn(5L);
+    @DisplayName("Deve criar pedido com adicional válido e calcular preço corretamente")
+    void createOrder_DeveCriarPedidoComAdicionalValido() {
+        // Arrange
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(1L);
+        adicionalRequest.setQuantity(2);
 
-        assertEquals(5L, orderService.countUserOrders());
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
+        when(adicionalProductRepository.existsByProductIdAndAdicionalId(1L, 1L)).thenReturn(true);
+        when(storeService.getMainStore()).thenReturn(Store.builder().deliveryFee(new BigDecimal("5.00")).build());
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        // Act
+        OrderResponseDTO result = orderService.createOrder(orderRequestDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(adicionalRepository, times(1)).findById(1L);
+        verify(adicionalProductRepository, times(1)).existsByProductIdAndAdicionalId(1L, 1L);
+        verify(orderRepository, times(1)).save(any(Order.class));
     }
 
     @Test
-    @DisplayName("canUserCancelOrder() — Deve retornar true para pedido pendente do usuário")
-    void canUserCancelOrder_DeveRetornarTrue_QuandoPedidoPendente() {
-        order.setStatus(StatusPedidoEnum.PENDENTE);
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+    @DisplayName("Deve lançar NotFoundException quando adicional não existe")
+    void createOrder_DeveLancarExcecaoQuandoAdicionalNaoExiste() {
+        // Arrange
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(99L);
+        adicionalRequest.setQuantity(1);
 
-        assertTrue(orderService.canUserCancelOrder(1L));
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> orderService.createOrder(orderRequestDTO));
+
+        assertEquals("Adicional não encontrado: 99", exception.getMessage());
+        verify(orderRepository, never()).save(any(Order.class));
     }
 
     @Test
-    @DisplayName("canUserCancelOrder() — Deve retornar false para pedido em preparo")
-    void canUserCancelOrder_DeveRetornarFalse_QuandoPedidoEmPreparo() {
-        order.setStatus(StatusPedidoEnum.PREPARANDO);
-        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+    @DisplayName("Deve lançar BusinessException quando adicional não está disponível")
+    void createOrder_DeveLancarExcecaoQuandoAdicionalIndisponivel() {
+        // Arrange
+        adicional.setAvailable(false);
 
-        assertFalse(orderService.canUserCancelOrder(1L));
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(1L);
+        adicionalRequest.setQuantity(1);
+
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
+
+        // Act & Assert
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> orderService.createOrder(orderRequestDTO));
+
+        assertEquals("Adicional 'Extra Bacon' não está disponível", exception.getMessage());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException quando adicional não pertence ao produto")
+    void createOrder_DeveLancarExcecaoQuandoAdicionalNaoPertenceAoProduto() {
+        // Arrange
+        OrderRequestDTO.AdicionalItemRequest adicionalRequest = new OrderRequestDTO.AdicionalItemRequest();
+        adicionalRequest.setAdicionalId(1L);
+        adicionalRequest.setQuantity(1);
+
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(List.of(adicionalRequest));
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(adicionalRepository.findById(1L)).thenReturn(Optional.of(adicional));
+        when(adicionalProductRepository.existsByProductIdAndAdicionalId(1L, 1L)).thenReturn(false);
+
+        // Act & Assert
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> orderService.createOrder(orderRequestDTO));
+
+        assertEquals("Adicional 'Extra Bacon' não pertence ao produto 'Pizza Margherita'", exception.getMessage());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Deve criar pedido sem adicionais normalmente")
+    void createOrder_DeveCriarPedidoSemAdicionais() {
+        // Arrange — item sem adicionais (lista nula ou vazia)
+        OrderRequestDTO.OrderItemRequest itemRequest = new OrderRequestDTO.OrderItemRequest();
+        itemRequest.setProductId(1L);
+        itemRequest.setQuantity(1);
+        itemRequest.setAdicionais(new ArrayList<>());
+
+        orderRequestDTO.setItems(List.of(itemRequest));
+
+        when(usuarioService.getCurrentUsuario()).thenReturn(usuario);
+        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(storeService.getMainStore()).thenReturn(Store.builder().deliveryFee(new BigDecimal("5.00")).build());
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+        when(orderMapper.toResponse(any(Order.class))).thenReturn(orderResponseDTO);
+
+        // Act
+        OrderResponseDTO result = orderService.createOrder(orderRequestDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(adicionalRepository, never()).findById(anyLong());
+        verify(orderRepository, times(1)).save(any(Order.class));
     }
 }
+

@@ -2,7 +2,6 @@
 package com.basilios.basilios.app.mapper;
 
 import com.basilios.basilios.app.dto.product.ProductResponseDTO;
-import com.basilios.basilios.core.model.IngredientProduct;
 import com.basilios.basilios.core.model.Product;
 import com.basilios.basilios.core.model.Promotion;
 import org.springframework.stereotype.Component;
@@ -26,22 +25,12 @@ public class ProductMapper {
                 .name(product.getName())
                 .description(product.getDescription())
                 .subcategory(product.getSubcategory() != null ? product.getSubcategory().getDisplayName() : null)
-                .subcategoryCode(product.getSubcategory() != null ? product.getSubcategory().name() : null)
                 .price(product.getPrice())
                 .finalPrice(product.getFinalPrice())
                 .isOnPromotion(product.isOnPromotion())
                 .isPaused(product.getIsPaused())
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt());
-
-        // Adicionar ingredientes
-        if (product.getProductIngredients() != null && !product.getProductIngredients().isEmpty()) {
-            List<ProductResponseDTO.IngredientResponse> ingredients = product.getProductIngredients()
-                    .stream()
-                    .map(this::toIngredientResponse)
-                    .toList();
-            builder.ingredients(ingredients);
-        }
 
         // Adicionar promoção se houver
         if (product.isOnPromotion()) {
@@ -64,22 +53,6 @@ public class ProductMapper {
         return products.stream()
                 .map(this::toResponse)
                 .toList();
-    }
-
-    /**
-     * Converte IngredientProduct para IngredientResponse
-     */
-    private ProductResponseDTO.IngredientResponse toIngredientResponse(IngredientProduct ip) {
-        if (ip == null || ip.getIngredient() == null) {
-            return null;
-        }
-
-        return ProductResponseDTO.IngredientResponse.builder()
-                .id(ip.getIngredient().getId())
-                .name(ip.getIngredient().getName())
-                .quantity(ip.getQuantity())
-                .measurementUnit(ip.getMeasurementUnit())
-                .build();
     }
 
     /**
