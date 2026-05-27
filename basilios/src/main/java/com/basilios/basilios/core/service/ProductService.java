@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -350,7 +350,7 @@ public class ProductService {
      */
     @Transactional(readOnly = true)
     public List<ProductResponseDTO> getProductsOnPromotion() {
-        LocalDate today = LocalDate.now();
+        LocalDateTime today = LocalDateTime.now();
         List<Promotion> currentPromos = promotionRepository.findCurrentPromotions(today);
 
         return currentPromos.stream()
@@ -366,7 +366,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getProductPromotions(Long productId) {
         findProductOrThrow(productId);
-        LocalDate today = LocalDate.now();
+        LocalDateTime today = LocalDateTime.now();
 
         return promotionRepository.findCurrentPromotionsByProductId(productId, today).stream()
                 .map(p -> Map.of(

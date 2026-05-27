@@ -13,7 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,7 +58,7 @@ public class PromotionService {
 
     public List<Promotion> getCurrentPromotions() {
 
-        return promotionRepository.findCurrentPromotions(LocalDate.now());
+        return promotionRepository.findCurrentPromotions(LocalDateTime.now());
 
     }
 
@@ -67,7 +67,7 @@ public class PromotionService {
      */
     public List<PromotionCurrentDTO> getCurrentPromotionsDTO() {
         try {
-            List<Object[]> results = promotionRepository.findCurrentPromotionsWithProductIds(LocalDate.now());
+            List<Object[]> results = promotionRepository.findCurrentPromotionsWithProductIds(LocalDateTime.now());
             
             if (results == null || results.isEmpty()) {
                 return List.of();
@@ -188,22 +188,22 @@ public class PromotionService {
             java.math.BigDecimal discountPercentage = (java.math.BigDecimal) row[3];
             java.math.BigDecimal discountAmount = (java.math.BigDecimal) row[4];
             
-            // Converter java.sql.Date para java.time.LocalDate
-            java.time.LocalDate startDate = null;
+            // Converter para LocalDateTime (pode vir como Timestamp ou LocalDateTime)
+            LocalDateTime startDate = null;
             if (row[5] != null) {
-                if (row[5] instanceof java.sql.Date) {
-                    startDate = ((java.sql.Date) row[5]).toLocalDate();
-                } else if (row[5] instanceof java.time.LocalDate) {
-                    startDate = (java.time.LocalDate) row[5];
+                if (row[5] instanceof java.sql.Timestamp) {
+                    startDate = ((java.sql.Timestamp) row[5]).toLocalDateTime();
+                } else if (row[5] instanceof LocalDateTime) {
+                    startDate = (LocalDateTime) row[5];
                 }
             }
             
-            java.time.LocalDate endDate = null;
+            LocalDateTime endDate = null;
             if (row[6] != null) {
-                if (row[6] instanceof java.sql.Date) {
-                    endDate = ((java.sql.Date) row[6]).toLocalDate();
-                } else if (row[6] instanceof java.time.LocalDate) {
-                    endDate = (java.time.LocalDate) row[6];
+                if (row[6] instanceof java.sql.Timestamp) {
+                    endDate = ((java.sql.Timestamp) row[6]).toLocalDateTime();
+                } else if (row[6] instanceof LocalDateTime) {
+                    endDate = (LocalDateTime) row[6];
                 }
             }
             
