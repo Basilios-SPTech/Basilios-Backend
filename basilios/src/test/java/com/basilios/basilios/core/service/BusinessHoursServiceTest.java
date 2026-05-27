@@ -1,179 +1,141 @@
 package com.basilios.basilios.core.service;
 
+import com.basilios.basilios.app.dto.store.StoreHoursDayDTO;
+import com.basilios.basilios.app.dto.store.StoreHoursResponseDTO;
 import com.basilios.basilios.core.exception.BusinessException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
-@DisplayName("Testes do Serviço de Horários de Funcionamento")
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Testes do Servico de Horarios de Funcionamento")
 class BusinessHoursServiceTest {
 
+    @Mock
+    private StoreService storeService;
+
+    @InjectMocks
     private BusinessHoursService businessHoursService;
 
-    @BeforeEach
-    void setup() {
-        businessHoursService = new BusinessHoursService();
-    }
-
-    // ========== TESTES SEGUNDA A QUINTA ==========
-
     @Test
-    @DisplayName("Segunda-feira às 12:00 deve estar aberto")
+    @DisplayName("Segunda-feira as 12:00 deve estar aberto")
     void testMondayAt12Open() {
-        LocalDateTime monday12 = LocalDateTime.of(2024, 5, 6, 12, 0); // Segunda
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.MONDAY))
+                .thenReturn(openDay(DayOfWeek.MONDAY, "09:00", "20:00"));
+
+        LocalDateTime monday12 = LocalDateTime.of(2024, 5, 6, 12, 0);
         assertTrue(businessHoursService.isOpen(monday12));
     }
 
     @Test
-    @DisplayName("Segunda-feira às 18:00 deve estar aberto")
-    void testMondayAt18Open() {
-        LocalDateTime monday18 = LocalDateTime.of(2024, 5, 6, 18, 0); // Segunda
-        assertTrue(businessHoursService.isOpen(monday18));
+    @DisplayName("Segunda-feira as 20:01 deve estar fechado")
+    void testMondayAt2001Closed() {
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.MONDAY))
+                .thenReturn(openDay(DayOfWeek.MONDAY, "09:00", "20:00"));
+
+        LocalDateTime monday2001 = LocalDateTime.of(2024, 5, 6, 20, 1);
+        assertFalse(businessHoursService.isOpen(monday2001));
     }
 
     @Test
-    @DisplayName("Segunda-feira às 23:00 deve estar aberto")
-    void testMondayAt23Open() {
-        LocalDateTime monday23 = LocalDateTime.of(2024, 5, 6, 23, 0); // Segunda
-        assertTrue(businessHoursService.isOpen(monday23));
+    @DisplayName("Domingo fechado deve retornar false")
+    void testSundayClosed() {
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.SUNDAY))
+                .thenReturn(closedDay(DayOfWeek.SUNDAY));
+
+        LocalDateTime sunday12 = LocalDateTime.of(2024, 5, 12, 12, 0);
+        assertFalse(businessHoursService.isOpen(sunday12));
     }
 
     @Test
-    @DisplayName("segunda-feira às 23:01 deve estar fechado")
-    void testMondayAt2301Closed() {
-        LocalDateTime monday2301 = LocalDateTime.of(2024, 5, 6, 23, 1); // Segunda
-        assertFalse(businessHoursService.isOpen(monday2301));
-    }
-
-    @Test
-    @DisplayName("Segunda-feira às 11:59 deve estar fechado")
-    void testMondayAt1159Closed() {
-        LocalDateTime monday1159 = LocalDateTime.of(2024, 5, 6, 11, 59); // Segunda
-        assertFalse(businessHoursService.isOpen(monday1159));
-    }
-
-    // ========== TESTES SEXTA-FEIRA E SÁBADO ==========
-
-    @Test
-    @DisplayName("Sexta-feira às 23:59 deve estar aberto")
-    void testFridayAt2359Open() {
-        LocalDateTime friday2359 = LocalDateTime.of(2024, 5, 10, 23, 59); // Sexta
-        assertTrue(businessHoursService.isOpen(friday2359));
-    }
-
-    @Test
-    @DisplayName("Sexta-feira à meia-noite (00:00) deve estar aberto")
-    void testFridayAtMidnightOpen() {
-        LocalDateTime fridayMidnight = LocalDateTime.of(2024, 5, 11, 0, 0); // Sábado (meia-noite da sexta)
-        assertTrue(businessHoursService.isOpen(fridayMidnight));
-    }
-
-    @Test
-    @DisplayName("Sexta-feira às 00:01 deve estar fechado")
-    void testFridayAt0001Closed() {
-        LocalDateTime friday0001 = LocalDateTime.of(2024, 5, 11, 0, 1); // Sábado (00:01)
-        assertFalse(businessHoursService.isOpen(friday0001));
-    }
-
-    @Test
-    @DisplayName("Sábado às 23:00 deve estar aberto")
-    void testSaturdayAt23Open() {
-        LocalDateTime saturday23 = LocalDateTime.of(2024, 5, 11, 23, 0); // Sábado
-        assertTrue(businessHoursService.isOpen(saturday23));
-    }
-
-    // ========== TESTES DOMINGO ==========
-
-    @Test
-    @DisplayName("Domingo às 12:00 deve estar aberto")
-    void testSundayAt12Open() {
-        LocalDateTime sunday12 = LocalDateTime.of(2024, 5, 12, 12, 0); // Domingo
-        assertTrue(businessHoursService.isOpen(sunday12));
-    }
-
-    @Test
-    @DisplayName("Domingo às 18:00 deve estar aberto")
-    void testSundayAt18Open() {
-        LocalDateTime sunday18 = LocalDateTime.of(2024, 5, 12, 18, 0); // Domingo
-        assertTrue(businessHoursService.isOpen(sunday18));
-    }
-
-    @Test
-    @DisplayName("Domingo às 18:01 deve estar fechado")
-    void testSundayAt1801Closed() {
-        LocalDateTime sunday1801 = LocalDateTime.of(2024, 5, 12, 18, 1); // Domingo
-        assertFalse(businessHoursService.isOpen(sunday1801));
-    }
-
-    @Test
-    @DisplayName("Domingo às 11:00 deve estar fechado")
-    void testSundayAt11Closed() {
-        LocalDateTime sunday11 = LocalDateTime.of(2024, 5, 12, 11, 0); // Domingo
-        assertFalse(businessHoursService.isOpen(sunday11));
-    }
-
-    // ========== TESTES DE VALIDAÇÃO ==========
-
-    @Test
-    @DisplayName("Validacao deve lançar exceção quando loja está fechada")
+    @DisplayName("Validacao deve lancar excecao quando loja esta fechada")
     void testValidateClosedThrowsException() {
-        LocalDateTime monday2301 = LocalDateTime.of(2024, 5, 6, 23, 1); // Segunda, fechado
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.MONDAY))
+                .thenReturn(openDay(DayOfWeek.MONDAY, "09:00", "20:00"));
+
+        LocalDateTime monday2301 = LocalDateTime.of(2024, 5, 6, 23, 1);
         assertThrows(BusinessException.class, () -> businessHoursService.validateIsOpen(monday2301));
     }
 
     @Test
-    @DisplayName("Validacao não deve lançar exceção quando loja está aberta")
+    @DisplayName("Validacao nao deve lancar excecao quando loja esta aberta")
     void testValidateOpenDoesNotThrow() {
-        LocalDateTime monday18 = LocalDateTime.of(2024, 5, 6, 18, 0); // Segunda, aberto
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.MONDAY))
+                .thenReturn(openDay(DayOfWeek.MONDAY, "09:00", "20:00"));
+
+        LocalDateTime monday18 = LocalDateTime.of(2024, 5, 6, 18, 0);
         assertDoesNotThrow(() -> businessHoursService.validateIsOpen(monday18));
     }
 
-    // ========== TESTES DE MENSAGENS ==========
-
     @Test
-    @DisplayName("Mensagem de horário deve ser retornada corretamente")
+    @DisplayName("Mensagem de horario deve ser retornada corretamente")
     void testBusinessHoursInfoReturned() {
+        StoreHoursResponseDTO response = new StoreHoursResponseDTO(Arrays.asList(
+                openDay(DayOfWeek.MONDAY, "09:00", "20:00"),
+                openDay(DayOfWeek.TUESDAY, "09:00", "20:00"),
+                openDay(DayOfWeek.WEDNESDAY, "09:00", "20:00"),
+                openDay(DayOfWeek.THURSDAY, "09:00", "20:00"),
+                openDay(DayOfWeek.FRIDAY, "09:00", "22:00"),
+                openDay(DayOfWeek.SATURDAY, "10:00", "22:00"),
+                closedDay(DayOfWeek.SUNDAY)
+        ));
+        when(storeService.getMainStoreHours()).thenReturn(response);
+
         String info = businessHoursService.getBusinessHoursInfo();
         assertNotNull(info);
-        assertFalse(info.isEmpty());
         assertTrue(info.contains("Segunda"));
-        assertTrue(info.contains("12:00"));
+        assertTrue(info.contains("09:00"));
+        assertTrue(info.contains("Domingo"));
+        assertTrue(info.contains("Fechado"));
     }
 
-    // ========== TESTES DE HORÁRIO DE FECHAMENTO ==========
-
     @Test
-    @DisplayName("Horário de fechamento para segunda-feira deve ser 23:00")
+    @DisplayName("Horario de fechamento para segunda-feira deve ser 20:00")
     void testClosingTimeMonday() {
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.MONDAY))
+                .thenReturn(openDay(DayOfWeek.MONDAY, "09:00", "20:00"));
+
         LocalTime closingTime = businessHoursService.getClosingTime(DayOfWeek.MONDAY);
-        assertEquals(LocalTime.of(23, 0), closingTime);
+        assertEquals(LocalTime.of(20, 0), closingTime);
     }
 
     @Test
-    @DisplayName("Horário de fechamento para sexta-feira deve ser 00:00")
-    void testClosingTimeFriday() {
-        LocalTime closingTime = businessHoursService.getClosingTime(DayOfWeek.FRIDAY);
-        assertEquals(LocalTime.of(0, 0), closingTime);
+    @DisplayName("Horario de abertura para sexta-feira deve ser 09:00")
+    void testOpeningTimeFriday() {
+        when(storeService.getMainStoreHoursByDay(DayOfWeek.FRIDAY))
+                .thenReturn(openDay(DayOfWeek.FRIDAY, "09:00", "22:00"));
+
+        LocalTime openingTime = businessHoursService.getOpeningTime(DayOfWeek.FRIDAY);
+        assertEquals(LocalTime.of(9, 0), openingTime);
     }
 
-    @Test
-    @DisplayName("Horário de fechamento para domingo deve ser 18:00")
-    void testClosingTimeSunday() {
-        LocalTime closingTime = businessHoursService.getClosingTime(DayOfWeek.SUNDAY);
-        assertEquals(LocalTime.of(18, 0), closingTime);
+    private StoreHoursDayDTO openDay(DayOfWeek day, String opensAt, String closesAt) {
+        StoreHoursDayDTO dto = new StoreHoursDayDTO();
+        dto.setDayOfWeek(day);
+        dto.setClosed(false);
+        dto.setOpensAt(LocalTime.parse(opensAt));
+        dto.setClosesAt(LocalTime.parse(closesAt));
+        return dto;
     }
 
-    @Test
-    @DisplayName("Horário de abertura deve ser 12:00")
-    void testOpeningTime() {
-        LocalTime openingTime = businessHoursService.getOpeningTime();
-        assertEquals(LocalTime.of(12, 0), openingTime);
+    private StoreHoursDayDTO closedDay(DayOfWeek day) {
+        StoreHoursDayDTO dto = new StoreHoursDayDTO();
+        dto.setDayOfWeek(day);
+        dto.setClosed(true);
+        dto.setOpensAt(null);
+        dto.setClosesAt(null);
+        return dto;
     }
 }
 

@@ -48,10 +48,6 @@ public class Store {
     @Column(length = 20)
     private String phone;
 
-    @Size(max = 255)
-    @Column(name = "opening_hours")
-    private String openingHours;
-
     @NotNull
     @Column(name = "delivery_fee", nullable = false)
     private BigDecimal deliveryFee = new BigDecimal("5.00");

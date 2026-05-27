@@ -75,16 +75,19 @@ public class OrderController {
     public ResponseEntity<BusinessHoursResponseDTO> checkBusinessStatus() {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         java.time.DayOfWeek dayOfWeek = now.getDayOfWeek();
-        
+        String businessHours = businessHoursService.getBusinessHoursInfo();
+
         if (businessHoursService.isOpen()) {
             return ResponseEntity.ok(BusinessHoursResponseDTO.open(
-                    businessHoursService.getOpeningTime(),
-                    businessHoursService.getClosingTime(dayOfWeek)
+                    businessHoursService.getOpeningTime(dayOfWeek),
+                    businessHoursService.getClosingTime(dayOfWeek),
+                    businessHours
             ));
         } else {
             return ResponseEntity.ok(BusinessHoursResponseDTO.closed(
-                    businessHoursService.getOpeningTime(),
-                    businessHoursService.getClosingTime(dayOfWeek)
+                    businessHoursService.getOpeningTime(dayOfWeek),
+                    businessHoursService.getClosingTime(dayOfWeek),
+                    businessHours
             ));
         }
     }
@@ -94,16 +97,19 @@ public class OrderController {
     public ResponseEntity<BusinessHoursResponseDTO> getBusinessHoursInfo() {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         java.time.DayOfWeek dayOfWeek = now.getDayOfWeek();
-        
+        String businessHours = businessHoursService.getBusinessHoursInfo();
+
         if (businessHoursService.isOpen()) {
             return ResponseEntity.ok(BusinessHoursResponseDTO.open(
-                    businessHoursService.getOpeningTime(),
-                    businessHoursService.getClosingTime(dayOfWeek)
+                    businessHoursService.getOpeningTime(dayOfWeek),
+                    businessHoursService.getClosingTime(dayOfWeek),
+                    businessHours
             ));
         } else {
             return ResponseEntity.ok(BusinessHoursResponseDTO.closed(
-                    businessHoursService.getOpeningTime(),
-                    businessHoursService.getClosingTime(dayOfWeek)
+                    businessHoursService.getOpeningTime(dayOfWeek),
+                    businessHoursService.getClosingTime(dayOfWeek),
+                    businessHours
             ));
         }
     }

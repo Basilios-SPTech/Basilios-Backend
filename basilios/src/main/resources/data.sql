@@ -6,15 +6,43 @@
 -- ===========================================
 -- LOJA
 -- -- ===========================================
-INSERT IGNORE INTO stores (name, address, latitude, longitude, phone, opening_hours)
+INSERT IGNORE INTO stores (name, address, latitude, longitude, phone, delivery_fee)
 VALUES (
-  'Basilios Burger & Açaí',
-  'R. Basílio da Cunha, 454 — Vila Deodoro, São Paulo, SP, 01544-001',
+  'Basilios Burger & Acaí',
+  'R. Basilio da Cunha, 454 - Vila Deodoro, Sao Paulo, SP, 01544-001',
   -23.57694,
   -46.62444,
   '(11) 4801-4864',
-  '12:00–00:00 (Seg–Sáb); 18:00–00:00 (Dom)'
+  5.00
 );
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'MONDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'TUESDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'WEDNESDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'THURSDAY', false, '09:00:00', '20:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'FRIDAY', false, '09:00:00', '22:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'SATURDAY', false, '10:00:00', '22:00:00' FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
+
+INSERT IGNORE INTO store_operating_hours (store_id, day_of_week, is_closed, opens_at, closes_at)
+SELECT s.id, 'SUNDAY', true, NULL, NULL FROM stores s
+WHERE s.name = 'Basilios Burger & Acaí';
 
 
 -- -- ===========================================

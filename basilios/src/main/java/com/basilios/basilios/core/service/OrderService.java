@@ -37,6 +37,7 @@ public class OrderService {
     private final AdicionalProductRepository adicionalProductRepository;
     private final UsuarioService usuarioService;
     private final StoreService storeService;
+    private final BusinessHoursService businessHoursService;
     private final OrderMapper orderMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationEventPublisher notificationEventPublisher;
@@ -54,6 +55,9 @@ public class OrderService {
                 request.getAddressId(),
                 request.getItems() != null ? request.getItems().size() : "null",
                 request.getDiscount());
+
+        // Bloqueia criação de pedido fora do horário configurado da loja.
+        businessHoursService.validateIsOpen();
 
         log.info("Buscando usuário autenticado...");
         Usuario usuario = usuarioService.getCurrentUsuario();

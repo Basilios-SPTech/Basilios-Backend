@@ -23,33 +23,30 @@ public class BusinessHoursResponseDTO {
     private String businessHours;
 
     public static BusinessHoursResponseDTO open(LocalTime openingTime, LocalTime closingTime) {
+        return open(openingTime, closingTime, "Horario de Funcionamento disponivel em /store/hours");
+    }
+
+    public static BusinessHoursResponseDTO open(LocalTime openingTime, LocalTime closingTime, String businessHours) {
         return BusinessHoursResponseDTO.builder()
                 .isOpen(true)
                 .openingTime(openingTime)
                 .closingTime(closingTime)
                 .message("A Basilios está aberta! Você já pode fazer seu pedido.")
-                .businessHours("""
-                        Horário de Funcionamento:
-                        - De Segunda a Quinta: 12:00 - 23:00
-                        - Sexta e Sábado: 12:00 - 00:00 (Meia-noite)
-                        - Domingo: 12:00 - 18:00
-                        """)
+                .businessHours(businessHours)
                 .build();
     }
 
     public static BusinessHoursResponseDTO closed(LocalTime openingTime, LocalTime closingTime) {
+        return closed(openingTime, closingTime, "Horario de Funcionamento disponivel em /store/hours");
+    }
+
+    public static BusinessHoursResponseDTO closed(LocalTime openingTime, LocalTime closingTime, String businessHours) {
         return BusinessHoursResponseDTO.builder()
                 .isOpen(false)
                 .openingTime(openingTime)
                 .closingTime(closingTime)
                 .message("A Basilios está fechada no momento. Confira nosso horário de funcionamento.")
-                .businessHours("""
-                        Horário de Funcionamento:
-                        - De Segunda a Quinta: 12:00 - 23:00
-                        - Sexta e Sábado: 12:00 - 00:00 (Meia-noite)
-                        - Domingo: 12:00 - 18:00
-                        """)
+                .businessHours(businessHours)
                 .build();
     }
 }
-
