@@ -68,6 +68,14 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
+    @PreAuthorize("hasRole('CLIENTE')")
+    @GetMapping("/me/has-active")
+    @Operation(summary = "Verificar se há pedido ativo", description = "Verifica se o cliente autenticado possui um pedido ativo")
+    public ResponseEntity<Boolean> hasActiveOrder() {
+        boolean hasActive = orderService.userHasActiveOrder();
+        return ResponseEntity.ok(hasActive);
+    }
+
     // ========== ENDPOINTS DE INFORMAÇÃO SOBRE HORÁRIOS ==========
 
     @GetMapping("/business-hours/status")

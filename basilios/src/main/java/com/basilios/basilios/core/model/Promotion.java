@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -61,11 +62,13 @@ public class Promotion {
 
     @NotNull(message = "Data de início é obrigatória")
     @Column(nullable = false)
-    private LocalDate startDate;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime startDate;
 
     @NotNull(message = "Data de término é obrigatória")
     @Column(nullable = false)
-    private LocalDate endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime endDate;
 
     @Builder.Default
     @Column(nullable = false)
@@ -85,22 +88,22 @@ public class Promotion {
      */
     public boolean isCurrent() {
         if (!isActive) return false;
-        LocalDate today = LocalDate.now();
-        return !today.isBefore(startDate) && !today.isAfter(endDate);
+        LocalDateTime now = LocalDateTime.now();
+        return !now.isBefore(startDate) && !now.isAfter(endDate);
     }
 
     /**
      * Verifica se a promoção está expirada
      */
     public boolean isExpired() {
-        return LocalDate.now().isAfter(endDate);
+        return LocalDateTime.now().isAfter(endDate);
     }
 
     /**
      * Verifica se a promoção está agendada (ainda não começou)
      */
     public boolean isScheduled() {
-        return LocalDate.now().isBefore(startDate);
+        return LocalDateTime.now().isBefore(startDate);
     }
 
     /**

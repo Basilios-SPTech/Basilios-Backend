@@ -2,9 +2,10 @@ package com.basilios.basilios.app.dto.promotion;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -23,12 +24,17 @@ public class CreatePromotionDTO {
 
     @DecimalMin(value = "0.00", message = "Valor de desconto não pode ser negativo")
     private BigDecimal discountAmount;
+    
+    @NotNull(message = "Preço final é obrigatório")
+    private BigDecimal finalPrice;
 
     @NotNull(message = "Data de início é obrigatória")
-    private LocalDate startDate;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime startDate;
 
     @NotNull(message = "Data de fim é obrigatória")
-    private LocalDate endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime endDate;
 
     @NotEmpty(message = "Selecione ao menos um produto")
     private List<Long> productIds;
