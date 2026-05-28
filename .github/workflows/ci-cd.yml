@@ -1,0 +1,147 @@
+name: ☕ Deploy Java — Backend Servers
+
+on:
+  push:
+    branches:
+      - main
+      - feat/pipe-main
+    # paths:
+    #   - 'backend/**'   # ajuste para o caminho da sua pasta Maven
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: basilios   # ajuste se necessário
+
+jobs:
+  # ============================================================
+  # JOB 1: Build Maven (runner GitHub-hosted)
+  # ============================================================
+  build:
+    name: 🔨 Build Maven
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build com Maven (pula testes para deploy mais rápido)
+        run: mvn clean package -DskipTests --batch-mode
+        # Para rodar os testes, remova -DskipTests acima
+
+      - name: Renomear JAR para nome fixo
+        run: |
+          # Garante que o artefato sempre se chame app.jar independente da versão
+          JAR_FILE=$(find target -name "*.jar" -not -name "*sources*" | head -1)
+          echo "JAR encontrado: $JAR_FILE"
+          cp "$JAR_FILE" target/app.jar
+
+      - name: Upload do JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: basilios/target/app.jar
+          retention-days: 1
+
+  # ============================================================
+  # JOB 2: Deploy no Backend 1 (rolling deploy — para 1, sobe 1)
+  # ============================================================
+  # deploy-backend1:
+  #   name: 🚀 Deploy Backend 1
+  #   runs-on: [self-hosted, backend1, java-deploy]
+  #   needs: build
+
+  #   steps:
+  #     - name: Download do JAR
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: backend-jar
+  #         path: /tmp/backend-deploy
+
+  #     - name: Parar serviço antes de substituir o JAR
+  #       run: sudo systemctl stop basilios-backend || true
+
+  #     - name: Substituir JAR
+  #       run: |
+  #         sudo cp /tmp/backend-deploy/app.jar /opt/basilios/app.jar
+  #         sudo chown ubuntu:ubuntu /opt/basilios/app.jar
+  #         sudo chmod 755 /opt/basilios/app.jar
+
+  #     - name: Iniciar serviço
+  #       run: sudo systemctl start basilios-backend
+
+  #     - name: Aguardar backend subir (health check)
+  #       run: |
+  #         echo "Aguardando o backend responder na porta 8080..."
+  #         for i in $(seq 1 30); do
+  #           if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+  #             echo "✅ Backend 1 está saudável!"
+  #             exit 0
+  #           fi
+  #           echo "  Tentativa $i/30 — aguardando 3s..."
+  #           sleep 3
+  #         done
+  #         echo "❌ Backend 1 não respondeu a tempo!"
+  #         sudo journalctl -u basilios-backend --no-pager -n 50
+  #         exit 1
+
+  #     - name: Limpar artefato temporário
+  #       run: rm -rf /tmp/backend-deploy
+
+  # # ============================================================
+  # # JOB 3: Deploy no Backend 2 (só começa após Backend 1 estar OK)
+  # # ============================================================
+  # deploy-backend2:
+  #   name: 🚀 Deploy Backend 2
+  #   runs-on: [self-hosted, backend2, java-deploy]
+  #   needs: deploy-backend1   # garante deploy em série (zero-downtime)
+
+  #   steps:
+  #     - name: Download do JAR
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: backend-jar
+  #         path: /tmp/backend-deploy
+
+  #     - name: Parar serviço antes de substituir o JAR
+  #       run: sudo systemctl stop basilios-backend || true
+
+  #     - name: Substituir JAR
+  #       run: |
+  #         sudo cp /tmp/backend-deploy/app.jar /opt/basilios/app.jar
+  #         sudo chown ubuntu:ubuntu /opt/basilios/app.jar
+  #         sudo chmod 755 /opt/basilios/app.jar
+
+  #     - name: Iniciar serviço
+  #       run: sudo systemctl start basilios-backend
+
+  #     - name: Aguardar backend subir (health check)
+  #       run: |
+  #         echo "Aguardando o backend responder na porta 8080..."
+  #         for i in $(seq 1 30); do
+  #           if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+  #             echo "✅ Backend 2 está saudável!"
+  #             exit 0
+  #           fi
+  #           echo "  Tentativa $i/30 — aguardando 3s..."
+  #           sleep 3
+  #         done
+  #         echo "❌ Backend 2 não respondeu a tempo!"
+  #         sudo journalctl -u basilios-backend --no-pager -n 50
+  #         exit 1
+
+  #     - name: Limpar artefato temporário
+  #       run: rm -rf /tmp/backend-deploy
+
+  #     - name: Resumo do deploy
+  #       run: |
+  #         echo "🎉 Deploy completo em ambos os backends!"
+  #         echo "Backend 1: OK (concluído antes)"
+  #         echo "Backend 2: OK"
