@@ -22,7 +22,7 @@ public class CorsConfig {
                                 "http://127.0.0.1:5173",
                                 "http://127.0.0.1:5174",
                                 "http://localhost:3000",
-                                "http://184.73.139.167"
+                                "http://ec2-3-80-128-122.compute-1.amazonaws.com"
                         )
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin")
