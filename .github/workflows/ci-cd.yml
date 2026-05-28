@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
-        
+
       - name: Diagnóstico
         run: |
           echo "PWD: $(pwd)"
@@ -39,7 +39,7 @@ jobs:
           cache: 'maven'
 
       - name: Build com Maven 
-        run: mvn clean package -DskipTests --batch-mode
+        run: mvn clean package -Dmaven.test.skip=true --batch-mode
         # Para rodar os testes, remova -DskipTests acima
 
       - name: Renomear JAR para nome fixo
