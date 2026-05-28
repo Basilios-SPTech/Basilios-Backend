@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -35,6 +36,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o WHERE o.status IN (com.basilios.basilios.core.enums.StatusPedidoEnum.CONFIRMADO, com.basilios.basilios.core.enums.StatusPedidoEnum.PREPARANDO, com.basilios.basilios.core.enums.StatusPedidoEnum.DESPACHADO) ORDER BY o.createdAt ASC")
     List<Order> findActiveOrders();
+
+    @Query("SELECT o FROM Order o WHERE o.usuario = :usuario AND o.status IN (com.basilios.basilios.core.enums.StatusPedidoEnum.PENDENTE, com.basilios.basilios.core.enums.StatusPedidoEnum.CONFIRMADO, com.basilios.basilios.core.enums.StatusPedidoEnum.PREPARANDO, com.basilios.basilios.core.enums.StatusPedidoEnum.DESPACHADO) ORDER BY o.createdAt DESC")
+    List<Order> findActiveOrdersByUsuario(@Param("usuario") Usuario usuario);
 
     List<Order> findByUsuarioAndStatus(Usuario usuario, StatusPedidoEnum status);
 

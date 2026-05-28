@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -79,6 +80,13 @@ public class OrderService {
         // Verificar se endereço está ativo
         if (!addressEntrega.isAtivo()) {
             throw new BusinessException("Endereço não está ativo");
+        }
+
+        // Verificar se o usuário tem um pedido ativo
+        List<Order> activeOrders = orderRepository.findActiveOrdersByUsuario(usuario);
+        if (!activeOrders.isEmpty()) {
+            Order activeOrder = activeOrders.get(0);
+            throw new BusinessException("Você possui um pedido ativo (Código: " + activeOrder.getCodigoPedido() + ") que precisa ser concluído ou cancelado antes de fazer um novo pedido.");
         }
 
         // Criar pedido
@@ -334,6 +342,18 @@ public class OrderService {
 
         log.info("Pagamento do pedido {} atualizado para: {}", order.getCodigoPedido(), novoStatus);
         return orderMapper.toResponse(order);
+    }
+
+    // ========== EVENTOS ==========
+
+    /**
+     * Verifica se o usuário autenticado tem um pedido ativo
+     */
+    @Transactional(readOnly = true)
+    public boolean userHasActiveOrder() {
+        Usuario usuario = usuarioService.getCurrentUsuario();
+        List<Order> activeOrders = orderRepository.findActiveOrdersByUsuario(usuario);
+        return !activeOrders.isEmpty();
     }
 
     // ========== EVENTOS ==========

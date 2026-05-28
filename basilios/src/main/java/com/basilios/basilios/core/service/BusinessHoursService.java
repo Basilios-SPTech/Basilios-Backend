@@ -69,7 +69,7 @@ public class BusinessHoursService {
     public void validateIsOpen(LocalDateTime dateTime) {
         if (!isOpen(dateTime)) {
             log.warn("Tentativa de criar pedido fora do horario de funcionamento. DateTime: {}", dateTime);
-            throw new BusinessException("A Basilios esta fechada no momento. Confira nosso horario de funcionamento.");
+            throw new BusinessException("A Basilios está fechada no momento. Confira nosso horário de funcionamento.");
         }
     }
 
