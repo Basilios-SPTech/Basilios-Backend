@@ -24,6 +24,12 @@ jobs:
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
+        
+      - name: Diagnóstico
+        run: |
+          echo "PWD: $(pwd)"
+          echo "pom.xml existe: $(ls pom.xml 2>/dev/null || echo 'NÃO ENCONTRADO')"
+          find $GITHUB_WORKSPACE -name "pom.xml" | head -5
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -32,7 +38,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build com Maven (pula testes para deploy mais rápido)
+      - name: Build com Maven 
         run: mvn clean package -DskipTests --batch-mode
         # Para rodar os testes, remova -DskipTests acima
 
