@@ -136,24 +136,10 @@ public class ProductService {
     }
 
     /**
-     * Deleta produto com validações
+     * Deleta produto com soft delete
      */
     public void deleteProduct(Long id) {
         Product product = findProductOrThrow(id);
-
-        // Verificar se está em pedidos
-        long orderCount = productOrderRepository.countByProductId(id);
-        if (orderCount > 0) {
-            throw new BusinessException(
-                    "Produto não pode ser deletado. Está em " + orderCount + " pedidos");
-        }
-
-        // Verificar se está em combos
-        long comboCount = productComboRepository.countByProductId(id);
-        if (comboCount > 0) {
-            throw new BusinessException(
-                    "Produto não pode ser deletado. Está em " + comboCount + " combos");
-        }
 
         productRepository.delete(product);
     }
@@ -482,17 +468,11 @@ public class ProductService {
     public Map<String, Object> canDeleteProduct(Long id) {
         findProductOrThrow(id);
 
-        long orderCount = productOrderRepository.countByProductId(id);
-        long comboCount = productComboRepository.countByProductId(id);
-        boolean canDelete = orderCount == 0 && comboCount == 0;
-
         return Map.of(
-                "canDelete", canDelete,
-                "orderCount", orderCount,
-                "comboCount", comboCount,
-                "reason", !canDelete ?
-                        "Produto está em " + orderCount + " pedidos e " + comboCount + " combos" :
-                        "Pode ser deletado"
+                "canDelete", true,
+                "orderCount", 0,
+                "comboCount", 0,
+                "reason", "Soft delete habilitado"
         );
     }
 

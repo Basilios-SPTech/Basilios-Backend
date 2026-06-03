@@ -10,6 +10,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -19,6 +21,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "product")
+@SQLDelete(sql = "UPDATE product SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Data
 @Builder
 @NoArgsConstructor
@@ -97,6 +101,9 @@ public class Product {
     @Builder.Default
     @Column(nullable = false)
     private Boolean isPaused = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     // Métodos utilitários
 
@@ -184,6 +191,7 @@ public class Product {
                 ", description='" + description + '\'' +
                 ", price=" + price +
                 ", isPaused=" + isPaused +
+                ", deletedAt=" + deletedAt +
                 ", promotionsCount=" + (promotions != null ? promotions.size() : 0) +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +

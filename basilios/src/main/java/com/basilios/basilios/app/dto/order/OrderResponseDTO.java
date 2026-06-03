@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.dto.order;
 
+import com.basilios.basilios.core.enums.MetodoPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,7 @@ public class OrderResponseDTO {
 
     private StatusPedidoEnum status;
     private StatusPagamentoEnum statusPagamento;
+    private MetodoPagamentoEnum metodoPagamento;
 
     private AddressResponse address;
 

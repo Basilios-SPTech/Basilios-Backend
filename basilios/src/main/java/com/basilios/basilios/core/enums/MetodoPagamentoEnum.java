@@ -2,8 +2,10 @@ package com.basilios.basilios.core.enums;
 
 public enum MetodoPagamentoEnum{
     DINHEIRO("dinheiro"),
+    CARTAO("cartao"),
     CARTAO_CREDITO("cartao_credito"),
     CARTAO_DEBITO("cartao_debito"),
+    VALE_REFEICAO("vale_refeicao"),
     PIX("pix"),
     TRANSFERENCIA("transferencia");
 

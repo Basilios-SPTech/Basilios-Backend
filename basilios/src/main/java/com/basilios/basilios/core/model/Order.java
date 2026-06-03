@@ -1,5 +1,6 @@
 package com.basilios.basilios.core.model;
 
+import com.basilios.basilios.core.enums.MetodoPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import jakarta.persistence.*;
@@ -61,6 +62,11 @@ public class Order {
     @Builder.Default
     @Column(nullable = false)
     private StatusPedidoEnum status = StatusPedidoEnum.PENDENTE;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "metodo_pagamento", nullable = false)
+    private MetodoPagamentoEnum metodoPagamento = MetodoPagamentoEnum.PIX;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -332,3 +338,4 @@ public class Order {
                 '}';
     }
 }
+

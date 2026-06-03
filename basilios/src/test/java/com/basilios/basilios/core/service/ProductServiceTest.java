@@ -326,11 +326,9 @@ class ProductServiceTest {
     // ========== TESTES DO MÉTODO deleteProduct() ==========
 
     @Test
-    @DisplayName("Deve deletar produto quando não está em pedidos nem combos")
-    void deleteProduct_DeveDeletarProdutoComSucesso() {
+    @DisplayName("Deve aplicar soft delete quando solicitar exclusão")
+    void deleteProduct_DeveAplicarSoftDelete() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(productOrderRepository.countByProductId(1L)).thenReturn(0L);
-        when(productComboRepository.countByProductId(1L)).thenReturn(0L);
 
         productService.deleteProduct(1L);
 
@@ -338,30 +336,23 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lançar BusinessException quando produto está em pedidos")
-    void deleteProduct_DeveLancarExcecaoQuandoEmPedidos() {
+    @DisplayName("Deve permitir exclusão mesmo quando produto está em pedidos")
+    void deleteProduct_DevePermitirExclusaoQuandoEmPedidos() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(productOrderRepository.countByProductId(1L)).thenReturn(5L);
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> productService.deleteProduct(1L));
+        productService.deleteProduct(1L);
 
-        assertTrue(exception.getMessage().contains("5 pedidos"));
-        verify(productRepository, never()).delete(any());
+        verify(productRepository, times(1)).delete(product);
     }
 
     @Test
-    @DisplayName("Deve lançar BusinessException quando produto está em combos")
-    void deleteProduct_DeveLancarExcecaoQuandoEmCombos() {
+    @DisplayName("Deve permitir exclusão mesmo quando produto está em combos")
+    void deleteProduct_DevePermitirExclusaoQuandoEmCombos() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(productOrderRepository.countByProductId(1L)).thenReturn(0L);
-        when(productComboRepository.countByProductId(1L)).thenReturn(3L);
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> productService.deleteProduct(1L));
+        productService.deleteProduct(1L);
 
-        assertTrue(exception.getMessage().contains("3 combos"));
-        verify(productRepository, never()).delete(any());
+        verify(productRepository, times(1)).delete(product);
     }
 
     // ========== TESTES DO MÉTODO createProduct() ==========

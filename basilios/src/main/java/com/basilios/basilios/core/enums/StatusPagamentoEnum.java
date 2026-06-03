@@ -3,7 +3,8 @@ package com.basilios.basilios.core.enums;
 public enum StatusPagamentoEnum {
     PENDENTE("pendente"),
     PAGO("pago"),
-    FALHOU("falhou");
+    FALHOU("falhou"),
+    CARTAO("cartao");
 
     private final String valor;
 
@@ -26,14 +27,14 @@ public enum StatusPagamentoEnum {
 
     public boolean podeTransicionarPara(StatusPagamentoEnum novoStatus) {
         return switch (this) {
-            case PENDENTE -> novoStatus == PAGO || novoStatus == FALHOU;
+            case PENDENTE -> novoStatus == PAGO || novoStatus == FALHOU || novoStatus == CARTAO;
             case FALHOU -> novoStatus == PENDENTE;
-            case PAGO -> false;
+            case PAGO, CARTAO -> false;
         };
     }
 
     public boolean isFinal() {
-        return this == PAGO;
+        return this == PAGO || this == CARTAO;
     }
 
     @Override

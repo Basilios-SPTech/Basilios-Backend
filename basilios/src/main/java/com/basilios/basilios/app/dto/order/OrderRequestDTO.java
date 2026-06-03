@@ -1,5 +1,6 @@
 package com.basilios.basilios.app.dto.order;
 
+import com.basilios.basilios.core.enums.MetodoPagamentoEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -30,6 +31,9 @@ public class OrderRequestDTO {
 
     @DecimalMin(value = "0.00", message = "Desconto deve ser maior ou igual a zero")
     private BigDecimal discount;
+
+    @Builder.Default
+    private MetodoPagamentoEnum metodoPagamento = MetodoPagamentoEnum.PIX;
 
     @Size(max = 1000, message = "Observações devem ter no máximo 1000 caracteres")
     private String observations;

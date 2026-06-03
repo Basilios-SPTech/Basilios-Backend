@@ -3,6 +3,7 @@ package com.basilios.basilios.core.service;
 import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.mapper.OrderMapper;
+import com.basilios.basilios.core.enums.MetodoPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
@@ -89,11 +90,20 @@ public class OrderService {
             throw new BusinessException("Você possui um pedido ativo (Código: " + activeOrder.getCodigoPedido() + ") que precisa ser concluído ou cancelado antes de fazer um novo pedido.");
         }
 
+        MetodoPagamentoEnum metodoPagamento = request.getMetodoPagamento() != null
+                ? request.getMetodoPagamento()
+                : MetodoPagamentoEnum.PIX;
+        StatusPagamentoEnum statusPagamentoInicial = isCardMethod(metodoPagamento)
+                ? StatusPagamentoEnum.CARTAO
+                : StatusPagamentoEnum.PENDENTE;
+
         // Criar pedido
         Order order = Order.builder()
                 .usuario(usuario)
                 .addressEntrega(addressEntrega)
                 .status(StatusPedidoEnum.PENDENTE)
+                .metodoPagamento(metodoPagamento)
+                .statusPagamento(statusPagamentoInicial)
                 .observations(request.getObservations())
                 .build();
 
@@ -385,5 +395,12 @@ public class OrderService {
         } catch (Exception e) {
             log.error("Erro ao publicar evento RabbitMQ do pedido {}: {}", order.getId(), e.getMessage());
         }
+    }
+
+    private boolean isCardMethod(MetodoPagamentoEnum metodoPagamento) {
+        return metodoPagamento == MetodoPagamentoEnum.CARTAO
+                || metodoPagamento == MetodoPagamentoEnum.CARTAO_CREDITO
+                || metodoPagamento == MetodoPagamentoEnum.CARTAO_DEBITO
+                || metodoPagamento == MetodoPagamentoEnum.VALE_REFEICAO;
     }
 }
