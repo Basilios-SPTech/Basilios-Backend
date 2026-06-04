@@ -4,6 +4,7 @@ import com.basilios.basilios.app.dto.order.OrderRequestDTO;
 import com.basilios.basilios.app.dto.order.OrderResponseDTO;
 import com.basilios.basilios.app.mapper.OrderMapper;
 import com.basilios.basilios.core.enums.MetodoPagamentoEnum;
+import com.basilios.basilios.core.enums.RoleEnum;
 import com.basilios.basilios.core.enums.StatusPagamentoEnum;
 import com.basilios.basilios.core.enums.StatusPedidoEnum;
 import com.basilios.basilios.core.exception.BusinessException;
@@ -339,6 +340,7 @@ public class OrderService {
      */
     @Transactional
     public OrderResponseDTO updatePaymentStatus(Long id, String statusStr) {
+        Usuario usuario = usuarioService.getCurrentUsuario();
         StatusPagamentoEnum novoStatus;
         try {
             novoStatus = StatusPagamentoEnum.fromValor(statusStr);
@@ -347,6 +349,12 @@ public class OrderService {
         }
 
         Order order = findById(id);
+        
+        // Verificação de segurança: CLIENTE só pode atualizar seus próprios pedidos, FUNCIONARIO pode atualizar qualquer um
+        if (!usuario.hasRole(RoleEnum.ROLE_FUNCIONARIO) && !order.getUsuario().getId().equals(usuario.getId())) {
+            throw new BusinessException("Pedido não pertence ao usuário");
+        }
+        
         order.atualizarPagamento(novoStatus);
         order = orderRepository.save(order);
 

@@ -14,7 +14,8 @@ public enum AdicionalSubcategory {
     VEGETAL("Vegetal"),
     BEBIDA("Bebida"),
     ACOMPANHAMENTO("Acompanhamento"),
-    PAO("Pão");
+    PAO("Pão"),
+    QUEIJO("Queijo");
 
     private final String displayName;
 
