@@ -16,18 +16,11 @@ public class CorsConfig {
             public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/**")
                         // Use originPatterns quando allowCredentials=true (o Spring responde com o origin exato)
-                        .allowedOriginPatterns(
-                                "http://localhost:5173",
-                                "http://localhost:5174",
-                                "http://127.0.0.1:5173",
-                                "http://127.0.0.1:5174",
-                                "http://localhost:3000",
-                                "http://ec2-3-80-128-122.compute-1.amazonaws.com"
-                        )
-                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                        .allowedHeaders("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin")
-                        .exposedHeaders("Authorization")
-                        .allowCredentials(true);
+                        .allowedOriginPatterns("*")
+                        .allowedMethods("*")
+                        .allowedHeaders("*")
+                        .allowCredentials(false)
+                        .exposedHeaders("Authorization");
             }
         };
     }
