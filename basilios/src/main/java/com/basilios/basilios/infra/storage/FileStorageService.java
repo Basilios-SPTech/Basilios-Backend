@@ -48,8 +48,10 @@ public class FileStorageService {
         try {
             s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         } catch (S3Exception ex) {
-            throw new BusinessException("Falha ao enviar imagem para o S3. Verifique bucket/permissoes AWS.");
+            ex.printStackTrace();
+            throw new BusinessException("Erro ao enviar arquivo para o armazenamento. " + ex.awsErrorDetails().errorMessage());
         } catch (IOException ex) {
+            ex.printStackTrace();
             throw new BusinessException("Nao foi possivel ler o arquivo enviado.");
         }
 
