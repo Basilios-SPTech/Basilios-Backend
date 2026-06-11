@@ -1,0 +1,76 @@
+name: 🚀 Deploy Java — Backend
+
+on:
+  push:
+    branches:
+      - main
+      - feat/pipe-main
+
+defaults:
+  run:
+    working-directory: Basilios-Backend/basilios
+
+jobs:
+  # ============================================================
+  # JOB 1: Build do Java (roda em runner hospedado pelo GitHub)
+  # ============================================================
+  build:
+    name: 🔨 Build Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build com Maven
+        run: mvn clean package -DskipTests
+
+      - name: Upload do artefato de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-build
+          path: Basilios-Backend/basilios/target/*.jar
+          retention-days: 1
+
+  # ============================================================
+  # JOB 2: Deploy no WebServer via self-hosted runner
+  # ============================================================
+  deploy:
+    name: 🚀 Deploy no WebServer (Java)
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: Download do artefato de build
+        uses: actions/download-artifact@v4
+        with:
+          name: java-build
+          path: /tmp/java-build
+
+      - name: Derrubar containers
+        working-directory: /home/ubuntu/back/Basilios-Containers
+        run: |
+          docker compose -f docker-compose.backend-ec2.yml down
+
+      - name: Atualizar código com Git Pull
+        working-directory: /home/ubuntu/back/Basilios-Backend/basilios
+        run: |
+          git pull origin main
+
+      - name: Executar script de deploy
+        working-directory: /home/ubuntu/back/Basilios-Backend/basilios
+        run: |
+          chmod +x ./deploy-ec2.sh
+          ./deploy-ec2.sh
+
+      - name: Verificação do deploy
+        run: |
+          echo "✅ Deploy do Java concluído!"
+          echo "Projeto: /home/ubuntu/back/Basilios-Backend/basilios"
