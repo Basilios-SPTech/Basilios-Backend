@@ -45,18 +45,6 @@ cd basilios
 
 API padrão: `http://localhost:8080`
 
-### Variáveis de ambiente
-
-| Variável | Descrição | Default típico |
-|----------|-----------|----------------|
-| `DB_URL` | JDBC URL MySQL | `jdbc:mysql://localhost:3306/basiliosData?...` |
-| `DB_USERNAME` / `DB_PASSWORD` | Credenciais do banco | `dev` / `dev123` |
-| `JWT_SECRET` / `JWT_EXPIRATION` | Assinatura e validade do token | — / `86400000` |
-| `RABBITMQ_HOST` / `PORT` / `USERNAME` / `PASSWORD` | Mensageria | `localhost` / `5672` / `guest` |
-| `MAIL_HOST` / `MAIL_USERNAME` / `MAIL_PASSWORD` | SMTP (se usado na API) | `smtp.gmail.com` |
-| Credenciais AWS S3 | Bucket de imagens | via profile / env de produção |
-
-> Não versionar secrets. Use `.env` local ou o Compose do `basilios-infra`.
 
 ## Testes
 
